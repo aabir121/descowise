@@ -65,10 +65,11 @@ export const getAccountBalance = async (accountNo: string): Promise<{ success: t
 };
 
 export const getAiDashboardSummary = async (monthlyConsumption: MonthlyConsumption[]): Promise<AiSummary> => {
-    if (!process.env.API_KEY || process.env.API_KEY === 'your_gemini_api_key_here') {
-        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your .env.local file.");
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `
       You are an expert electricity bill analyst. Analyze the following 24 months of electricity consumption data for a residential customer.
