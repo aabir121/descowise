@@ -1,4 +1,4 @@
-// import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AccountInfo, BalanceData, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary } from '../types';
 
 // Helper to format a date as YYYY-MM-DD
@@ -64,55 +64,55 @@ export const getAccountBalance = async (accountNo: string): Promise<{ success: t
     }
 };
 
-// export const getAiDashboardSummary = async (monthlyConsumption: MonthlyConsumption[]): Promise<AiSummary> => {
-//     if (!process.env.API_KEY) {
-//         throw new Error("API_KEY environment variable not set.");
-//     }
-//     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+export const getAiDashboardSummary = async (monthlyConsumption: MonthlyConsumption[]): Promise<AiSummary> => {
+    if (!process.env.API_KEY || process.env.API_KEY === 'your_gemini_api_key_here') {
+        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your .env.local file.");
+    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-//     const prompt = `
-//       You are an expert electricity bill analyst. Analyze the following 24 months of electricity consumption data for a residential customer.
-//       The data is provided as a JSON array where 'month' is the year-month, 'consumedUnit' is the consumption in kWh, and 'consumedTaka' is the cost in BDT.
+    const prompt = `
+      You are an expert electricity bill analyst. Analyze the following 24 months of electricity consumption data for a residential customer.
+      The data is provided as a JSON array where 'month' is the year-month, 'consumedUnit' is the consumption in kWh, and 'consumedTaka' is the cost in BDT.
 
-//       Data:
-//       ${JSON.stringify(monthlyConsumption)}
+      Data:
+      ${JSON.stringify(monthlyConsumption)}
 
-//       Based on this data, provide a concise analysis in a JSON object format. The JSON object must have the following structure:
-//       {
-//         "title": "A brief, encouraging title for the summary (e.g., 'Steady Consumption Trend')",
-//         "summary": "A 2-3 sentence summary of the user's overall consumption pattern. Mention the average monthly consumption in kWh.",
-//         "anomaly": {
-//           "detected": true or false,
-//           "details": "If an anomaly is detected (e.g., a month with consumption >50% higher than the 6-month average), describe it here in one sentence. For example: 'A significant spike was detected in January 2025.' If no anomaly is detected, this string should be empty."
-//         }
-//       }
+      Based on this data, provide a concise analysis in a JSON object format. The JSON object must have the following structure:
+      {
+        "title": "A brief, encouraging title for the summary (e.g., 'Steady Consumption Trend')",
+        "summary": "A 2-3 sentence summary of the user's overall consumption pattern. Mention the average monthly consumption in kWh.",
+        "anomaly": {
+          "detected": true or false,
+          "details": "If an anomaly is detected (e.g., a month with consumption >50% higher than the 6-month average), describe it here in one sentence. For example: 'A significant spike was detected in January 2025.' If no anomaly is detected, this string should be empty."
+        }
+      }
 
-//       Be insightful but keep the language simple and easy to understand. Do not include any text outside the JSON object.
-//     `;
+      Be insightful but keep the language simple and easy to understand. Do not include any text outside the JSON object.
+    `;
 
-//     const response: GenerateContentResponse = await ai.models.generateContent({
-//         model: 'gemini-2.5-flash-preview-04-17',
-//         contents: prompt,
-//         config: {
-//             responseMimeType: "application/json",
-//             temperature: 0.5
-//         }
-//     });
+    const response: GenerateContentResponse = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-preview-04-17',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            temperature: 0.5
+        }
+    });
 
-//     let jsonStr = response.text.trim();
-//     const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-//     const match = jsonStr.match(fenceRegex);
-//     if (match && match[2]) {
-//       jsonStr = match[2].trim();
-//     }
+    let jsonStr = response.text?.trim() || '';
+    const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
+    const match = jsonStr.match(fenceRegex);
+    if (match && match[2]) {
+      jsonStr = match[2].trim();
+    }
     
-//     try {
-//         return JSON.parse(jsonStr) as AiSummary;
-//     } catch (e) {
-//         console.error("Failed to parse AI response:", jsonStr, e);
-//         throw new Error("Failed to get a valid analysis from the AI.");
-//     }
-// };
+    try {
+        return JSON.parse(jsonStr) as AiSummary;
+    } catch (e) {
+        console.error("Failed to parse AI response:", jsonStr, e);
+        throw new Error("Failed to get a valid analysis from the AI.");
+    }
+};
 
 
 // --- New Dashboard APIs ---

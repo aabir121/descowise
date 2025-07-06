@@ -43,7 +43,8 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?:
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const [data, setData] = useState<DashboardData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAiLoading, setIsAiLoading] = useState(true);
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [isAiAvailable, setIsAiAvailable] = useState(true);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
@@ -69,18 +70,30 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
 
                 setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null });
                 
-                // Now fetch AI summary in the background
-                // setIsAiLoading(true);
-                // const aiSummary = await api.getAiDashboardSummary(monthlyConsumption);
-                // setData(prevData => prevData ? { ...prevData, aiSummary } : null);
+                // Start AI summary generation in the background (non-blocking)
+                fetchAiSummary(monthlyConsumption);
 
             } catch (err: any) {
                 setError(err.message || 'Failed to load dashboard data. Please try again later.');
             } finally {
                 setIsLoading(false);
+            }
+        };
+
+        const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[]) => {
+            try {
+                setIsAiLoading(true);
+                setIsAiAvailable(true);
+                const aiSummary = await api.getAiDashboardSummary(monthlyConsumption);
+                setData(prevData => prevData ? { ...prevData, aiSummary } : null);
+            } catch (err: any) {
+                console.warn('AI summary generation failed:', err.message);
+                setIsAiAvailable(false);
+            } finally {
                 setIsAiLoading(false);
             }
         };
+
         fetchEssentialData();
     }, [account.accountNo, account.meterNo]);
 
@@ -227,29 +240,31 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         
         return (
             <div className="space-y-6">
-                 {/* <Section title="AI-Powered Insights" defaultOpen>
-                    {isAiLoading ? (
-                         <div className="flex items-center gap-3 text-slate-400">
-                             <Spinner size="w-6 h-6" color="border-slate-400" />
-                             <span>Generating your personalized summary...</span>
-                         </div>
-                    ) : !data?.aiSummary ? (
-                         <div className="text-slate-400">Could not generate AI summary.</div>
-                    ) : (
-                        <div className="flex items-start gap-4">
-                            <WandSparklesIcon className="w-8 h-8 text-cyan-400 flex-shrink-0 mt-1" />
-                            <div>
-                                <h3 className="text-xl font-bold text-white mb-2">{data.aiSummary.title}</h3>
-                                <p className="text-slate-300 mb-3">{data.aiSummary.summary}</p>
-                                {data.aiSummary.anomaly.detected && (
-                                    <p className="text-sm font-semibold text-amber-400 bg-amber-500/10 px-3 py-2 rounded-md">
-                                        <span className="font-bold">Anomaly Detected:</span> {data.aiSummary.anomaly.details}
-                                    </p>
-                                )}
+                 {isAiAvailable && (
+                    <Section title="AI-Powered Insights" defaultOpen>
+                        {isAiLoading ? (
+                             <div className="flex items-center gap-3 text-slate-400">
+                                 <Spinner size="w-6 h-6" color="border-slate-400" />
+                                 <span>Generating your personalized summary...</span>
+                             </div>
+                        ) : !data?.aiSummary ? (
+                             <div className="text-slate-400">Could not generate AI summary.</div>
+                        ) : (
+                            <div className="flex items-start gap-4">
+                                <WandSparklesIcon className="w-8 h-8 text-cyan-400 flex-shrink-0 mt-1" />
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-2">{data.aiSummary.title}</h3>
+                                    <p className="text-slate-300 mb-3">{data.aiSummary.summary}</p>
+                                    {data.aiSummary.anomaly.detected && (
+                                        <p className="text-sm font-semibold text-amber-400 bg-amber-500/10 px-3 py-2 rounded-md">
+                                            <span className="font-bold">Anomaly Detected:</span> {data.aiSummary.anomaly.details}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </Section> */}
+                        )}
+                    </Section>
+                 )}
                 
                 <Section title="Account Balance Status" defaultOpen>
                     {processedData?.gaugeData ? (
