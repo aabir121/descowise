@@ -6,8 +6,8 @@ import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import AccountDashboardView from './components/AccountDashboardView';
-import ConfirmationDialog from './components/ConfirmationDialog';
-import { BoltIcon, PlusIcon, ExclamationTriangleIcon } from './components/Icons';
+import ConfirmationDialog from './components/common/ConfirmationDialog';
+import { BoltIcon, PlusIcon, ExclamationTriangleIcon } from './components/common/Icons';
 
 const App: React.FC = () => {
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();

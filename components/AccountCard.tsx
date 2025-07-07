@@ -1,7 +1,7 @@
 import React from 'react';
 import { Account } from '../types';
-import Spinner from './Spinner';
-import { BoltIcon, TrashIcon } from './Icons';
+import Spinner from './common/Spinner';
+import { BoltIcon, TrashIcon } from './common/Icons';
 
 interface AccountCardProps {
     account: Account;

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Account, AccountInfo } from '../types';
 import { verifyAccount } from '../services/descoService';
-import { CloseIcon } from './Icons';
-import Spinner from './Spinner';
+import { CloseIcon } from './common/Icons';
+import Spinner from './common/Spinner';
 
 interface AddAccountModalProps {
     isOpen: boolean;

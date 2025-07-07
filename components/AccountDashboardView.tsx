@@ -2,9 +2,11 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { ResponsiveContainer, BarChart, LineChart, PieChart, AreaChart, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, Line, Pie, Cell, Area, Scatter } from 'recharts';
 import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption } from '../types';
 import * as api from '../services/descoService';
-import { ArrowLeftIcon, TrashIcon, WandSparklesIcon, ExternalLinkIcon, BuildingOfficeIcon, ExclamationTriangleIcon } from './Icons';
-import Spinner from './Spinner';
-import ConfirmationDialog from './ConfirmationDialog';
+import Section from './common/Section';
+import CustomTooltip from './common/CustomTooltip';
+import Spinner from './common/Spinner';
+import ConfirmationDialog from './common/ConfirmationDialog';
+import { ArrowLeftIcon, TrashIcon, WandSparklesIcon, ExternalLinkIcon, BuildingOfficeIcon, ExclamationTriangleIcon } from './common/Icons';
 
 interface DashboardData {
     aiSummary: AiSummary | null;
@@ -14,31 +16,6 @@ interface DashboardData {
     rechargeHistory: RechargeHistoryItem[];
     balance: any | null;
 }
-
-const Section: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen }) => (
-    <details className="bg-slate-800 rounded-xl overflow-hidden" open={defaultOpen}>
-        <summary className="p-4 sm:p-6 text-lg font-bold text-slate-100 cursor-pointer hover:bg-slate-700/50 transition-colors">
-            {title}
-        </summary>
-        <div className="p-4 sm:p-6 border-t border-slate-700">
-            {children}
-        </div>
-    </details>
-);
-
-const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?: any[], label?: string | number }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-slate-700/80 backdrop-blur-sm p-3 rounded-md border border-slate-600 shadow-lg text-sm">
-                <p className="font-bold text-cyan-300 mb-2">{label}</p>
-                {payload.map((p, i) => (
-                    <div key={i} style={{ color: p.color }}>{`${p.name}: ${p.value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}`}</div>
-                ))}
-            </div>
-        );
-    }
-    return null;
-};
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const [data, setData] = useState<DashboardData | null>(null);

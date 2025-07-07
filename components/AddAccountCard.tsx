@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusIcon } from './Icons';
+import { PlusIcon } from './common/Icons';
 
 interface AddAccountCardProps {
     onClick: () => void;
