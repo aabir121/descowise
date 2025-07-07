@@ -28,26 +28,26 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm p-4 flex" onClick={onClose}>
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md text-gray-800 m-auto transform transition-all" onClick={e => e.stopPropagation()}>
+            <div className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md text-slate-100 m-auto transform transition-all" onClick={e => e.stopPropagation()}>
                 <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                            {icon && <div className="text-red-500">{icon}</div>}
-                            <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+                            {icon && <div className="text-red-400">{icon}</div>}
+                            <h2 className="text-xl font-bold text-white">{title}</h2>
                         </div>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-300">
                             <CloseIcon />
                         </button>
                     </div>
 
                     <div className="mb-6">
-                        <p className="text-gray-600 leading-relaxed">{message}</p>
+                        <p className="text-slate-300 leading-relaxed">{message}</p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-3">
                         <button 
                             onClick={onClose} 
-                            className="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition"
+                            className="w-full bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-lg hover:bg-slate-500 transition"
                         >
                             {cancelText}
                         </button>

@@ -83,24 +83,24 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
 
     const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
         <div className="py-2">
-            <span className="text-sm font-medium text-gray-500">{label}</span>
-            <p className="text-base font-semibold text-gray-800">{value || 'N/A'}</p>
+            <span className="text-sm font-medium text-slate-400">{label}</span>
+            <p className="text-base font-semibold text-slate-100">{value || 'N/A'}</p>
         </div>
     );
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm p-4 flex" onClick={onClose}>
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg text-gray-800 m-auto transform transition-all" onClick={e => e.stopPropagation()}>
+            <div className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg text-slate-100 m-auto transform transition-all" onClick={e => e.stopPropagation()}>
                 <div className="p-6 sm:p-8">
                     <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-2xl font-bold text-gray-900">{step === 'form' ? 'Add New Account' : 'Confirm Account'}</h2>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+                        <h2 className="text-2xl font-bold text-white">{step === 'form' ? 'Add New Account' : 'Confirm Account'}</h2>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-300">
                             <CloseIcon />
                         </button>
                     </div>
 
                     {message && (
-                        <div className={`p-3 rounded-lg mb-4 text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <div className={`p-3 rounded-lg mb-4 text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-300 border border-green-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'}`}>
                             {message.text}
                         </div>
                     )}
@@ -108,7 +108,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                     {step === 'form' && (
                         <form onSubmit={handleVerify}>
                             <div className="mb-4">
-                                <label htmlFor="accountNo" className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                                <label htmlFor="accountNo" className="block text-sm font-medium text-slate-300 mb-1">Account Number</label>
                                 <input
                                     type="text"
                                     id="accountNo"
@@ -121,7 +121,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                                         }
                                     }}
                                     placeholder="Enter your DESCO account number"
-                                    className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-gray-500"
+                                    className="w-full px-4 py-3 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400"
                                     aria-required="true"
                                     aria-invalid={message?.type === 'error'}
                                     aria-describedby={message ? "form-message" : undefined}
@@ -149,18 +149,18 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                                 </div>
                             </div>
                             <div className="mt-6">
-                                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">Display Name (Optional)</label>
+                                <label htmlFor="displayName" className="block text-sm font-medium text-slate-300 mb-1">Display Name (Optional)</label>
                                 <input
                                     type="text"
                                     id="displayName"
                                     value={displayName}
                                     onChange={(e) => setDisplayName(e.target.value)}
                                     placeholder="e.g., My Home Account"
-                                    className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-gray-500"
+                                    className="w-full px-4 py-3 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400"
                                 />
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                                <button onClick={resetState} className="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+                                <button onClick={resetState} className="w-full bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-lg hover:bg-slate-500 transition">Cancel</button>
                                 <button onClick={handleConfirmAdd} className="w-full bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-transform transform hover:-translate-y-0.5">Add Account</button>
                             </div>
                         </div>
