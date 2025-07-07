@@ -71,7 +71,9 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null });
                 
                 // Start AI summary generation in the background (non-blocking)
-                fetchAiSummary(monthlyConsumption);
+                if (balanceResult.success) {
+                    fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
+                }
 
             } catch (err: any) {
                 setError(err.message || 'Failed to load dashboard data. Please try again later.');
@@ -80,11 +82,12 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             }
         };
 
-        const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[]) => {
+        const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], currentBalance: number) => {
             try {
                 setIsAiLoading(true);
                 setIsAiAvailable(true);
-                const aiSummary = await api.getAiDashboardSummary(monthlyConsumption);
+                const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
+                const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, currentBalance, currentMonth);
                 setData(prevData => prevData ? { ...prevData, aiSummary } : null);
             } catch (err: any) {
                 console.warn('AI summary generation failed:', err.message);
@@ -250,16 +253,107 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         ) : !data?.aiSummary ? (
                              <div className="text-slate-400">Could not generate AI summary.</div>
                         ) : (
-                            <div className="flex items-start gap-4">
-                                <WandSparklesIcon className="w-8 h-8 text-cyan-400 flex-shrink-0 mt-1" />
-                                <div>
-                                    <h3 className="text-xl font-bold text-white mb-2">{data.aiSummary.title}</h3>
-                                    <p className="text-slate-300 mb-3">{data.aiSummary.summary}</p>
-                                    {data.aiSummary.anomaly.detected && (
-                                        <p className="text-sm font-semibold text-amber-400 bg-amber-500/10 px-3 py-2 rounded-md">
-                                            <span className="font-bold">Anomaly Detected:</span> {data.aiSummary.anomaly.details}
-                                        </p>
-                                    )}
+                            <div className="space-y-6">
+                                {/* Header */}
+                                <div className="flex items-start gap-4">
+                                    <WandSparklesIcon className="w-8 h-8 text-cyan-400 flex-shrink-0 mt-1" />
+                                    <div className="flex-1">
+                                        <h3 className="text-xl font-bold text-white mb-2">{data.aiSummary.title}</h3>
+                                        <p className="text-slate-300 mb-4">{data.aiSummary.overallSummary}</p>
+                                    </div>
+                                </div>
+
+                                {/* 1. Balance Status and Advice - HIGHEST PRIORITY */}
+                                <div className={`rounded-lg p-4 border-l-4 ${
+                                    data.aiSummary.balanceStatusAndAdvice.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
+                                    data.aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'bg-yellow-500/10 border-yellow-500/20 border-l-yellow-400' :
+                                    'bg-green-500/10 border-green-500/20 border-l-green-400'
+                                }`}>
+                                    <div className="flex items-start gap-3">
+                                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                                            data.aiSummary.balanceStatusAndAdvice.status === 'low' ? 'bg-red-400' :
+                                            data.aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'bg-yellow-400' :
+                                            'bg-green-400'
+                                        }`}></div>
+                                        <div>
+                                            <h4 className={`font-semibold mb-1 ${
+                                                data.aiSummary.balanceStatusAndAdvice.status === 'low' ? 'text-red-400' :
+                                                data.aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'text-yellow-400' :
+                                                'text-green-400'
+                                            }`}>
+                                                Balance Status: {data.aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + data.aiSummary.balanceStatusAndAdvice.status.slice(1)}
+                                            </h4>
+                                            <p className="text-sm text-slate-300">{data.aiSummary.balanceStatusAndAdvice.details}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 2. Suggested Recharge Amount - HIGH PRIORITY */}
+                                {data.aiSummary.suggestedRechargeAmount.amountBDT && (
+                                    <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0"></div>
+                                            <div>
+                                                <h4 className="font-semibold text-cyan-400 mb-1">💰 Recommended Recharge</h4>
+                                                <p className="text-2xl font-bold text-cyan-300 mb-2">৳{data.aiSummary.suggestedRechargeAmount.amountBDT.toLocaleString()}</p>
+                                                <p className="text-sm text-cyan-300">{data.aiSummary.suggestedRechargeAmount.justification}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 3. Recharge Timing Insight - HIGH PRIORITY */}
+                                <div className="bg-indigo-500/10 border border-indigo-500/20 border-l-4 border-l-indigo-400 rounded-lg p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-2 h-2 bg-indigo-400 rounded-full mt-2 flex-shrink-0"></div>
+                                        <div>
+                                            <h4 className="font-semibold text-indigo-400 mb-1">⏰ Optimal Recharge Timing</h4>
+                                            <p className="text-sm text-indigo-300">{data.aiSummary.rechargeTimingInsight}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 4. Anomaly Alert - MEDIUM PRIORITY */}
+                                {data.aiSummary.anomaly.detected && (
+                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
+                                            <div>
+                                                <h4 className="font-semibold text-amber-400 mb-1">⚠️ Anomaly Detected</h4>
+                                                <p className="text-sm text-amber-300">{data.aiSummary.anomaly.details}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 5. Seasonal Trend - MEDIUM PRIORITY */}
+                                {data.aiSummary.seasonalTrend.observed && (
+                                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                                            <div>
+                                                <h4 className="font-semibold text-blue-400 mb-1">🌡️ Seasonal Pattern</h4>
+                                                <p className="text-sm text-blue-300">{data.aiSummary.seasonalTrend.details}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 6. Recharge Pattern Insight - LOWER PRIORITY */}
+                                <div className="bg-slate-700/30 rounded-lg p-4">
+                                    <h4 className="font-semibold text-slate-200 mb-2">📊 Recharge Pattern Analysis</h4>
+                                    <p className="text-sm text-slate-300">{data.aiSummary.rechargePatternInsight}</p>
+                                </div>
+
+                                {/* 7. Actionable Tip - SUMMARY */}
+                                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                                        <div>
+                                            <h4 className="font-semibold text-purple-400 mb-1">💡 Actionable Tip</h4>
+                                            <p className="text-sm text-purple-300">{data.aiSummary.actionableTip}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}

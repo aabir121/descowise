@@ -7,6 +7,26 @@ const formatDate = (date: Date): string => date.toISOString().split('T')[0];
 // Helper to format a date as YYYY-MM
 const formatMonth = (date: Date): string => date.toISOString().substring(0, 7);
 
+// Helper to process recharge history into monthly format
+const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[]): Array<{month: string, rechargeAmount: number, rechargeCount: number}> => {
+    const monthlyRecharge: Record<string, {amount: number, count: number}> = {};
+    
+    rechargeHistory.forEach(item => {
+        const month = item.rechargeDate.substring(0, 7); // Extract YYYY-MM
+        if (!monthlyRecharge[month]) {
+            monthlyRecharge[month] = { amount: 0, count: 0 };
+        }
+        monthlyRecharge[month].amount += item.totalAmount;
+        monthlyRecharge[month].count += 1;
+    });
+    
+    return Object.entries(monthlyRecharge).map(([month, data]) => ({
+        month,
+        rechargeAmount: data.amount,
+        rechargeCount: data.count
+    })).sort((a, b) => a.month.localeCompare(b.month));
+};
+
 // This service now calls the real DESCO API.
 // NOTE: This may be blocked by the browser's CORS policy. 
 // A backend proxy is the standard solution for production applications.
@@ -64,32 +84,72 @@ export const getAccountBalance = async (accountNo: string): Promise<{ success: t
     }
 };
 
-export const getAiDashboardSummary = async (monthlyConsumption: MonthlyConsumption[]): Promise<AiSummary> => {
+export const getAiDashboardSummary = async (
+    monthlyConsumption: MonthlyConsumption[], 
+    rechargeHistory: RechargeHistoryItem[], 
+    currentBalance: number, 
+    currentMonth: string
+): Promise<AiSummary> => {
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
         throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
     }
     const ai = new GoogleGenAI({ apiKey });
 
+    // Process recharge history into monthly format
+    const monthlyRechargeData = processRechargeHistoryToMonthly(rechargeHistory);
+
     const prompt = `
-      You are an expert electricity bill analyst. Analyze the following 24 months of electricity consumption data for a residential customer.
-      The data is provided as a JSON array where 'month' is the year-month, 'consumedUnit' is the consumption in kWh, and 'consumedTaka' is the cost in BDT.
+You are an expert electricity bill and recharge analyst for residential customers, providing strategic advice to optimize their energy usage and financial management. Your goal is to offer actionable, data-driven recommendations.
 
-      Data:
-      ${JSON.stringify(monthlyConsumption)}
+Analyze the following historical electricity consumption and recharge data, along with the customer's current balance and the current month.
 
-      Based on this data, provide a concise analysis in a JSON object format. The JSON object must have the following structure:
-      {
-        "title": "A brief, encouraging title for the summary (e.g., 'Steady Consumption Trend')",
-        "summary": "A 2-3 sentence summary of the user's overall consumption pattern. Mention the average monthly consumption in kWh.",
-        "anomaly": {
-          "detected": true or false,
-          "details": "If an anomaly is detected (e.g., a month with consumption >50% higher than the 6-month average), describe it here in one sentence. For example: 'A significant spike was detected in January 2025.' If no anomaly is detected, this string should be empty."
-        }
-      }
+**Historical Electricity Consumption Data (24 months, JSON array, sorted by month):**
+- 'month': year-month (e.g., "2024-01")
+- 'consumedUnit': electricity consumption in kWh
+- 'consumedTaka': cost of consumption in BDT
 
-      Be insightful but keep the language simple and easy to understand. Do not include any text outside the JSON object.
-    `;
+${JSON.stringify(monthlyConsumption)}
+
+**Historical Electricity Recharge Data (24 months, JSON array, sorted by month):**
+- 'month': year-month (e.g., "2024-01")
+- 'rechargeAmount': total BDT recharged for that month (sum of all recharges)
+- 'rechargeCount': number of individual recharges made in that month
+
+${JSON.stringify(monthlyRechargeData)}
+
+**Current Customer Information:**
+- Current Meter Balance: ${currentBalance} BDT
+- Current Month (YYYY-MM): ${currentMonth}
+
+Based on this comprehensive data and insights from historical trends (especially seasonal patterns for the current month), provide a concise and highly actionable analysis in a JSON object format. The JSON object must have the following structure:
+
+{
+  "title": "An encouraging and personalized title for the analysis (e.g., 'Your Energy & Recharge Insights: Smart Habits!', 'Optimizing Your Electricity Budget')",
+  "overallSummary": "A 2-3 sentence summary of the customer's overall consumption, cost, and recharge patterns. Include average monthly consumption (kWh) and average monthly recharge (BDT). Highlight general trends (e.g., 'consistent usage, balanced recharges', 'variable consumption, frequent small recharges').",
+  "anomaly": {
+    "detected": true or false,
+    "details": "If a significant anomaly is detected in either consumption or recharge (e.g., consumption >50% higher than 6-month average, or exceptionally high/low recharge relative to typical patterns). Describe it in one concise sentence, including month and type of anomaly. Example: 'A significant spike in consumption was observed in January 2025, consuming X% more than average, not fully covered by recharges.' If no anomaly, this string should be empty."
+  },
+  "seasonalTrend": {
+    "observed": true or false,
+    "details": "If a noticeable seasonal trend is observed in consumption or recharges (e.g., 'Consumption and recharges typically peak during the summer months due to AC usage.'). If no clear seasonal trend, this string should be empty."
+  },
+  "rechargePatternInsight": "Analyze the customer's historical recharge frequency and total amount relative to consumption. Is there a clear pattern (e.g., 'consistent monthly recharges', 'multiple small recharges, especially when balance is low')? Provide a brief insight into their financial management of electricity.",
+  "balanceStatusAndAdvice": {
+    "status": "low", "normal", or "good", // Assess current balance: 'low', 'normal', 'good'
+    "details": "Based on historical consumption for the current month (${currentMonth}) and the user's current balance, assess if the balance is low. Explain why (e.g., 'Your current balance of ${currentBalance} BDT is considered low given your typical consumption of X kWh in ${currentMonth} and average cost of Y BDT for this month historically.'). If not low, state why it's normal/good."
+  },
+  "suggestedRechargeAmount": {
+    "amountBDT": null, // Suggested amount in BDT, or null if no specific suggestion
+    "justification": "Based on average consumption for the current month (${currentMonth}) from historical data, your typical monthly cost for this month is X BDT. A recharge of [suggested amount] BDT is recommended to cover a full month's usage, potentially with a small buffer. If no specific suggestion, state 'N/A'."
+  },
+  "rechargeTimingInsight": "Analyze the customer's recharge timing patterns from history and provide specific recommendations on WHEN to perform the suggested recharge amount. Consider: their typical balance thresholds when they recharge, historical consumption leading to recharges, seasonal patterns, and optimal timing to avoid low balance situations or frequent top-ups. Examples: 'You typically recharge when your balance drops below 300 BDT. To maintain a healthy buffer, consider topping up at the start of each month.' or 'Your pattern of recharging on the 15th of each month works well with your consumption cycle; continue this trend.' or 'During summer months, consider splitting your recharge into two mid-month payments due to higher AC usage and cost.'",
+  "actionableTip": "Provide one brief, overarching actionable tip that combines insights from consumption, recharge patterns, and future needs. For example: 'To avoid future low balance situations, consider topping up [suggested amount] BDT at the beginning of each [month type, e.g., summer] month based on your historical peak usage.', or 'Your stable consumption and healthy balance suggest you're managing your electricity effectively. Keep up the good work!'"
+}
+
+Ensure the language is simple, encouraging, and directly useful for a typical homeowner. Do not include any text or explanations outside the JSON object.
+`;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-preview-04-17',

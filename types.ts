@@ -29,11 +29,26 @@ export interface Account extends AccountInfo {
 
 export interface AiSummary {
     title: string;
-    summary: string;
+    overallSummary: string;
     anomaly: {
         detected: boolean;
         details: string;
     };
+    seasonalTrend: {
+        observed: boolean;
+        details: string;
+    };
+    rechargePatternInsight: string;
+    balanceStatusAndAdvice: {
+        status: 'low' | 'normal' | 'good';
+        details: string;
+    };
+    suggestedRechargeAmount: {
+        amountBDT: number | null;
+        justification: string;
+    };
+    rechargeTimingInsight: string;
+    actionableTip: string;
 }
 
 export interface CustomerLocation {
