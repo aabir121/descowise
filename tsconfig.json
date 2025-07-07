@@ -6,6 +6,8 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -25,6 +27,18 @@
 
     "paths": {
       "@/*" :  ["./*"]
-    }
-  }
+    },
+
+    "types": ["react", "react-dom", "node"],
+    "typeRoots": ["./node_modules/@types", "./types"]
+  },
+  "include": [
+    "./src",
+    "./types",
+    "./components",
+    "./services",
+    "./hooks",
+    "./*.ts",
+    "./*.tsx"
+  ]
 }
