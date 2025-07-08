@@ -146,16 +146,23 @@ const App: React.FC = () => {
 
                         <main>
                             {accounts.length === 0 ? (
-                                <div className="text-center bg-slate-800/50 border border-slate-700 rounded-2xl p-10 sm:p-16">
-                                    <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-slate-100">No Accounts Added Yet</h2>
-                                    <p className="text-slate-400 mb-6 max-w-md mx-auto">Click the button below to add your first electricity account and get started.</p>
-                                    <button
-                                        onClick={handleOpenModal}
-                                        className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-full transition-transform transform hover:scale-105 shadow-lg shadow-cyan-500/20"
-                                    >
-                                        <PlusIcon />
-                                        Add Your First Account
-                                    </button>
+                                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center bg-slate-800/50 border border-slate-700 rounded-2xl p-10 sm:p-16">
+                                  {/* Friendly icon/illustration */}
+                                  <div className="mb-6">
+                                    <svg className="w-16 h-16 mx-auto text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                                      <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    </svg>
+                                  </div>
+                                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">No Accounts Yet</h2>
+                                  <p className="text-slate-400 mb-8 max-w-md mx-auto">You haven’t added any electricity accounts.<br />Click below to get started.</p>
+                                  <button
+                                    onClick={handleOpenModal}
+                                    className="flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-semibold text-lg shadow-lg transition focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
+                                  >
+                                    <span className="text-2xl">+</span>
+                                    Add Account
+                                  </button>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
