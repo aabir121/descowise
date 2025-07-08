@@ -10,6 +10,7 @@ import ConfirmationDialog from './components/common/ConfirmationDialog';
 import { BoltIcon, PlusIcon, ExclamationTriangleIcon, TrashIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingCoffeeButton from './components/FloatingCoffeeButton';
+import Footer from './components/common/Footer';
 
 const App: React.FC = () => {
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
@@ -174,11 +175,7 @@ const App: React.FC = () => {
                             )}
                         </main>
                     </div>
-                     <footer className="text-center py-4 mt-auto">
-                        <p className="text-xs text-slate-500">
-                            Data provided by DESCO Open APIs. This is an unofficial client.
-                        </p>
-                    </footer>
+                    <Footer />
                 </div>
             )}
             <AddAccountModal

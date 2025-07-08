@@ -6,6 +6,7 @@ import { BuildingOfficeIcon, ExclamationTriangleIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
+import Footer from './common/Footer';
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const {
@@ -71,6 +72,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 confirmButtonClass="bg-cyan-600 hover:bg-cyan-700"
                 icon={<BuildingOfficeIcon className="w-6 h-6" />}
             />
+            <Footer />
         </div>
     );
 };
