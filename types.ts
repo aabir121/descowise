@@ -50,6 +50,21 @@ export interface AiSummary {
     };
     rechargeTimingInsight: string;
     actionableTip: string;
+    // --- New fields for advanced forecasting ---
+    balanceDepletionForecast?: {
+        daysRemaining: number | null;
+        expectedDepletionDate: string | null; // "YYYY-MM-DD"
+        details: string;
+    };
+    currentMonthBillForecast?: {
+        estimatedTotal: number | null;
+        details: string;
+    };
+    futureConsumptionForecast?: Array<{
+        month: string; // "YYYY-MM"
+        estimatedConsumption: number | null;
+        estimatedBill: number | null;
+    }>;
 }
 
 export interface CustomerLocation {

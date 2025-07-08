@@ -25,6 +25,74 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <p className="text-slate-300 mb-4">{aiSummary.overallSummary}</p>
             </div>
           </div>
+          {/* 8. Balance Depletion Forecast */}
+          {aiSummary.balanceDepletionForecast && (
+            <div className="bg-red-500/10 border border-red-500/20 border-l-4 border-l-red-400 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-red-400 mb-1">⏳ Balance Depletion Forecast</h4>
+                  <p className="text-sm text-red-300">{aiSummary.balanceDepletionForecast.details}</p>
+                  {aiSummary.balanceDepletionForecast.daysRemaining !== null && (
+                    <div className="mt-2 text-lg font-bold text-red-200">
+                      Estimated Days Remaining: {aiSummary.balanceDepletionForecast.daysRemaining}
+                    </div>
+                  )}
+                  {aiSummary.balanceDepletionForecast.expectedDepletionDate && (
+                    <div className="text-sm text-red-200">
+                      Expected Depletion Date: {aiSummary.balanceDepletionForecast.expectedDepletionDate}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* 9. Current Month Bill Forecast */}
+          {aiSummary.currentMonthBillForecast && (
+            <div className="bg-orange-500/10 border border-orange-500/20 border-l-4 border-l-orange-400 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-orange-400 mb-1">📅 Estimated Bill for This Month</h4>
+                  <p className="text-sm text-orange-300">{aiSummary.currentMonthBillForecast.details}</p>
+                  {aiSummary.currentMonthBillForecast.estimatedTotal !== null && (
+                    <div className="mt-2 text-lg font-bold text-orange-200">
+                      Estimated Total Bill: ৳{aiSummary.currentMonthBillForecast.estimatedTotal.toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* 10. Future Consumption Forecast */}
+          {aiSummary.futureConsumptionForecast && aiSummary.futureConsumptionForecast.length > 0 && (
+            <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-cyan-400 mb-1">🔮 Next 3 Months Forecast</h4>
+                  <table className="min-w-full text-sm text-cyan-200 mt-2">
+                    <thead>
+                      <tr>
+                        <th className="pr-4 text-left">Month</th>
+                        <th className="pr-4 text-left">Est. Consumption (kWh)</th>
+                        <th className="pr-4 text-left">Est. Bill (৳)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {aiSummary.futureConsumptionForecast.map((f, idx) => (
+                        <tr key={f.month || idx}>
+                          <td className="pr-4">{f.month}</td>
+                          <td className="pr-4">{f.estimatedConsumption !== null ? f.estimatedConsumption.toLocaleString() : '-'}</td>
+                          <td className="pr-4">{f.estimatedBill !== null ? `৳${f.estimatedBill.toLocaleString()}` : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
           {/* 1. Balance Status and Advice */}
           <div className={`rounded-lg p-4 border-l-4 ${
             aiSummary.balanceStatusAndAdvice.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
