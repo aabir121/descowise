@@ -7,7 +7,7 @@ import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import AccountDashboardView from './components/AccountDashboardView';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, PlusIcon, ExclamationTriangleIcon } from './components/common/Icons';
+import { BoltIcon, PlusIcon, ExclamationTriangleIcon, TrashIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingCoffeeButton from './components/FloatingCoffeeButton';
 
@@ -22,6 +22,7 @@ const App: React.FC = () => {
         accountNo: null,
         accountName: ''
     });
+    const [showDataNotice, setShowDataNotice] = useState(true);
 
     useEffect(() => {
         if (accounts.length > 0) {
@@ -116,6 +117,20 @@ const App: React.FC = () => {
                 />
             ) : (
                 <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+                    {showDataNotice && (
+                        <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
+                            <span className="text-base font-medium">
+                                Data is updated daily and shows information up to the previous day. Today’s data will be available tomorrow, according to DESCO’s schedule.
+                            </span>
+                            <button
+                                className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
+                                aria-label="Dismiss notice"
+                                onClick={() => setShowDataNotice(false)}
+                            >
+                                <TrashIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    )}
                     {notification && (
                         <Notification message={notification} />
                     )}

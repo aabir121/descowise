@@ -2,7 +2,7 @@ import React from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import ConfirmationDialog from './common/ConfirmationDialog';
-import { BuildingOfficeIcon } from './common/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
