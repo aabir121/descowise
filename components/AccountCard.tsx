@@ -42,14 +42,15 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
             className="relative bg-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer border border-slate-700 hover:border-cyan-500/50"
             aria-label={`Select account ${displayName}`}
         >
-            <div className="flex items-center justify-between mb-4 pr-2">
+            <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-xl text-slate-100 truncate pr-4 max-w-[70%]">{displayName}</h3>
                 <DeleteButton
                     onClick={handleDeleteClick}
                     title="Delete Account"
-                    className="flex-shrink-0"
+                    className="ml-4"
+                    noPadding={true}
                 >
-                    <TrashIcon className="w-5 h-5" />
+                    <TrashIcon className="w-5 h-5 text-red-500" />
                 </DeleteButton>
             </div>
             <div className="space-y-2 text-sm">

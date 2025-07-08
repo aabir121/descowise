@@ -32,11 +32,12 @@ export const DeleteButton: React.FC<{
     title?: string;
     className?: string;
     children: React.ReactNode;
-}> = ({ onClick, title = 'Delete', className = '', children }) => (
+    noPadding?: boolean;
+}> = ({ onClick, title = 'Delete', className = '', children, noPadding = false }) => (
     <button
         onClick={onClick}
         title={title}
-        className={`p-2 text-slate-500 hover:text-white hover:bg-red-500/80 rounded-full transition-colors duration-200 z-10 ${className}`}
+        className={`${noPadding ? '' : 'p-2 '}text-slate-500 hover:text-white hover:bg-red-500/80 rounded-full transition-colors duration-200 z-10 ${className}`.trim()}
     >
         {children}
     </button>
