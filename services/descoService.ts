@@ -97,6 +97,14 @@ export const getAiDashboardSummary = async (
     }
     const ai = new GoogleGenAI({ apiKey });
 
+    // --- Model and temperature config ---
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
+    let temperature = 0.5;
+    if (process.env.GEMINI_TEMPERATURE) {
+        const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
+        if (!isNaN(parsed)) temperature = parsed;
+    }
+
     // Process recharge history into monthly format
     const monthlyRechargeData = processRechargeHistoryToMonthly(rechargeHistory);
 
@@ -176,11 +184,11 @@ Ensure the language is simple, encouraging, and directly useful for a typical ho
 `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-preview-04-17',
+        model,
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            temperature: 0.5
+            temperature
         }
     });
 
