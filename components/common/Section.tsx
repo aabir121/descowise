@@ -18,4 +18,28 @@ const Section: React.FC<SectionProps> = ({ title, children, defaultOpen }) => (
     </details>
 );
 
+// Reusable DetailItem for label-value pairs
+export const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
+    <div className="py-2">
+        <span className="text-sm font-medium text-slate-400">{label}</span>
+        <p className="text-base font-semibold text-slate-100">{value || 'N/A'}</p>
+    </div>
+);
+
+// Reusable DeleteButton for delete actions
+export const DeleteButton: React.FC<{
+    onClick: (e: React.MouseEvent) => void;
+    title?: string;
+    className?: string;
+    children: React.ReactNode;
+}> = ({ onClick, title = 'Delete', className = '', children }) => (
+    <button
+        onClick={onClick}
+        title={title}
+        className={`p-2 text-slate-500 hover:text-white hover:bg-red-500/80 rounded-full transition-colors duration-200 z-10 ${className}`}
+    >
+        {children}
+    </button>
+);
+
 export default Section; 

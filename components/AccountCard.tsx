@@ -2,6 +2,9 @@ import React from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import { BoltIcon, TrashIcon } from './common/Icons';
+import { DeleteButton } from './common/Section';
+import AccountInfoRow from './account/AccountInfoRow';
+import BalanceDisplay from './account/BalanceDisplay';
 
 interface AccountCardProps {
     account: Account;
@@ -26,48 +29,36 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
     };
 
     return (
-        <div 
+        <div
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(account.accountNo)}
+            onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(account.accountNo);
+                }
+            }}
             className="relative bg-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer border border-slate-700 hover:border-cyan-500/50"
+            aria-label={`Select account ${displayName}`}
         >
-            <button
-                onClick={handleDeleteClick}
-                title="Delete Account"
-                className="absolute top-3 right-3 p-2 text-slate-500 hover:text-white hover:bg-red-500/80 rounded-full transition-colors duration-200 z-10"
-            >
-                <TrashIcon className="w-5 h-5" />
-            </button>
-            <h3 className="font-bold text-xl text-slate-100 truncate mb-4 pr-8">{displayName}</h3>
+            <div className="flex items-center justify-between mb-4 pr-2">
+                <h3 className="font-bold text-xl text-slate-100 truncate pr-4 max-w-[70%]">{displayName}</h3>
+                <DeleteButton
+                    onClick={handleDeleteClick}
+                    title="Delete Account"
+                    className="flex-shrink-0"
+                >
+                    <TrashIcon className="w-5 h-5" />
+                </DeleteButton>
+            </div>
             <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                    <span className="font-medium text-slate-400">Account No:</span>
-                    <span className="font-semibold text-slate-200">{account.accountNo}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="font-medium text-slate-400">Customer:</span>
-                    <span className="font-semibold text-slate-200 truncate max-w-[150px]">{account.customerName}</span>
-                </div>
-                 <div className="flex justify-between items-center">
-                    <span className="font-medium text-slate-400">Meter No:</span>
-                    <span className="font-semibold text-slate-200">{account.meterNo}</span>
-                </div>
+                <AccountInfoRow label="Account No:" value={account.accountNo} />
+                <AccountInfoRow label="Customer:" value={account.customerName} valueClassName="truncate max-w-[150px]" />
+                <AccountInfoRow label="Meter No:" value={account.meterNo} />
                 <div className="flex justify-between items-start pt-2 min-h-[50px]">
                     <span className="font-medium text-slate-400 text-base">Balance:</span>
-                    {isBalanceLoading ? (
-                        <Spinner size="w-7 h-7" color="border-slate-400" />
-                    ) : (
-                        <div className="text-right">
-                            <div className="flex items-center gap-1.5">
-                                <BoltIcon className={`w-5 h-5 ${balanceColor}`} />
-                                <span className={`font-bold text-2xl ${balanceColor}`}>{balanceDisplay}</span>
-                            </div>
-                            {account.readingTime && (
-                                <p className="text-xs text-slate-500 -mt-1">
-                                    As of {new Date(account.readingTime).toLocaleDateString()}
-                                </p>
-                            )}
-                        </div>
-                    )}
+                    <BalanceDisplay isLoading={isBalanceLoading} balance={account.balance !== null && account.balance !== undefined ? Number(account.balance) : null} readingTime={account.readingTime} />
                 </div>
             </div>
         </div>

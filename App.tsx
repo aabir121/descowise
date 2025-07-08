@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance } from './services/descoService';
@@ -8,6 +8,8 @@ import AddAccountModal from './components/AddAccountModal';
 import AccountDashboardView from './components/AccountDashboardView';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
 import { BoltIcon, PlusIcon, ExclamationTriangleIcon } from './components/common/Icons';
+import Notification from './components/common/Notification';
+import FloatingCoffeeButton from './components/FloatingCoffeeButton';
 
 const App: React.FC = () => {
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
@@ -115,9 +117,7 @@ const App: React.FC = () => {
             ) : (
                 <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
                     {notification && (
-                        <div className="fixed top-5 left-1/2 z-[60] bg-green-600 text-white px-6 py-3 rounded-full shadow-lg animate-fade-in-down">
-                            {notification}
-                        </div>
+                        <Notification message={notification} />
                     )}
                     <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                         <header className="text-center mb-8 sm:mb-12">
@@ -180,6 +180,58 @@ const App: React.FC = () => {
                 cancelText="Cancel"
                 icon={<ExclamationTriangleIcon />}
             />
+            {/* Floating Buy Me a Coffee Button */}
+            <div>
+                <style>{`
+                    .floating-coffee-btn {
+                        position: fixed;
+                        bottom: 2rem;
+                        right: 2rem;
+                        z-index: 100;
+                        background: #22223b;
+                        color: #f2e9e4;
+                        border-radius: 50%;
+                        width: 56px;
+                        height: 56px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+                        cursor: pointer;
+                        transition: box-shadow 0.2s, transform 0.2s;
+                    }
+                    .floating-coffee-btn:hover {
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+                        transform: scale(1.08);
+                    }
+                    .coffee-popover {
+                        position: fixed;
+                        bottom: 5.5rem;
+                        right: 2rem;
+                        background: #262626;
+                        color: #fff;
+                        border-radius: 1rem;
+                        box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+                        padding: 1.5rem 1.25rem 1.25rem 1.25rem;
+                        min-width: 260px;
+                        max-width: 90vw;
+                        z-index: 101;
+                        animation: fade-in 0.3s cubic-bezier(0.4,0,0.2,1);
+                    }
+                    .coffee-popover a {
+                        display: inline-block;
+                        margin: 0.25rem 0.5rem 0.25rem 0;
+                        text-decoration: none;
+                        color: #f2e9e4;
+                        font-weight: 500;
+                        transition: color 0.2s;
+                    }
+                    .coffee-popover a:hover {
+                        color: #fbbf24;
+                    }
+                `}</style>
+                <FloatingCoffeeButton />
+            </div>
         </>
     );
 };

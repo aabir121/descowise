@@ -5,7 +5,6 @@ import ConfirmationDialog from './common/ConfirmationDialog';
 import { BuildingOfficeIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
-import DashboardNotification from './dashboard/DashboardNotification';
 import DashboardSections from './dashboard/DashboardSections';
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
@@ -33,7 +32,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
 
     return (
         <div className="fixed inset-0 z-40 bg-slate-900 text-slate-100 flex flex-col animate-fade-in">
-            {notification && <DashboardNotification message={notification} />}
+            {/* {notification && <DashboardNotification message={notification} />} */}
             <DashboardHeader
                 account={account}
                 onClose={onClose}
