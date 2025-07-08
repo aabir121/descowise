@@ -166,6 +166,7 @@ const App: React.FC = () => {
                                             onDelete={handleDeleteAccount}
                                             isBalanceLoading={loadingBalances.has(account.accountNo)}
                                             onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
+                                            onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
                                         />
                                     ))}
                                     <AddAccountCard onClick={handleOpenModal} />
