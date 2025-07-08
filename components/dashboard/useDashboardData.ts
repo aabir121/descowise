@@ -52,7 +52,12 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         ]);
         setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null });
         if (balanceResult.success) {
-          fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
+          if (account.aiInsightsEnabled) {
+            fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
+          } else {
+            setIsAiAvailable(false);
+            setData(prevData => prevData ? { ...prevData, aiSummary: null } : null);
+          }
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load dashboard data. Please try again later.');

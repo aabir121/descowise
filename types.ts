@@ -23,6 +23,7 @@ export interface AccountInfo {
 export interface Account extends AccountInfo {
   displayName?: string | null;
   dateAdded: string;
+  aiInsightsEnabled: boolean;
 }
 
 // --- New Dashboard Types ---
