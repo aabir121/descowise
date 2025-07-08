@@ -150,6 +150,7 @@ const App: React.FC = () => {
                                             onSelect={handleSelectAccount}
                                             onDelete={handleDeleteAccount}
                                             isBalanceLoading={loadingBalances.has(account.accountNo)}
+                                            onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
                                         />
                                     ))}
                                     <AddAccountCard onClick={handleOpenModal} />

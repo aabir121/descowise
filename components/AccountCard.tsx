@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
-import { BoltIcon, TrashIcon } from './common/Icons';
+import { BoltIcon, TrashIcon, PencilIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
@@ -11,9 +11,10 @@ interface AccountCardProps {
     onSelect: (accountNo: string) => void;
     onDelete: (accountNo: string) => void;
     isBalanceLoading: boolean;
+    onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
 }
 
-const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, isBalanceLoading }) => {
+const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName }) => {
     const displayName = account.displayName || `Account ${account.accountNo}`;
 
     const hasBalance = account.balance !== null && account.balance !== undefined;
@@ -23,12 +24,34 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
 
     const balanceColor = !isNaN(balanceValue) && balanceValue >= 0 ? 'text-cyan-400' : 'text-red-400';
 
+    const [isEditModalOpen, setEditModalOpen] = useState(false);
+    const [editDisplayName, setEditDisplayName] = useState(displayName);
+
     const handleDeleteClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         onDelete(account.accountNo);
     };
 
+    const handleEditClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditModalOpen(true);
+    };
+
+    const handleEditSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (onUpdateDisplayName) {
+            onUpdateDisplayName(account.accountNo, editDisplayName);
+        }
+        setEditModalOpen(false);
+    };
+
+    const handleEditCancel = () => {
+        setEditDisplayName(displayName);
+        setEditModalOpen(false);
+    };
+
     return (
+        <>
         <div
             role="button"
             tabIndex={0}
@@ -44,14 +67,26 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
         >
             <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-xl text-slate-100 truncate pr-4 max-w-[70%]">{displayName}</h3>
-                <DeleteButton
-                    onClick={handleDeleteClick}
-                    title="Delete Account"
-                    className="ml-4"
-                    noPadding={true}
-                >
-                    <TrashIcon className="w-5 h-5 text-red-500" />
-                </DeleteButton>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        className="p-1 rounded hover:bg-slate-700 focus:outline-none"
+                        title="Edit Display Name"
+                        onClick={handleEditClick}
+                        tabIndex={-1}
+                        aria-label="Edit display name"
+                    >
+                        <PencilIcon className="w-5 h-5 text-cyan-400" />
+                    </button>
+                    <DeleteButton
+                        onClick={handleDeleteClick}
+                        title="Delete Account"
+                        className="ml-2"
+                        noPadding={true}
+                    >
+                        <TrashIcon className="w-5 h-5 text-red-500" />
+                    </DeleteButton>
+                </div>
             </div>
             <div className="space-y-2 text-sm">
                 <AccountInfoRow label="Account No:" value={account.accountNo} />
@@ -63,6 +98,36 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
                 </div>
             </div>
         </div>
+        {/* Edit Display Name Modal */}
+        {isEditModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={handleEditCancel}>
+                <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md text-slate-100 relative m-auto p-6" onClick={e => e.stopPropagation()}>
+                    <h2 className="text-xl font-bold mb-4">Edit Display Name</h2>
+                    <div className="mb-4 text-slate-300 text-sm bg-slate-700/60 rounded p-3">
+                        <div className="mb-1">Changing display name for <span className="font-semibold">{account.displayName || `Account ${account.accountNo}`}</span></div>
+                        <div className="flex flex-col gap-0.5 text-xs">
+                            <span>Account No: <span className="font-mono">{account.accountNo}</span></span>
+                            <span>Customer: <span className="font-mono">{account.customerName}</span></span>
+                            <span>Meter No: <span className="font-mono">{account.meterNo}</span></span>
+                        </div>
+                    </div>
+                    <form onSubmit={handleEditSave}>
+                        <input
+                            type="text"
+                            className="w-full p-2 rounded bg-slate-700 text-slate-100 mb-4 border border-slate-600 focus:border-cyan-400 outline-none"
+                            value={editDisplayName}
+                            onChange={e => setEditDisplayName(e.target.value)}
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button type="button" className="px-4 py-2 rounded bg-slate-600 hover:bg-slate-700" onClick={handleEditCancel}>Cancel</button>
+                            <button type="submit" className="px-4 py-2 rounded bg-cyan-500 hover:bg-cyan-600 text-white font-semibold">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 
