@@ -5,7 +5,7 @@ const Footer: React.FC = () => {
 
   return (
     <>
-      <footer className="fixed bottom-0 left-0 w-full bg-slate-900/95 border-t border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 px-3 py-2 z-40 backdrop-blur-md">
+      <footer className="w-full bg-slate-900/95 border-t border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 px-3 py-2 backdrop-blur-md">
         <span className="truncate text-center">
           Data provided by DESCO Open APIs. This is an unofficial client.
         </span>
