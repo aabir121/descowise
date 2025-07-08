@@ -23,7 +23,22 @@ const App: React.FC = () => {
         accountNo: null,
         accountName: ''
     });
-    const [showDataNotice, setShowDataNotice] = useState(true);
+    const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
+
+    useEffect(() => {
+        // Check if the notice was dismissed within the last 6 hours
+        const dismissedAt = localStorage.getItem('dataNoticeDismissedAt');
+        if (dismissedAt) {
+            const dismissedTime = parseInt(dismissedAt, 10);
+            const now = Date.now();
+            const hoursPassed = (now - dismissedTime) / (1000 * 60 * 60);
+            if (hoursPassed < 6) {
+                setShowDataNotice(false);
+                return;
+            }
+        }
+        setShowDataNotice(true);
+    }, []);
 
     useEffect(() => {
         if (accounts.length > 0) {
@@ -105,6 +120,11 @@ const App: React.FC = () => {
         }
     }, [deleteConfirmation.accountNo, deleteAccount]);
 
+    const handleDismissDataNotice = useCallback(() => {
+        localStorage.setItem('dataNoticeDismissedAt', Date.now().toString());
+        setShowDataNotice(false);
+    }, []);
+
     const selectedAccount = accounts.find(acc => acc.accountNo === selectedAccountNo);
 
     return (
@@ -118,7 +138,7 @@ const App: React.FC = () => {
                 />
             ) : (
                 <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
-                    {showDataNotice && (
+                    {showDataNotice === true && (
                         <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
                             <span className="text-base font-medium">
                                 Data is updated daily and shows information up to the previous day. Today’s data will be available tomorrow, according to DESCO’s schedule.
@@ -126,7 +146,7 @@ const App: React.FC = () => {
                             <button
                                 className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
                                 aria-label="Dismiss notice"
-                                onClick={() => setShowDataNotice(false)}
+                                onClick={handleDismissDataNotice}
                             >
                                 <TrashIcon className="w-5 h-5" />
                             </button>
