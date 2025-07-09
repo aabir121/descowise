@@ -27,88 +27,71 @@ const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[])
     })).sort((a, b) => a.month.localeCompare(b.month));
 };
 
-// This service now calls the real DESCO API.
-// NOTE: This may be blocked by the browser's CORS policy. 
-// A backend proxy is the standard solution for production applications.
-export const verifyAccount = async (accountNo: string): Promise<{ success: true; data: AccountInfo } | { success: false; message: string }> => {
-    if (!accountNo || !/^\d+$/.test(accountNo) || accountNo.length < 5) {
-        return { success: false, message: 'Invalid account number. Please enter only digits and ensure it is a valid length.' };
-    }
+// --- Prompt Generators ---
+function generateBanglaAiDashboardPrompt(monthlyConsumption: MonthlyConsumption[], monthlyRechargeData: any, recentDailyConsumption: DailyConsumption[], currentBalance: number, currentMonth: string): string {
+    return `
+আপনি একজন বিদ্যুৎ বিল ও রিচার্জ বিশ্লেষক, যিনি সাধারণ মানুষের জন্য সহজ ভাষায়, বন্ধুর মতো বোঝান। কঠিন শব্দ বা জটিল ব্যাখ্যা এড়িয়ে চলুন। দৈনন্দিন জীবনের মতো সহজ, গল্পের ছলে, মানুষের সাথে কথা বলার মতো করে ব্যাখ্যা দিন।
 
-    try {
-        const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getCustomerInfo?accountNo=${accountNo}`);
+গ্রাহকের বিদ্যুৎ ব্যবহার, রিচার্জ ইতিহাস, সাম্প্রতিক দৈনিক ব্যবহার ও বর্তমান ব্যালান্স দেখে সহজ, কার্যকরী ও উৎসাহব্যঞ্জক পরামর্শ দিন। মৌসুমি প্রবণতা, অস্বাভাবিকতা, রিচার্জের ধরন, এবং সামনে কী করলে ভালো হয়—এসব নিয়ে আলাপ করুন।
 
-        if (!response.ok) {
-            let errorMessage = `Error: Account not found or API unavailable (status: ${response.status}).`;
-            try {
-                const errorJson = await response.json();
-                if(errorJson.message) {
-                    errorMessage = errorJson.message;
-                }
-            } catch (e) {
-                // Body was not JSON or empty, use the generic message.
-            }
-            return { success: false, message: errorMessage };
-        }
+*গত ২৪ মাসের বিদ্যুৎ ব্যবহার (JSON array, মাস অনুযায়ী):*
+${JSON.stringify(monthlyConsumption)}
 
-        const result = await response.json();
+*গত ২৪ মাসের রিচার্জ ইতিহাস (JSON array, মাস অনুযায়ী):*
+${JSON.stringify(monthlyRechargeData)}
 
-        if (result.code === 200 && result.data) {
-            return { success: true, data: result.data };
-        } else {
-            return { success: false, message: result.message || 'Account not found or an unknown error occurred.' };
-        }
-    } catch (error) {
-        console.error('Failed to verify account:', error);
-        return { success: false, message: 'A network error occurred. This could be due to your connection or a CORS policy blocking the request.' };
-    }
-};
+*সাম্প্রতিক ১৪ দিনের দৈনিক ব্যবহার (JSON array):*
+${JSON.stringify(recentDailyConsumption)}
 
-export const getAccountBalance = async (accountNo: string): Promise<{ success: true; data: BalanceData } | { success: false; message: string }> => {
-    try {
-        const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${accountNo}`);
-        if (!response.ok) {
-            return { success: false, message: `API error fetching balance (status: ${response.status})` };
-        }
-        
-        const result: { code: number; desc: string; data: BalanceData | null; message?: string } = await response.json();
+*বর্তমান তথ্য:*
+- মিটার ব্যালান্স: ${currentBalance} টাকা
+- বর্তমান মাস: ${currentMonth}
 
-        if (result.code === 200 && result.data) {
-            return { success: true, data: result.data };
-        }
-        
-        return { success: false, message: result.message || 'Could not fetch balance from API response.' };
-    } catch (error) {
-        console.error(`Failed to fetch balance for account ${accountNo}:`, error);
-        return { success: false, message: 'A network error occurred while fetching balance.' };
-    }
-};
+নিচের কাঠামোতে শুধুমাত্র JSON আকারে উত্তর দিন (কোনো ব্যাখ্যা ছাড়াই):
+{
+  "title": "ব্যক্তিগত, উৎসাহব্যঞ্জক শিরোনাম (যেমন: 'গরমের মাসে স্মার্জ রিচার্জ টিপস', 'আপনার জুলাই পাওয়ার স্ন্যাপশট')",
+  "overallSummary": "গড় মাসিক ব্যবহার (kWh) ও রিচার্জ (টাকা), এবং মূল ব্যবহার-রিচার্জের ধরন ২-৩ লাইনে বলুন।",
+  "anomaly": {
+    "detected": true বা false,
+    "details": "কোনো মাসে ব্যবহার বা রিচার্জ ৬ মাসের গড় থেকে ৫০% বেশি/কম হলে, এক লাইনে বলুন (যেমন: 'জানুয়ারি ২০২৪-এ অস্বাভাবিক কম ব্যবহার হয়েছে (৳৫২৩.২), যা আপনার স্বাভাবিকের চেয়ে অনেক কম।'), না হলে ফাঁকা রাখুন।"
+  },
+  "seasonalTrend": {
+    "observed": true বা false,
+    "details": "কোনো মৌসুমি প্রবণতা থাকলে (যেমন: 'গরমে এসি চালানোর জন্য বেশি ব্যবহার'), সংক্ষেপে বলুন, না থাকলে ফাঁকা রাখুন।"
+  },
+  "rechargePatternInsight": "রিচার্জের ধরন সহজ ভাষায় বলুন—যেমন, 'প্রতি মাসে ২-৩ বার রিচার্জ করেন, সাধারণত ব্যবহার অনুযায়ী'।",
+  "balanceStatusAndAdvice": {
+    "status": "low", "normal", বা "good",
+    "details": "বর্তমান ব্যালান্স মাসের বাকি সময়ের জন্য যথেষ্ট কি না, সহজ ভাষায় বলুন। কম হলে কারণ ব্যাখ্যা করুন।"
+  },
+  "rechargeRecommendation": {
+    "recommendedAmountBDT": সংখ্যা বা null,
+    "justification": "গত বছরের এই মাসের গড় খরচ দেখে, কত টাকা রিচার্জ করলে ভালো হয়, সহজ ভাষায় বলুন।"
+  },
+  "rechargeTimingInsight": "কখন রিচার্জ করলে ভালো হয়, সহজ ও গল্পের ছলে বলুন (যেমন: 'গরমে মাসের শুরুতেই রিচার্জ করুন, তাহলে হঠাৎ ব্যালান্স শেষ হবে না')।",
+  "actionableTip": "ব্যবহার, সময় ও রিচার্জ নিয়ে এক লাইনের সহজ টিপস দিন (যেমন: 'জুলাইয়ের শুরুতেই ১০,০০০ টাকা রিচার্জ করুন, তাহলে মাঝপথে বিদ্যুৎ শেষ হবে না!')।",
+  "balanceDepletionForecast": {
+    "daysRemaining": সংখ্যা,
+    "expectedDepletionDate": "YYYY-MM-DD",
+    "details": "সাম্প্রতিক দৈনিক গড় খরচ দেখে, ব্যালান্স কতদিন চলবে, সহজ ভাষায় বলুন।"
+  },
+  "currentMonthBillForecast": {
+    "estimatedTotal": সংখ্যা,
+    "details": "এই মাসের মোট বিল কত হতে পারে, সহজ ভাষায় বলুন।"
+  },
+  "futureConsumptionForecast": [
+    { "month": "YYYY-MM", "estimatedConsumption": সংখ্যা, "estimatedBill": সংখ্যা },
+    { "month": "YYYY-MM", "estimatedConsumption": সংখ্যা, "estimatedBill": সংখ্যা },
+    { "month": "YYYY-MM", "estimatedConsumption": সংখ্যা, "estimatedBill": সংখ্যা }
+  ]
+}
 
-export const getAiDashboardSummary = async (
-    monthlyConsumption: MonthlyConsumption[], 
-    rechargeHistory: RechargeHistoryItem[], 
-    currentBalance: number, 
-    currentMonth: string,
-    recentDailyConsumption: DailyConsumption[]
-): Promise<AiSummary> => {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
-    }
-    const ai = new GoogleGenAI({ apiKey });
+ভাষা সহজ, গল্পের মতো ও উৎসাহব্যঞ্জক রাখুন। কঠিন শব্দ বা জটিলতা এড়িয়ে চলুন। শুধু JSON দিন, কোনো বাড়তি ব্যাখ্যা নয়।
+`;
+}
 
-    // --- Model and temperature config ---
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
-    let temperature = 0.3;
-    if (process.env.GEMINI_TEMPERATURE) {
-        const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
-        if (!isNaN(parsed)) temperature = parsed;
-    }
-
-    // Process recharge history into monthly format
-    const monthlyRechargeData = processRechargeHistoryToMonthly(rechargeHistory);
-
-    const prompt = `
+function generateEnglishAiDashboardPrompt(monthlyConsumption: MonthlyConsumption[], monthlyRechargeData: any, recentDailyConsumption: DailyConsumption[], currentBalance: number, currentMonth: string): string {
+    return `
 Use a friendly, conversational tone as if you’re explaining to a friend or family member. Make your advice easy to follow, use simple language, and avoid technical jargon. Use analogies or relatable examples if helpful.
 
 You are an expert electricity bill and recharge analyst for residential customers. Your role is to generate concise, data-driven insights to help them optimize energy usage and financial planning, especially during high-consumption months. Your advice should be simple, actionable, and based on historical trends and recent activity.
@@ -193,6 +176,93 @@ Generate a JSON object using this structure:
 
 Keep the language encouraging and easy to understand for everyday users. Avoid duplication across sections. Output only the JSON — no surrounding explanation.
 `;
+}
+
+// This service now calls the real DESCO API.
+// NOTE: This may be blocked by the browser's CORS policy. 
+// A backend proxy is the standard solution for production applications.
+export const verifyAccount = async (accountNo: string): Promise<{ success: true; data: AccountInfo } | { success: false; message: string }> => {
+    if (!accountNo || !/^\d+$/.test(accountNo) || accountNo.length < 5) {
+        return { success: false, message: 'Invalid account number. Please enter only digits and ensure it is a valid length.' };
+    }
+
+    try {
+        const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getCustomerInfo?accountNo=${accountNo}`);
+
+        if (!response.ok) {
+            let errorMessage = `Error: Account not found or API unavailable (status: ${response.status}).`;
+            try {
+                const errorJson = await response.json();
+                if(errorJson.message) {
+                    errorMessage = errorJson.message;
+                }
+            } catch (e) {
+                // Body was not JSON or empty, use the generic message.
+            }
+            return { success: false, message: errorMessage };
+        }
+
+        const result = await response.json();
+
+        if (result.code === 200 && result.data) {
+            return { success: true, data: result.data };
+        } else {
+            return { success: false, message: result.message || 'Account not found or an unknown error occurred.' };
+        }
+    } catch (error) {
+        console.error('Failed to verify account:', error);
+        return { success: false, message: 'A network error occurred. This could be due to your connection or a CORS policy blocking the request.' };
+    }
+};
+
+export const getAccountBalance = async (accountNo: string): Promise<{ success: true; data: BalanceData } | { success: false; message: string }> => {
+    try {
+        const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${accountNo}`);
+        if (!response.ok) {
+            return { success: false, message: `API error fetching balance (status: ${response.status})` };
+        }
+        
+        const result: { code: number; desc: string; data: BalanceData | null; message?: string } = await response.json();
+
+        if (result.code === 200 && result.data) {
+            return { success: true, data: result.data };
+        }
+        
+        return { success: false, message: result.message || 'Could not fetch balance from API response.' };
+    } catch (error) {
+        console.error(`Failed to fetch balance for account ${accountNo}:`, error);
+        return { success: false, message: 'A network error occurred while fetching balance.' };
+    }
+};
+
+export const getAiDashboardSummary = async (
+    monthlyConsumption: MonthlyConsumption[], 
+    rechargeHistory: RechargeHistoryItem[], 
+    currentBalance: number, 
+    currentMonth: string,
+    recentDailyConsumption: DailyConsumption[],
+    banglaEnabled: boolean = false
+): Promise<AiSummary> => {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
+    // --- Model and temperature config ---
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
+    let temperature = 0.3;
+    if (process.env.GEMINI_TEMPERATURE) {
+        const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
+        if (!isNaN(parsed)) temperature = parsed;
+    }
+
+    // Process recharge history into monthly format
+    const monthlyRechargeData = processRechargeHistoryToMonthly(rechargeHistory);
+
+    const prompt = banglaEnabled
+        ? generateBanglaAiDashboardPrompt(monthlyConsumption, monthlyRechargeData, recentDailyConsumption, currentBalance, currentMonth)
+        : generateEnglishAiDashboardPrompt(monthlyConsumption, monthlyRechargeData, recentDailyConsumption, currentBalance, currentMonth);
 
     const response: GenerateContentResponse = await ai.models.generateContent({
         model,

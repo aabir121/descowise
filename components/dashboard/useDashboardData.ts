@@ -74,7 +74,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         const recentDailyConsumption = data?.dailyConsumption
           ? [...data.dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
           : [];
-        const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, currentBalance, currentMonth, recentDailyConsumption);
+        const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, currentBalance, currentMonth, recentDailyConsumption, account.banglaEnabled);
         setData(prevData => prevData ? { ...prevData, aiSummary } : null);
       } catch (err) {
         setIsAiAvailable(false);
