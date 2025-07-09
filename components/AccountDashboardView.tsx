@@ -40,6 +40,12 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 onDelete={onDelete}
                 setPortalConfirmation={setPortalConfirmation}
             />
+            {/* As of date display */}
+            {data?.balance?.readingTime && (
+                <div className="text-xs text-slate-400 text-right px-4 sm:px-6 lg:px-8 mt-1 mb-2">
+                    Data as of {new Date(data.balance.readingTime).toLocaleString()}
+                </div>
+            )}
             <main className="flex-grow p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {isLoading ? (
                     <div className="flex justify-center items-center h-full"><Spinner size="w-12 h-12" /></div>
