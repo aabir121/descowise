@@ -15,7 +15,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = ''
       onClick={onClose}
     >
       <div
-        className={`bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg text-slate-100 relative m-auto transform transition-all ${className}`}
+        className={`bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm text-slate-100 relative m-auto transform transition-all p-0 ${className}`}
         onClick={e => e.stopPropagation()}
         {...props}
       >

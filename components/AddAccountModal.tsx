@@ -21,6 +21,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
     const [displayName, setDisplayName] = useState('');
     const [verifiedData, setVerifiedData] = useState<AccountInfo | null>(null);
     const [aiInsightsEnabled, setAiInsightsEnabled] = useState(true);
+    const [banglaEnabled, setBanglaEnabled] = useState(false);
 
     const resetState = useCallback(() => {
         setStep('form');
@@ -30,6 +31,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
         setDisplayName('');
         setVerifiedData(null);
         setAiInsightsEnabled(true);
+        setBanglaEnabled(false);
     }, []);
 
     useEffect(() => {
@@ -75,7 +77,8 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
             displayName: displayName.trim() || null,
             dateAdded: new Date().toISOString(),
             aiInsightsEnabled, // Add this property to the account object
-        } as Account & { aiInsightsEnabled: boolean };
+            banglaEnabled, // Persist Bangla language preference
+        } as Account & { aiInsightsEnabled: boolean; banglaEnabled: boolean };
         onAccountAdded(newAccount);
     };
 
@@ -88,24 +91,24 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
-            <div className="p-6 sm:p-8">
-                <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-2xl font-bold text-white">{step === 'form' ? 'Add New Account' : 'Confirm Account'}</h2>
+            <div className="p-4 sm:p-5">
+                <div className="flex justify-between items-start mb-2">
+                    <h2 className="text-xl font-bold text-white">{step === 'form' ? 'Add New Account' : 'Confirm Account'}</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-300">
                         <CloseIcon />
                     </button>
                 </div>
 
                 {message && (
-                    <div className={`p-3 rounded-lg mb-4 text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-300 border border-green-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'}`}>
+                    <div className={`p-2 rounded-lg mb-3 text-xs ${message.type === 'success' ? 'bg-green-500/10 text-green-300 border border-green-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'}`}>
                         {message.text}
                     </div>
                 )}
 
                 {step === 'form' && (
                     <form onSubmit={handleVerify}>
-                        <div className="mb-4">
-                            <label htmlFor="accountNo" className="block text-sm font-medium text-slate-300 mb-1">Account Number</label>
+                        <div className="mb-2">
+                            <label htmlFor="accountNo" className="block text-xs font-medium text-slate-300 mb-1">Account Number</label>
                             <input
                                 type="text"
                                 id="accountNo"
@@ -117,14 +120,14 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                                     }
                                 }}
                                 placeholder="Enter your DESCO account number"
-                                className="w-full px-4 py-3 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400"
+                                className="w-full px-3 py-2 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400 text-sm"
                                 aria-required="true"
                                 aria-invalid={message?.type === 'error'}
                                 aria-describedby={message ? "form-message" : undefined}
                             />
                         </div>
                         {message && <p id="form-message" role="alert" className="sr-only">{message.text}</p>}
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none">
+                        <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none text-sm">
                             {isLoading ? <><Spinner /> Verifying...</> : 'Verify Account'}
                         </button>
                     </form>
@@ -132,7 +135,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
 
                 {step === 'details' && verifiedData && (
                     <div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 max-h-60 overflow-y-auto pr-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 max-h-48 overflow-y-auto pr-1">
                             <DetailItem label="Account Number" value={verifiedData.accountNo} />
                             <DetailItem label="Customer Name" value={verifiedData.customerName} />
                             <DetailItem label="Contact Number" value={verifiedData.contactNo} />
@@ -144,39 +147,64 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                                 <DetailItem label="Installation Address" value={verifiedData.installationAddress} />
                             </div>
                         </div>
-                        <div className="mt-6">
-                            <label htmlFor="displayName" className="block text-sm font-medium text-slate-300 mb-1">Display Name (Optional)</label>
+                        <div className="mt-3">
+                            <label htmlFor="displayName" className="block text-xs font-medium text-slate-300 mb-1">Display Name (Optional)</label>
                             <input
                                 type="text"
                                 id="displayName"
                                 value={displayName}
                                 onChange={(e) => setDisplayName(e.target.value)}
                                 placeholder="e.g., My Home Account"
-                                className="w-full px-4 py-3 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400"
+                                className="w-full px-3 py-2 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400 text-sm"
                             />
                         </div>
-                        {/* AI Insights Toggle */}
-                        <div className="flex flex-col items-center gap-3 my-4">
-                            <div className="flex items-center gap-2">
-                                <span className="text-slate-200 font-medium text-base">Enable AI Insights</span>
-                                <button
-                                    type="button"
-                                    className={`relative inline-flex h-6 w-10 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                                    aria-pressed={aiInsightsEnabled}
-                                    onClick={() => setAiInsightsEnabled(v => !v)}
-                                    style={{ minWidth: '40px' }}
-                                >
-                                    <span
-                                        className={`inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${aiInsightsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}
-                                    />
-                                    <span className="sr-only">Toggle AI Insights</span>
-                                </button>
+                        {/* AI Insights and Bangla Language Toggles Side by Side */}
+                        <div className="flex flex-col items-center gap-2 my-2">
+                            <div className="flex flex-row items-center gap-4">
+                                {/* AI Insights Toggle */}
+                                <div className="flex flex-col items-center gap-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-slate-200 font-medium text-xs">Enable AI Insights</span>
+                                        <button
+                                            type="button"
+                                            className={`relative inline-flex h-5 w-8 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
+                                            aria-pressed={aiInsightsEnabled}
+                                            onClick={() => setAiInsightsEnabled(v => !v)}
+                                            style={{ minWidth: '32px' }}
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${aiInsightsEnabled ? 'translate-x-3' : 'translate-x-0.5'}`}
+                                            />
+                                            <span className="sr-only">Toggle AI Insights</span>
+                                        </button>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">AI Insights provide personalized energy and recharge analysis for your account.</span>
+                                </div>
+                                {/* Bangla Language Toggle */}
+                                <div className="flex flex-col items-center gap-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-slate-200 font-medium text-xs">Enable Bangla Language</span>
+                                        <button
+                                            type="button"
+                                            className={`relative inline-flex h-5 w-8 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${banglaEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
+                                            aria-pressed={banglaEnabled}
+                                            onClick={() => setBanglaEnabled(v => !v)}
+                                            style={{ minWidth: '32px' }}
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${banglaEnabled ? 'translate-x-3' : 'translate-x-0.5'}`}
+                                            />
+                                            <span className="sr-only">Toggle Bangla Language</span>
+                                        </button>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">Enable Bangla to view account details and insights in Bangla.</span>
+                                </div>
                             </div>
-                            <span className="text-xs text-slate-400 max-w-xs text-center leading-tight">AI Insights provide personalized energy and recharge analysis for your account. You can change this setting later.</span>
+                            <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">You can change these settings later.</span>
                         </div>
-                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                            <button onClick={resetState} className="w-full bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-lg hover:bg-slate-500 transition">Cancel</button>
-                            <button onClick={handleConfirmAdd} className="w-full bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-transform transform hover:-translate-y-0.5">Add Account</button>
+                        <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                            <button onClick={resetState} className="w-full bg-slate-600 text-slate-200 font-bold py-2 px-3 rounded-lg hover:bg-slate-500 transition text-sm">Cancel</button>
+                            <button onClick={handleConfirmAdd} className="w-full bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-transform transform hover:-translate-y-0.5 text-sm">Add Account</button>
                         </div>
                     </div>
                 )}

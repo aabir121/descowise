@@ -13,9 +13,10 @@ interface AccountCardProps {
     isBalanceLoading: boolean;
     onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
     onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
+    onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void; // Added prop
 }
 
-const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled }) => {
+const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled, onUpdateBanglaEnabled }) => {
     const displayName = account.displayName || `Account ${account.accountNo}`;
 
     const hasBalance = account.balance !== null && account.balance !== undefined;
@@ -89,25 +90,48 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
                     </DeleteButton>
                 </div>
             </div>
-            {/* AI Insights Toggle */}
-            <div className="flex items-center gap-2 mb-4">
-                <span className="text-slate-400 text-xs">AI Insights</span>
-                <button
-                    type="button"
-                    className={`relative w-9 h-5 flex items-center rounded-full transition-colors duration-200 focus:outline-none ${account.aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                    aria-pressed={account.aiInsightsEnabled}
-                    aria-label={account.aiInsightsEnabled ? 'Disable AI Insights' : 'Enable AI Insights'}
-                    onClick={e => {
-                        e.stopPropagation();
-                        onUpdateAiInsightsEnabled && onUpdateAiInsightsEnabled(account.accountNo, !account.aiInsightsEnabled);
-                    }}
-                >
-                    <span
-                        className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${account.aiInsightsEnabled ? 'translate-x-4' : 'translate-x-0'}`}
-                    />
-                    <span className="sr-only">Toggle AI Insights</span>
-                </button>
-                <span className={`text-xs font-semibold ${account.aiInsightsEnabled ? 'text-cyan-400' : 'text-slate-500'}`}>{account.aiInsightsEnabled ? 'On' : 'Off'}</span>
+            {/* AI Insights & Bangla Language Toggles - Opposite sides */}
+            <div className="flex flex-row items-center justify-between mb-4 w-full">
+                {/* AI Insights Toggle (left) */}
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-xs">AI Insights</span>
+                    <button
+                        type="button"
+                        className={`relative w-9 h-5 flex items-center rounded-full transition-colors duration-200 focus:outline-none ${account.aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
+                        aria-pressed={account.aiInsightsEnabled}
+                        aria-label={account.aiInsightsEnabled ? 'Disable AI Insights' : 'Enable AI Insights'}
+                        onClick={e => {
+                            e.stopPropagation();
+                            onUpdateAiInsightsEnabled && onUpdateAiInsightsEnabled(account.accountNo, !account.aiInsightsEnabled);
+                        }}
+                    >
+                        <span
+                            className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${account.aiInsightsEnabled ? 'translate-x-4' : 'translate-x-0'}`}
+                        />
+                        <span className="sr-only">Toggle AI Insights</span>
+                    </button>
+                    <span className={`text-xs font-semibold ${account.aiInsightsEnabled ? 'text-cyan-400' : 'text-slate-500'}`}>{account.aiInsightsEnabled ? 'On' : 'Off'}</span>
+                </div>
+                {/* Bangla Language Toggle (right) */}
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-xs">Bangla</span>
+                    <button
+                        type="button"
+                        className={`relative w-9 h-5 flex items-center rounded-full transition-colors duration-200 focus:outline-none ${account.banglaEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
+                        aria-pressed={account.banglaEnabled}
+                        aria-label={account.banglaEnabled ? 'Disable Bangla Language' : 'Enable Bangla Language'}
+                        onClick={e => {
+                            e.stopPropagation();
+                            onUpdateBanglaEnabled && onUpdateBanglaEnabled(account.accountNo, !account.banglaEnabled);
+                        }}
+                    >
+                        <span
+                            className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${account.banglaEnabled ? 'translate-x-4' : 'translate-x-0'}`}
+                        />
+                        <span className="sr-only">Toggle Bangla Language</span>
+                    </button>
+                    <span className={`text-xs font-semibold ${account.banglaEnabled ? 'text-cyan-400' : 'text-slate-500'}`}>{account.banglaEnabled ? 'On' : 'Off'}</span>
+                </div>
             </div>
             <div className="space-y-2 text-sm">
                 <AccountInfoRow label="Account No:" value={account.accountNo} />

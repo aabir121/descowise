@@ -24,6 +24,7 @@ export interface Account extends AccountInfo {
   displayName?: string | null;
   dateAdded: string;
   aiInsightsEnabled: boolean;
+  banglaEnabled: boolean;
 }
 
 // --- New Dashboard Types ---

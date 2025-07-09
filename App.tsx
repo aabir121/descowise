@@ -195,6 +195,7 @@ const App: React.FC = () => {
                                             isBalanceLoading={loadingBalances.has(account.accountNo)}
                                             onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
                                             onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
+                                            onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
                                         />
                                     ))}
                                     <AddAccountCard onClick={handleOpenModal} />
