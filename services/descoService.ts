@@ -89,7 +89,7 @@ export const getAiDashboardSummary = async (
     rechargeHistory: RechargeHistoryItem[], 
     currentBalance: number, 
     currentMonth: string,
-    recentDailyConsumption: DailyConsumption[] // NEW PARAM
+    recentDailyConsumption: DailyConsumption[]
 ): Promise<AiSummary> => {
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
@@ -99,7 +99,7 @@ export const getAiDashboardSummary = async (
 
     // --- Model and temperature config ---
     const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
-    let temperature = 0.5;
+    let temperature = 0.3;
     if (process.env.GEMINI_TEMPERATURE) {
         const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
         if (!isNaN(parsed)) temperature = parsed;
@@ -109,70 +109,81 @@ export const getAiDashboardSummary = async (
     const monthlyRechargeData = processRechargeHistoryToMonthly(rechargeHistory);
 
     const prompt = `
-You are an expert electricity bill and recharge analyst for residential customers, providing strategic advice to optimize their energy usage and financial management. Your goal is to offer actionable, data-driven recommendations.
+Use a friendly, conversational tone as if you’re explaining to a friend or family member. Make your advice easy to follow, use simple language, and avoid technical jargon. Use analogies or relatable examples if helpful.
 
-Analyze the following historical electricity consumption and recharge data, along with the customer's current balance, the current month, and recent daily consumption.
+You are an expert electricity bill and recharge analyst for residential customers. Your role is to generate concise, data-driven insights to help them optimize energy usage and financial planning, especially during high-consumption months. Your advice should be simple, actionable, and based on historical trends and recent activity.
 
-**Historical Electricity Consumption Data (24 months, JSON array, sorted by month):**
+Analyze the customer’s historical electricity consumption, recharge history, recent daily usage, and current balance. Focus on highlighting seasonal trends, anomalies, recharge behavior, and provide specific forward-looking recommendations.
+
+*Historical Electricity Consumption Data (24 months, JSON array, sorted by month):* 
 - 'month': year-month (e.g., "2024-01")
 - 'consumedUnit': electricity consumption in kWh
 - 'consumedTaka': cost of consumption in BDT
 
 ${JSON.stringify(monthlyConsumption)}
 
-**Historical Electricity Recharge Data (24 months, JSON array, sorted by month):**
+*Historical Electricity Recharge Data (24 months, JSON array, sorted by month):* 
 - 'month': year-month (e.g., "2024-01")
-- 'rechargeAmount': total BDT recharged for that month (sum of all recharges)
-- 'rechargeCount': number of individual recharges made in that month
+- 'rechargeAmount': total BDT recharged in that month 
+- 'rechargeCount': number of recharge transactions 
 
 ${JSON.stringify(monthlyRechargeData)}
 
-**Recent Daily Consumption (last 14 days, JSON array):**
+*Recent Daily Consumption (last 14 days, JSON array):* 
 - 'date': YYYY-MM-DD
 - 'consumedUnit': kWh
 - 'consumedTaka': BDT
 
 ${JSON.stringify(recentDailyConsumption)}
 
-**Current Customer Information:**
+*Current Customer Info:* 
 - Current Meter Balance: ${currentBalance} BDT
 - Current Month (YYYY-MM): ${currentMonth}
 
-Based on this comprehensive data and insights from historical trends (especially seasonal patterns for the current month), provide a concise and highly actionable analysis in a JSON object format. The JSON object must have the following structure:
+Generate a JSON object using this structure:
 
 {
-  "title": "An encouraging and personalized title for the analysis (e.g., 'Your Energy & Recharge Insights: Smart Habits!', 'Optimizing Your Electricity Budget')",
-  "overallSummary": "A 2-3 sentence summary of the customer's overall consumption, cost, and recharge patterns. Include average monthly consumption (kWh) and average monthly recharge (BDT). Highlight general trends (e.g., 'consistent usage, balanced recharges', 'variable consumption, frequent small recharges').",
+  "title": "Personalized, encouraging title for the analysis (e.g., 'Smart Recharge Planning for Peak Season', 'Your July Power Snapshot')",
+
+  "overallSummary": "Briefly summarize average monthly consumption (in kWh) and recharge (in BDT), along with key consumption-recharge behavior patterns (e.g., consistent, seasonal spikes, frequent top-ups). Keep it to 2–3 sentences.",
+
   "anomaly": {
     "detected": true or false,
-    "details": "If a significant anomaly is detected in either consumption or recharge (e.g., consumption >50% higher than 6-month average, or exceptionally high/low recharge relative to typical patterns). Describe it in one concise sentence, including month and type of anomaly. Example: 'A significant spike in consumption was observed in January 2025, consuming X% more than average, not fully covered by recharges.' If no anomaly, this string should be empty."
+    "details": "If any month had consumption or recharge that deviated significantly from the 6-month average (e.g., spike or drop >50%), describe in one sentence (e.g., 'Unusually low usage in Jan 2024 (৳523.2), well below your norm.'). Otherwise, leave empty string."
   },
+
   "seasonalTrend": {
     "observed": true or false,
-    "details": "If a noticeable seasonal trend is observed in consumption or recharges (e.g., 'Consumption and recharges typically peak during the summer months due to AC usage.'). If no clear seasonal trend, this string should be empty."
+    "details": "If clear seasonal usage/recharge pattern exists (e.g., 'High summer usage due to AC.'), summarize it. Otherwise, leave empty string."
   },
-  "rechargePatternInsight": "Analyze the customer's historical recharge frequency and total amount relative to consumption. Is there a clear pattern (e.g., 'consistent monthly recharges', 'multiple small recharges, especially when balance is low')? Provide a brief insight into their financial management of electricity.",
-  "balanceStatusAndAdvice": {
-    "status": "low", "normal", or "good", // Assess current balance: 'low', 'normal', 'good'
-    "details": "Based on historical consumption for the current month (${currentMonth}) and the user's current balance, assess if the balance is low. Explain why (e.g., 'Your current balance of ${currentBalance} BDT is considered low given your typical consumption of X kWh in ${currentMonth} and average cost of Y BDT for this month historically.'). If not low, state why it's normal/good."
-  },
-  "suggestedRechargeAmount": {
-    "amountBDT": null, // Suggested amount in BDT, or null if no specific suggestion
-    "justification": "Based on average consumption for the current month (${currentMonth}) from historical data, your typical monthly cost for this month is X BDT. A recharge of [suggested amount] BDT is recommended to cover a full month's usage, potentially with a small buffer. If no specific suggestion, state 'N/A'."
-  },
-  "rechargeTimingInsight": "Analyze the customer's recharge timing patterns from history and provide specific recommendations on WHEN to perform the suggested recharge amount. Consider: their typical balance thresholds when they recharge, historical consumption leading to recharges, seasonal patterns, and optimal timing to avoid low balance situations or frequent top-ups. Examples: 'You typically recharge when your balance drops below 300 BDT. To maintain a healthy buffer, consider topping up at the start of each month.' or 'Your pattern of recharging on the 15th of each month works well with your consumption cycle; continue this trend.' or 'During summer months, consider splitting your recharge into two mid-month payments due to higher AC usage and cost.'",
-  "actionableTip": "Provide one brief, overarching actionable tip that combines insights from consumption, recharge patterns, and future needs. For example: 'To avoid future low balance situations, consider topping up [suggested amount] BDT at the beginning of each [month type, e.g., summer] month based on your historical peak usage.', or 'Your stable consumption and healthy balance suggest you're managing your electricity effectively. Keep up the good work!'",
 
-  // --- New advanced forecasting fields ---
+  "rechargePatternInsight": "Describe recharge behavior briefly — e.g., ‘2-3 top-ups monthly, usually matching or slightly exceeding usage’. Include any pattern related to timing or amount that shows how they manage recharges.",
+
+  "balanceStatusAndAdvice": {
+    "status": "low", "normal", or "good",
+    "details": "Assess whether the current balance is sufficient for the rest of the current month, based on historical average consumption for this month (${currentMonth}). If low, explain why (e.g., 'Your current balance of ${currentBalance} BDT is not enough to cover typical July usage of X BDT.')."
+  },
+
+  "rechargeRecommendation": {
+    "recommendedAmountBDT": number or null,
+    "justification": "Based on average cost for ${currentMonth} in past years, recommend an amount (e.g., 'To match your typical July usage of X BDT, recharge ৳10,000 to ensure coverage and a small buffer.')."
+  },
+
+  "rechargeTimingInsight": "Suggest optimal recharge timing based on past patterns and seasonal need (e.g., 'To avoid low balance during summer, recharge at the start of July and August.'). Avoid repeating previous info; focus on when to recharge.",
+
+  "actionableTip": "One practical tip combining usage, timing, and recharge insight (e.g., 'Recharge ৳10,000 early in July to avoid mid-month outages during high-consumption periods.').",
+
   "balanceDepletionForecast": {
-    "daysRemaining": number, // Predicted number of days until balance runs out, based on recent daily consumption and seasonality
-    "expectedDepletionDate": "YYYY-MM-DD", // Date when balance is expected to reach zero
-    "details": "Explain the reasoning, e.g., 'Based on your average daily consumption of X kWh (Y BDT) over the last 14 days and your current balance, your balance is expected to last Z days, until [date].'"
+    "daysRemaining": number,
+    "expectedDepletionDate": "YYYY-MM-DD",
+    "details": "Estimate based on recent daily average cost (last 14 days or latest full month if 14-day data is missing). Mention average daily cost and how long the current balance will last. If the expectedDepletionDate is before today’s date, acknowledge this (e.g., 'You’ve already passed the predicted depletion date, so your balance management is better than expected!')."
   },
+
   "currentMonthBillForecast": {
-    "estimatedTotal": number, // Predicted total bill for the current month
-    "details": "Explain the calculation, e.g., 'Based on your consumption so far this month and historical patterns for the remaining days, your estimated bill for ${currentMonth} is X BDT.'"
+    "estimatedTotal": number,
+    "details": "Project total bill for ${currentMonth} using current and historical data. Be clear about method used (e.g., extrapolation from recent usage, or same as last year's July)."
   },
+
   "futureConsumptionForecast": [
     { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },
     { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },
@@ -180,7 +191,7 @@ Based on this comprehensive data and insights from historical trends (especially
   ]
 }
 
-Ensure the language is simple, encouraging, and directly useful for a typical homeowner. Do not include any text or explanations outside the JSON object.
+Keep the language encouraging and easy to understand for everyday users. Avoid duplication across sections. Output only the JSON — no surrounding explanation.
 `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({

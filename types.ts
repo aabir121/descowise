@@ -44,26 +44,25 @@ export interface AiSummary {
         status: 'low' | 'normal' | 'good';
         details: string;
     };
-    suggestedRechargeAmount: {
-        amountBDT: number | null;
+    rechargeRecommendation: {
+        recommendedAmountBDT: number | null;
         justification: string;
     };
     rechargeTimingInsight: string;
     actionableTip: string;
-    // --- New fields for advanced forecasting ---
-    balanceDepletionForecast?: {
-        daysRemaining: number | null;
-        expectedDepletionDate: string | null; // "YYYY-MM-DD"
+    balanceDepletionForecast: {
+        daysRemaining: number;
+        expectedDepletionDate: string;
         details: string;
     };
-    currentMonthBillForecast?: {
-        estimatedTotal: number | null;
+    currentMonthBillForecast: {
+        estimatedTotal: number;
         details: string;
     };
-    futureConsumptionForecast?: Array<{
+    futureConsumptionForecast: Array<{
         month: string; // "YYYY-MM"
-        estimatedConsumption: number | null;
-        estimatedBill: number | null;
+        estimatedConsumption: number;
+        estimatedBill: number;
     }>;
 }
 

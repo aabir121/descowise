@@ -95,37 +95,37 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
           )}
           {/* 1. Balance Status and Advice */}
           <div className={`rounded-lg p-4 border-l-4 ${
-            aiSummary.balanceStatusAndAdvice.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
-            aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'bg-yellow-500/10 border-yellow-500/20 border-l-yellow-400' :
+            aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
+            aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-500/10 border-yellow-500/20 border-l-yellow-400' :
             'bg-green-500/10 border-green-500/20 border-l-green-400'
           }`}>
             <div className="flex items-start gap-3">
               <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                aiSummary.balanceStatusAndAdvice.status === 'low' ? 'bg-red-400' :
-                aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'bg-yellow-400' :
+                aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-400' :
+                aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-400' :
                 'bg-green-400'
               }`} />
               <div>
                 <h4 className={`font-semibold mb-1 ${
-                  aiSummary.balanceStatusAndAdvice.status === 'low' ? 'text-red-400' :
-                  aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'text-yellow-400' :
+                  aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'text-red-400' :
+                  aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'text-yellow-400' :
                   'text-green-400'
                 }`}>
-                  Balance Status: {aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1)}
+                  Balance Status: {aiSummary.balanceStatusAndAdvice?.status ? aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1) : 'Unknown'}
                 </h4>
-                <p className="text-sm text-slate-300">{aiSummary.balanceStatusAndAdvice.details}</p>
+                <p className="text-sm text-slate-300">{aiSummary.balanceStatusAndAdvice?.details}</p>
               </div>
             </div>
           </div>
-          {/* 2. Suggested Recharge Amount */}
-          {aiSummary.suggestedRechargeAmount.amountBDT && (
+          {/* 2. Suggested Recharge Amount (now rechargeRecommendation) */}
+          {aiSummary.rechargeRecommendation?.recommendedAmountBDT && (
             <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
                   <h4 className="font-semibold text-cyan-400 mb-1">💰 Recommended Recharge</h4>
-                  <p className="text-2xl font-bold text-cyan-300 mb-2">৳{aiSummary.suggestedRechargeAmount.amountBDT.toLocaleString()}</p>
-                  <p className="text-sm text-cyan-300">{aiSummary.suggestedRechargeAmount.justification}</p>
+                  <p className="text-2xl font-bold text-cyan-300 mb-2">৳{aiSummary.rechargeRecommendation.recommendedAmountBDT.toLocaleString()}</p>
+                  <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.justification}</p>
                 </div>
               </div>
             </div>
