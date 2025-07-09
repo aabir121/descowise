@@ -156,22 +156,23 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                             />
                         </div>
                         {/* AI Insights Toggle */}
-                        <div className="flex flex-col items-center gap-6 my-6">
-                            <div className="flex items-center gap-4">
-                                <span className="text-slate-200 font-medium text-lg">Enable AI Insights</span>
+                        <div className="flex flex-col items-center gap-3 my-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-slate-200 font-medium text-base">Enable AI Insights</span>
                                 <button
                                     type="button"
-                                    className={`relative inline-flex h-8 w-16 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
+                                    className={`relative inline-flex h-6 w-10 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
                                     aria-pressed={aiInsightsEnabled}
                                     onClick={() => setAiInsightsEnabled(v => !v)}
+                                    style={{ minWidth: '40px' }}
                                 >
                                     <span
-                                        className={`inline-block h-7 w-7 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${aiInsightsEnabled ? 'translate-x-8' : 'translate-x-1'}`}
+                                        className={`inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${aiInsightsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}
                                     />
                                     <span className="sr-only">Toggle AI Insights</span>
                                 </button>
                             </div>
-                            <span className="text-xs text-slate-400 max-w-xs text-center">AI Insights provide personalized energy and recharge analysis for your account. You can change this setting later.</span>
+                            <span className="text-xs text-slate-400 max-w-xs text-center leading-tight">AI Insights provide personalized energy and recharge analysis for your account. You can change this setting later.</span>
                         </div>
                         <div className="mt-6 flex flex-col sm:flex-row gap-3">
                             <button onClick={resetState} className="w-full bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-lg hover:bg-slate-500 transition">Cancel</button>
