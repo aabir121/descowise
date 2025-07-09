@@ -3,24 +3,25 @@ import React from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
+import { getDashboardLabel } from './dashboardLabels';
 
-const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeframe, setConsumptionTimeframe }) => {
+const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeframe, setConsumptionTimeframe, banglaEnabled }) => {
   if (!consumptionChartData || consumptionChartData.length === 0) return null;
   return (
-    <Section title="Consumption Chart" defaultOpen>
+    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen>
       <div className="flex justify-end mb-4">
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600">
           <button
             className={`px-4 py-2 font-semibold rounded-l-lg ${consumptionTimeframe === 'daily' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
             onClick={() => setConsumptionTimeframe('daily')}
           >
-            Daily
+            {banglaEnabled ? 'দৈনিক' : 'Daily'}
           </button>
           <button
             className={`px-4 py-2 font-semibold rounded-r-lg ${consumptionTimeframe === 'monthly' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
             onClick={() => setConsumptionTimeframe('monthly')}
           >
-            Monthly
+            {banglaEnabled ? 'মাসিক' : 'Monthly'}
           </button>
         </div>
       </div>

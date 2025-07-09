@@ -3,24 +3,25 @@ import React from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
+import { getDashboardLabel } from './dashboardLabels';
 
-const ComparisonChartSection = ({ comparisonData, comparisonMetric, setComparisonMetric }) => {
+const ComparisonChartSection = ({ comparisonData, comparisonMetric, setComparisonMetric, banglaEnabled }) => {
   if (!comparisonData || comparisonData.length === 0) return null;
   return (
-    <Section title="Year-over-Year Comparison" defaultOpen>
+    <Section title={getDashboardLabel('comparison', banglaEnabled)} defaultOpen>
       <div className="flex justify-end mb-4">
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600">
           <button
             className={`px-4 py-2 font-semibold rounded-l-lg ${comparisonMetric === 'bdt' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
             onClick={() => setComparisonMetric('bdt')}
           >
-            BDT
+            {banglaEnabled ? 'টাকা' : 'BDT'}
           </button>
           <button
             className={`px-4 py-2 font-semibold rounded-r-lg ${comparisonMetric === 'kwh' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
             onClick={() => setComparisonMetric('kwh')}
           >
-            kWh
+            {banglaEnabled ? 'কিলোওয়াট-ঘণ্টা' : 'kWh'}
           </button>
         </div>
       </div>

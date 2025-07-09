@@ -5,6 +5,7 @@ import Spinner from '../common/Spinner';
 import Modal from '../common/Modal';
 import { useState } from 'react';
 import { useRef } from 'react';
+import { getDashboardLabel } from './dashboardLabels';
 
 const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
   const printRef = useRef();
@@ -86,7 +87,7 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
   );
 };
 
-const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear }) => {
+const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled }) => {
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -96,7 +97,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   };
 
   return (
-    <Section title="Recharge History (Last 1 year)" defaultOpen>
+    <Section title={getDashboardLabel('rechargeHistory', banglaEnabled) + (banglaEnabled ? ' (গত ১ বছর)' : ' (Last 1 year)')} defaultOpen>
       <div className="flex flex-wrap justify-end items-center gap-4 mb-4">
         <select
           value={rechargeYear}
@@ -111,12 +112,12 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
         <table className="w-full text-sm text-left text-slate-300">
           <thead className="text-xs text-slate-400 uppercase bg-slate-700/50">
             <tr>
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Date & Time</th>
-              <th className="px-4 py-3">Meter No</th>
-              <th className="px-4 py-3">Total Amount</th>
-              <th className="px-4 py-3">Energy Amount</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{banglaEnabled ? 'বিস্তারিত' : 'Action'}</th>
+              <th className="px-4 py-3">{banglaEnabled ? 'তারিখ ও সময়' : 'Date & Time'}</th>
+              <th className="px-4 py-3">{banglaEnabled ? 'মিটার নম্বর' : 'Meter No'}</th>
+              <th className="px-4 py-3">{banglaEnabled ? 'মোট পরিমাণ' : 'Total Amount'}</th>
+              <th className="px-4 py-3">{banglaEnabled ? 'এনার্জি পরিমাণ' : 'Energy Amount'}</th>
+              <th className="px-4 py-3">{getDashboardLabel('status', banglaEnabled)}</th>
             </tr>
           </thead>
           <tbody>
@@ -124,7 +125,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
               <tr><td colSpan={6} className="text-center py-8"><Spinner/></td></tr>
             ) : rechargeHistory && rechargeHistory.length > 0 ? rechargeHistory.map((item) => (
               <tr key={item.orderID} className="border-b border-slate-700 hover:bg-slate-700/50">
-                <td className="px-4 py-3"><button onClick={() => handleDetails(item)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">Details</button></td>
+                <td className="px-4 py-3"><button onClick={() => handleDetails(item)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">{banglaEnabled ? 'বিস্তারিত' : 'Details'}</button></td>
                 <td className="px-4 py-3 whitespace-nowrap">{new Date(item.rechargeDate).toLocaleString()}</td>
                 <td className="px-4 py-3">{item.meterNo}</td>
                 <td className="px-4 py-3 font-medium text-white">{item.totalAmount.toLocaleString()}</td>
@@ -136,7 +137,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-400">No recharge history found for {rechargeYear}.</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-slate-400">{banglaEnabled ? `${rechargeYear} সালের জন্য কোনো রিচার্জ ইতিহাস পাওয়া যায়নি।` : `No recharge history found for ${rechargeYear}.`}</td></tr>
             )}
           </tbody>
         </table>

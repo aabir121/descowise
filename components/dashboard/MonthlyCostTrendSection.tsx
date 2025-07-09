@@ -3,11 +3,12 @@ import React from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
+import { getDashboardLabel } from './dashboardLabels';
 
-const MonthlyCostTrendSection = ({ monthlyCostData }) => {
+const MonthlyCostTrendSection = ({ monthlyCostData, banglaEnabled }) => {
   if (!monthlyCostData || monthlyCostData.length === 0) return null;
   return (
-    <Section title="Monthly Cost Trend" defaultOpen>
+    <Section title={getDashboardLabel('monthlyCostTrend', banglaEnabled)} defaultOpen>
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <LineChart data={monthlyCostData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

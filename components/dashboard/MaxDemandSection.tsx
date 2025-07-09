@@ -3,11 +3,12 @@ import React from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
+import { getDashboardLabel } from './dashboardLabels';
 
-const MaxDemandSection = ({ maxDemandData }) => {
+const MaxDemandSection = ({ maxDemandData, banglaEnabled }) => {
   if (!maxDemandData || maxDemandData.length === 0) return null;
   return (
-    <Section title="Max Demand (kW)" defaultOpen>
+    <Section title={getDashboardLabel('maxDemand', banglaEnabled) + ' (kW)'} defaultOpen>
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <LineChart data={maxDemandData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

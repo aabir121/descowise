@@ -64,6 +64,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         rechargeYear={rechargeYear}
                         isHistoryLoading={isHistoryLoading}
                         handleYearChange={handleYearChange}
+                        banglaEnabled={account.banglaEnabled}
                     />
                 )}
             </main>

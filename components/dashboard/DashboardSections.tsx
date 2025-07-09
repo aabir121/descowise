@@ -25,36 +25,40 @@ const DashboardSections: React.FC<any> = ({
   rechargeYear,
   isHistoryLoading,
   handleYearChange,
+  banglaEnabled,
 }) => (
   <div className="space-y-6">
     <AIDashboardInsightsSection
       aiSummary={data?.aiSummary}
       isAiLoading={isAiLoading}
       isAiAvailable={isAiAvailable}
-      banglaEnabled={data?.account?.banglaEnabled ?? data?.banglaEnabled}
+      banglaEnabled={banglaEnabled}
     />
-    <AccountBalanceSection gaugeData={processedData?.gaugeData} />
+    <AccountBalanceSection gaugeData={processedData?.gaugeData} banglaEnabled={banglaEnabled} />
     <ConsumptionChartSection
       consumptionChartData={processedData?.consumptionChartData}
       consumptionTimeframe={consumptionTimeframe}
       setConsumptionTimeframe={setConsumptionTimeframe}
+      banglaEnabled={banglaEnabled}
     />
     <ComparisonChartSection
       comparisonData={processedData?.comparisonData}
       comparisonMetric={comparisonMetric}
       setComparisonMetric={setComparisonMetric}
+      banglaEnabled={banglaEnabled}
     />
-    <RechargeVsConsumptionSection rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData} />
-    <RechargeDistributionSection pieChartData={processedData?.pieChartData} />
-    <MaxDemandSection maxDemandData={processedData?.maxDemandData} />
-    <CumulativeConsumptionSection cumulativeData={processedData?.cumulativeData} />
-    <BoxPlotSection boxPlotData={processedData?.boxPlotData} />
-    <MonthlyCostTrendSection monthlyCostData={processedData?.monthlyCostData} />
+    <RechargeVsConsumptionSection rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData} banglaEnabled={banglaEnabled} />
+    <RechargeDistributionSection pieChartData={processedData?.pieChartData} banglaEnabled={banglaEnabled} />
+    <MaxDemandSection maxDemandData={processedData?.maxDemandData} banglaEnabled={banglaEnabled} />
+    <CumulativeConsumptionSection cumulativeData={processedData?.cumulativeData} banglaEnabled={banglaEnabled} />
+    <BoxPlotSection boxPlotData={processedData?.boxPlotData} banglaEnabled={banglaEnabled} />
+    <MonthlyCostTrendSection monthlyCostData={processedData?.monthlyCostData} banglaEnabled={banglaEnabled} />
     <RechargeHistorySection
       rechargeHistory={data?.rechargeHistory}
       rechargeYear={rechargeYear}
       isHistoryLoading={isHistoryLoading}
       setRechargeYear={handleYearChange}
+      banglaEnabled={banglaEnabled}
     />
   </div>
 );

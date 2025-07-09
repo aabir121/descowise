@@ -3,11 +3,12 @@ import React from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Area } from 'recharts';
+import { getDashboardLabel } from './dashboardLabels';
 
-const CumulativeConsumptionSection = ({ cumulativeData }) => {
+const CumulativeConsumptionSection = ({ cumulativeData, banglaEnabled }) => {
   if (!cumulativeData || cumulativeData.length === 0) return null;
   return (
-    <Section title="Cumulative Consumption Trend" defaultOpen>
+    <Section title={getDashboardLabel('cumulativeConsumption', banglaEnabled)} defaultOpen>
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <AreaChart data={cumulativeData} margin={{ top: 5, right: 20, left: -5, bottom: 5 }}>
