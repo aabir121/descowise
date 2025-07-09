@@ -31,6 +31,7 @@ const DashboardSections: React.FC<any> = ({
       aiSummary={data?.aiSummary}
       isAiLoading={isAiLoading}
       isAiAvailable={isAiAvailable}
+      banglaEnabled={data?.account?.banglaEnabled ?? data?.banglaEnabled}
     />
     <AccountBalanceSection gaugeData={processedData?.gaugeData} />
     <ConsumptionChartSection

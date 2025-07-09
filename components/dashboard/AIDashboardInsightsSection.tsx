@@ -4,17 +4,39 @@ import Section from '../common/Section';
 import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
 
-const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) => {
+const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled }) => {
   if (!isAiAvailable) return null;
+  // Define all section labels in both English and Bangla
+  const labels = {
+    aiInsights: banglaEnabled ? 'এআই-চালিত বিশ্লেষণ' : 'AI-Powered Insights',
+    generating: banglaEnabled ? 'আপনার জন্য ব্যক্তিগত সারাংশ তৈরি হচ্ছে...' : 'Generating your personalized summary...',
+    couldNotGenerate: banglaEnabled ? 'এআই সারাংশ তৈরি করা যায়নি।' : 'Could not generate AI summary.',
+    balanceDepletion: banglaEnabled ? '⏳ ব্যালেন্স শেষ হওয়ার পূর্বাভাস' : '⏳ Balance Depletion Forecast',
+    estimatedDays: banglaEnabled ? 'আনুমানিক দিন বাকি:' : 'Estimated Days Remaining:',
+    expectedDepletionDate: banglaEnabled ? 'প্রত্যাশিত শেষ হওয়ার তারিখ:' : 'Expected Depletion Date:',
+    currentMonthBill: banglaEnabled ? '📅 এই মাসের আনুমানিক বিল' : '📅 Estimated Bill for This Month',
+    estimatedTotalBill: banglaEnabled ? 'আনুমানিক মোট বিল:' : 'Estimated Total Bill:',
+    next3Months: banglaEnabled ? '🔮 আগামী ৩ মাসের পূর্বাভাস' : '🔮 Next 3 Months Forecast',
+    month: banglaEnabled ? 'মাস' : 'Month',
+    estConsumption: banglaEnabled ? 'আনুমানিক খরচ (কিলোওয়াট-ঘণ্টা)' : 'Est. Consumption (kWh)',
+    estBill: banglaEnabled ? 'আনুমানিক বিল (৳)' : 'Est. Bill (৳)',
+    balanceStatus: banglaEnabled ? 'ব্যালেন্স অবস্থা' : 'Balance Status',
+    recommendedRecharge: banglaEnabled ? '💰 সুপারিশকৃত রিচার্জ' : '💰 Recommended Recharge',
+    optimalRechargeTiming: banglaEnabled ? '⏰ রিচার্জের সেরা সময়' : '⏰ Optimal Recharge Timing',
+    anomalyDetected: banglaEnabled ? '⚠️ অস্বাভাবিকতা ধরা পড়েছে' : '⚠️ Anomaly Detected',
+    seasonalPattern: banglaEnabled ? '🌡️ মৌসুমি ধারা' : '🌡️ Seasonal Pattern',
+    rechargePattern: banglaEnabled ? '📊 রিচার্জের ধারা বিশ্লেষণ' : '📊 Recharge Pattern Analysis',
+    actionableTip: banglaEnabled ? '💡 কার্যকরী পরামর্শ' : '💡 Actionable Tip',
+  };
   return (
-    <Section title="AI-Powered Insights" defaultOpen>
+    <Section title={labels.aiInsights} defaultOpen>
       {isAiLoading ? (
         <div className="flex items-center gap-3 text-slate-400">
           <Spinner size="w-6 h-6" color="border-slate-400" />
-          <span>Generating your personalized summary...</span>
+          <span>{labels.generating}</span>
         </div>
       ) : !aiSummary ? (
-        <div className="text-slate-400">Could not generate AI summary.</div>
+        <div className="text-slate-400">{labels.couldNotGenerate}</div>
       ) : (
         <div className="space-y-6">
           {/* Header */}
@@ -31,16 +53,16 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-red-400 mb-1">⏳ Balance Depletion Forecast</h4>
+                  <h4 className="font-semibold text-red-400 mb-1">{labels.balanceDepletion}</h4>
                   <p className="text-sm text-red-300">{aiSummary.balanceDepletionForecast.details}</p>
                   {aiSummary.balanceDepletionForecast.daysRemaining !== null && (
                     <div className="mt-2 text-lg font-bold text-red-200">
-                      Estimated Days Remaining: {aiSummary.balanceDepletionForecast.daysRemaining}
+                      {labels.estimatedDays} {aiSummary.balanceDepletionForecast.daysRemaining}
                     </div>
                   )}
                   {aiSummary.balanceDepletionForecast.expectedDepletionDate && (
                     <div className="text-sm text-red-200">
-                      Expected Depletion Date: {aiSummary.balanceDepletionForecast.expectedDepletionDate}
+                      {labels.expectedDepletionDate} {aiSummary.balanceDepletionForecast.expectedDepletionDate}
                     </div>
                   )}
                 </div>
@@ -53,11 +75,11 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-orange-400 mb-1">📅 Estimated Bill for This Month</h4>
+                  <h4 className="font-semibold text-orange-400 mb-1">{labels.currentMonthBill}</h4>
                   <p className="text-sm text-orange-300">{aiSummary.currentMonthBillForecast.details}</p>
                   {aiSummary.currentMonthBillForecast.estimatedTotal !== null && (
                     <div className="mt-2 text-lg font-bold text-orange-200">
-                      Estimated Total Bill: ৳{aiSummary.currentMonthBillForecast.estimatedTotal.toLocaleString()}
+                      {labels.estimatedTotalBill} ৳{aiSummary.currentMonthBillForecast.estimatedTotal.toLocaleString()}
                     </div>
                   )}
                 </div>
@@ -70,13 +92,13 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-cyan-400 mb-1">🔮 Next 3 Months Forecast</h4>
+                  <h4 className="font-semibold text-cyan-400 mb-1">{labels.next3Months}</h4>
                   <table className="min-w-full text-sm text-cyan-200 mt-2">
                     <thead>
                       <tr>
-                        <th className="pr-4 text-left">Month</th>
-                        <th className="pr-4 text-left">Est. Consumption (kWh)</th>
-                        <th className="pr-4 text-left">Est. Bill (৳)</th>
+                        <th className="pr-4 text-left">{labels.month}</th>
+                        <th className="pr-4 text-left">{labels.estConsumption}</th>
+                        <th className="pr-4 text-left">{labels.estBill}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -111,7 +133,9 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
                   aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'text-yellow-400' :
                   'text-green-400'
                 }`}>
-                  Balance Status: {aiSummary.balanceStatusAndAdvice?.status ? aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1) : 'Unknown'}
+                  {labels.balanceStatus}: {aiSummary.balanceStatusAndAdvice?.status ? (banglaEnabled
+                    ? aiSummary.balanceStatusAndAdvice.status === 'low' ? 'কম' : aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'মাঝারি' : 'ভালো'
+                    : aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1)) : (banglaEnabled ? 'অজানা' : 'Unknown')}
                 </h4>
                 <p className="text-sm text-slate-300">{aiSummary.balanceStatusAndAdvice?.details}</p>
               </div>
@@ -123,7 +147,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-cyan-400 mb-1">💰 Recommended Recharge</h4>
+                  <h4 className="font-semibold text-cyan-400 mb-1">{labels.recommendedRecharge}</h4>
                   <p className="text-2xl font-bold text-cyan-300 mb-2">৳{aiSummary.rechargeRecommendation.recommendedAmountBDT.toLocaleString()}</p>
                   <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.justification}</p>
                 </div>
@@ -135,7 +159,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-indigo-400 rounded-full mt-2 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-indigo-400 mb-1">⏰ Optimal Recharge Timing</h4>
+                <h4 className="font-semibold text-indigo-400 mb-1">{labels.optimalRechargeTiming}</h4>
                 <p className="text-sm text-indigo-300">{aiSummary.rechargeTimingInsight}</p>
               </div>
             </div>
@@ -146,7 +170,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-amber-400 mb-1">⚠️ Anomaly Detected</h4>
+                  <h4 className="font-semibold text-amber-400 mb-1">{labels.anomalyDetected}</h4>
                   <p className="text-sm text-amber-300">{aiSummary.anomaly.details}</p>
                 </div>
               </div>
@@ -158,7 +182,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-blue-400 mb-1">🌡️ Seasonal Pattern</h4>
+                  <h4 className="font-semibold text-blue-400 mb-1">{labels.seasonalPattern}</h4>
                   <p className="text-sm text-blue-300">{aiSummary.seasonalTrend.details}</p>
                 </div>
               </div>
@@ -166,7 +190,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
           )}
           {/* 6. Recharge Pattern Insight */}
           <div className="bg-slate-700/30 rounded-lg p-4">
-            <h4 className="font-semibold text-slate-200 mb-2">📊 Recharge Pattern Analysis</h4>
+            <h4 className="font-semibold text-slate-200 mb-2">{labels.rechargePattern}</h4>
             <p className="text-sm text-slate-300">{aiSummary.rechargePatternInsight}</p>
           </div>
           {/* 7. Actionable Tip */}
@@ -174,7 +198,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable }) =
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-purple-400 mb-1">💡 Actionable Tip</h4>
+                <h4 className="font-semibold text-purple-400 mb-1">{labels.actionableTip}</h4>
                 <p className="text-sm text-purple-300">{aiSummary.actionableTip}</p>
               </div>
             </div>

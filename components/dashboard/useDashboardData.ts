@@ -50,7 +50,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 30),
           api.getAccountBalance(account.accountNo)
         ]);
-        setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null });
+        setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null, banglaEnabled: account.banglaEnabled, account });
         if (balanceResult.success) {
           if (account.aiInsightsEnabled) {
             fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
