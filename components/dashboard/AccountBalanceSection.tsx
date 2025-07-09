@@ -6,7 +6,7 @@ const AccountBalanceSection = ({ gaugeData }) => {
   if (!gaugeData) return null;
   return (
     <Section title="Account Balance Status" defaultOpen>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col items-center justify-center p-6 bg-slate-700/50 rounded-xl">
           <div className="relative w-32 h-32 mb-4">
             <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
