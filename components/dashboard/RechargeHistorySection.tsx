@@ -21,32 +21,65 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
 
   if (!recharge) return null;
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-sm">
       <div className="flex flex-col h-full max-h-[90vh]">
-        <div ref={printRef} className="p-6 pb-4 overflow-y-auto print:bg-white print:text-black flex-1">
-          <div className="text-xl font-bold mb-2 text-center">Recharge Information</div>
-          <div className="text-center font-semibold mb-4">Dhaka Electric Supply Company Ltd<br/>DESCO</div>
-          <div className="mb-2 text-sm">Date: {new Date(recharge.rechargeDate).toLocaleString()}</div>
-          <div className="mb-2 text-sm">Order No: {recharge.orderID}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Name:</span> {recharge.name || '-'}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Meter No:</span> {recharge.meterNo}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Account No:</span> {recharge.accountNo}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Status:</span> {recharge.orderStatus}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Recharge Operator:</span> {recharge.rechargeOperator}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Sequence:</span> {recharge.sequence}</div>
-          <hr className="my-3" />
-          <div className="mb-2 text-sm"><span className="font-semibold">Energy Cost:</span> {recharge.energyAmount}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Demand Charge:</span> {recharge.chargeItems?.find(i => i.chargeItemName === 'Demand Charge')?.chargeAmount ?? '-'}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Meter Rent 1P:</span> {recharge.chargeItems?.find(i => i.chargeItemName === 'Meter Rent 1P')?.chargeAmount ?? '-'}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">VAT (5%):</span> {recharge.VAT}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Rebate:</span> {recharge.rebate}</div>
-          <div className="mb-2 text-sm"><span className="font-semibold">Gross Amount:</span> {recharge.totalAmount}</div>
-          <hr className="my-3" />
-          <div className="mb-2 text-sm"><span className="font-semibold">Token</span><br/>{recharge.token.match(/.{1,4}/g)?.join('-')}</div>
+        <div
+          ref={printRef}
+          className="p-4 pb-2 overflow-y-auto print:bg-white print:text-black flex-1 font-mono text-[15px] print:text-xs print:font-mono"
+        >
+          {/* Header */}
+          <div className="text-center mb-2">
+            <div className="font-bold text-lg print:text-base">Dhaka Electric Supply Company Ltd</div>
+            <div className="text-xs font-semibold text-slate-500 print:text-black">DESCO</div>
+            <div className="mt-1 mb-2 border-b border-dashed border-slate-300 print:border-black" />
+          </div>
+
+          {/* General Info */}
+          <div className="mb-2">
+            <div><span className="inline-block w-28">Date</span>: {new Date(recharge.rechargeDate).toLocaleString()}</div>
+            <div><span className="inline-block w-28">Order No</span>: {recharge.orderID}</div>
+            <div><span className="inline-block w-28">Name</span>: {recharge.name || '-'}</div>
+            <div><span className="inline-block w-28">Meter No</span>: {recharge.meterNo}</div>
+            <div><span className="inline-block w-28">Account No</span>: {recharge.accountNo}</div>
+            <div><span className="inline-block w-28">Status</span>: {recharge.orderStatus}</div>
+            <div><span className="inline-block w-28">Operator</span>: {recharge.rechargeOperator}</div>
+            <div><span className="inline-block w-28">Sequence</span>: {recharge.sequence}</div>
+          </div>
+
+          <div className="my-2 border-b border-dashed border-slate-300 print:border-black" />
+
+          {/* Charges */}
+          <div className="mb-2">
+            <div className="font-semibold mb-1 text-xs print:text-xs">Charges</div>
+            <div><span className="inline-block w-28">Energy Cost</span>: {recharge.energyAmount}</div>
+            <div><span className="inline-block w-28">Demand Charge</span>: {recharge.chargeItems?.find(i => i.chargeItemName === 'Demand Charge')?.chargeAmount ?? '-'}</div>
+            <div><span className="inline-block w-28">Meter Rent 1P</span>: {recharge.chargeItems?.find(i => i.chargeItemName === 'Meter Rent 1P')?.chargeAmount ?? '-'}</div>
+            <div><span className="inline-block w-28">VAT (5%)</span>: {recharge.VAT}</div>
+            <div><span className="inline-block w-28">Rebate</span>: {recharge.rebate}</div>
+            <div className="font-bold mt-1"><span className="inline-block w-28">Gross Amount</span>: {recharge.totalAmount}</div>
+          </div>
+
+          <div className="my-2 border-b border-dashed border-slate-300 print:border-black" />
+
+          {/* Token */}
+          <div className="mb-2">
+            <div className="font-semibold text-xs mb-1 print:text-xs">Token</div>
+            <div className="border border-slate-300 print:border-black rounded px-2 py-2 text-center font-mono tracking-widest text-lg print:text-base bg-white text-black select-all">
+              {recharge.token.match(/.{1,4}/g)?.join('-')}
+            </div>
+          </div>
+
+          <div className="my-2 border-b border-dashed border-slate-300 print:border-black" />
+
+          {/* Footer */}
+          <div className="text-center mt-4 text-xs print:text-xs">
+            <div>Thank you for using DESCO!</div>
+            <div className="mt-1">For queries, call 16262</div>
+          </div>
         </div>
-        <div className="flex justify-end gap-2 p-4 pt-2 border-t border-slate-700 bg-slate-800 sticky bottom-0 print:hidden z-10">
-          <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Print</button>
-          <button onClick={onClose} className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg">Close</button>
+        <div className="flex justify-end gap-2 p-3 pt-2 border-t border-slate-700 bg-slate-800 sticky bottom-0 print:hidden z-10">
+          <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm">Print</button>
+          <button onClick={onClose} className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-sm">Close</button>
         </div>
       </div>
     </Modal>

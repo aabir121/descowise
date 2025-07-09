@@ -94,8 +94,15 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
             <div className="p-4 sm:p-5">
                 <div className="flex justify-between items-start mb-2">
                     <h2 className="text-xl font-bold text-white">{step === 'form' ? 'Add New Account' : 'Confirm Account'}</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-300">
-                        <CloseIcon />
+                    <button
+                        onClick={onClose}
+                        className="text-slate-400 hover:text-slate-300 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+                        aria-label="Close modal"
+                        type="button"
+                    >
+                        <span className="w-6 h-6 block">
+                            <CloseIcon />
+                        </span>
                     </button>
                 </div>
 
