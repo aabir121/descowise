@@ -1,40 +1,89 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Section from '../common/Section';
 import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
 
 const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled }) => {
+  // Timeout handling for long waits
+  const [waitedLong, setWaitedLong] = useState(false);
+  useEffect(() => {
+    if (isAiLoading) {
+      const timer = setTimeout(() => setWaitedLong(true), 30000); // 30 seconds
+      return () => clearTimeout(timer);
+    } else {
+      setWaitedLong(false);
+    }
+  }, [isAiLoading]);
+
+  // Fun facts or tips (optional)
+  const tips = [
+    banglaEnabled
+      ? "টিপ: নিচের ড্যাশবোর্ডে আপনার মাসিক প্রবণতা দেখতে পারেন।"
+      : "Tip: You can view your monthly trends in the dashboard below.",
+    banglaEnabled
+      ? "জানেন কি? এআই আপনার বিদ্যুৎ ব্যবহার অপ্টিমাইজ করতে সাহায্য করতে পারে!"
+      : "Did you know? AI can help you optimize your electricity usage!",
+    banglaEnabled
+      ? "টিপ: ব্যালেন্স কমে যাওয়ার আগেই রিচার্জ করুন।"
+      : "Tip: Recharge before your balance runs low to avoid interruptions.",
+  ];
+  const [tipIdx, setTipIdx] = useState(() => Math.floor(Math.random() * tips.length));
+  useEffect(() => {
+    if (isAiLoading) {
+      setTipIdx(Math.floor(Math.random() * tips.length));
+    }
+  }, [isAiLoading]);
+  const randomTip = tips[tipIdx];
+
   if (!isAiAvailable) return null;
   // Define all section labels in both English and Bangla
   const labels = {
-    aiInsights: banglaEnabled ? 'এআই-চালিত বিশ্লেষণ' : 'AI-Powered Insights',
-    generating: banglaEnabled ? 'আপনার জন্য ব্যক্তিগত সারাংশ তৈরি হচ্ছে...' : 'Generating your personalized summary...',
-    couldNotGenerate: banglaEnabled ? 'এআই সারাংশ তৈরি করা যায়নি।' : 'Could not generate AI summary.',
-    balanceDepletion: banglaEnabled ? '⏳ ব্যালেন্স শেষ হওয়ার পূর্বাভাস' : '⏳ Balance Depletion Forecast',
-    estimatedDays: banglaEnabled ? 'আনুমানিক দিন বাকি:' : 'Estimated Days Remaining:',
-    expectedDepletionDate: banglaEnabled ? 'প্রত্যাশিত শেষ হওয়ার তারিখ:' : 'Expected Depletion Date:',
-    currentMonthBill: banglaEnabled ? '📅 এই মাসের আনুমানিক বিল' : '📅 Estimated Bill for This Month',
-    estimatedTotalBill: banglaEnabled ? 'আনুমানিক মোট বিল:' : 'Estimated Total Bill:',
-    next3Months: banglaEnabled ? '🔮 আগামী ৩ মাসের পূর্বাভাস' : '🔮 Next 3 Months Forecast',
+    aiInsights: banglaEnabled ? 'আপনার জন্য কিছু তথ্য' : 'AI-Powered Insights',
+    generating: banglaEnabled ? 'আপনার জন্য তথ্য প্রস্তুত হচ্ছে...' : 'Generating your personalized summary...',
+    couldNotGenerate: banglaEnabled ? 'দুঃখিত, বিশ্লেষণ দেখানো যাচ্ছে না।' : 'Could not generate AI summary.',
+    balanceDepletion: banglaEnabled ? '⏳ ব্যালেন্স কখন শেষ হতে পারে' : '⏳ Balance Depletion Forecast',
+    estimatedDays: banglaEnabled ? 'সম্ভাব্য বাকি দিন:' : 'Estimated Days Remaining:',
+    expectedDepletionDate: banglaEnabled ? 'সম্ভাব্য শেষের তারিখ:' : 'Expected Depletion Date:',
+    currentMonthBill: banglaEnabled ? '📅 এই মাসের সম্ভাব্য বিল' : '📅 Estimated Bill for This Month',
+    estimatedTotalBill: banglaEnabled ? 'মোট অনুমানকৃত বিল:' : 'Estimated Total Bill:',
+    next3Months: banglaEnabled ? '🔮 পরের ৩ মাসের পূর্বাভাস' : '🔮 Next 3 Months Forecast',
     month: banglaEnabled ? 'মাস' : 'Month',
-    estConsumption: banglaEnabled ? 'আনুমানিক খরচ (কিলোওয়াট-ঘণ্টা)' : 'Est. Consumption (kWh)',
-    estBill: banglaEnabled ? 'আনুমানিক বিল (৳)' : 'Est. Bill (৳)',
-    balanceStatus: banglaEnabled ? 'ব্যালেন্স অবস্থা' : 'Balance Status',
-    recommendedRecharge: banglaEnabled ? '💰 সুপারিশকৃত রিচার্জ' : '💰 Recommended Recharge',
-    optimalRechargeTiming: banglaEnabled ? '⏰ রিচার্জের সেরা সময়' : '⏰ Optimal Recharge Timing',
-    anomalyDetected: banglaEnabled ? '⚠️ অস্বাভাবিকতা ধরা পড়েছে' : '⚠️ Anomaly Detected',
-    seasonalPattern: banglaEnabled ? '🌡️ মৌসুমি ধারা' : '🌡️ Seasonal Pattern',
-    rechargePattern: banglaEnabled ? '📊 রিচার্জের ধারা বিশ্লেষণ' : '📊 Recharge Pattern Analysis',
-    actionableTip: banglaEnabled ? '💡 কার্যকরী পরামর্শ' : '💡 Actionable Tip',
+    estConsumption: banglaEnabled ? 'সম্ভাব্য খরচ (কিলোওয়াট-ঘণ্টা)' : 'Est. Consumption (kWh)',
+    estBill: banglaEnabled ? 'সম্ভাব্য বিল (৳)' : 'Est. Bill (৳)',
+    balanceStatus: banglaEnabled ? 'ব্যালেন্সের অবস্থা' : 'Balance Status',
+    recommendedRecharge: banglaEnabled ? '💰 রিচার্জের পরামর্শ' : '💰 Recommended Recharge',
+    optimalRechargeTiming: banglaEnabled ? '⏰ কখন রিচার্জ করবেন' : '⏰ Optimal Recharge Timing',
+    anomalyDetected: banglaEnabled ? '⚠️ কিছু অস্বাভাবিক লেগেছে' : '⚠️ Anomaly Detected',
+    seasonalPattern: banglaEnabled ? '🌡️ মৌসুমি প্রবণতা' : '🌡️ Seasonal Pattern',
+    rechargePattern: banglaEnabled ? '📊 রিচার্জের অভ্যাস' : '📊 Recharge Pattern Analysis',
+    actionableTip: banglaEnabled ? '💡 সহজ টিপস' : '💡 Actionable Tip',
   };
   return (
     <Section title={labels.aiInsights} defaultOpen>
       {isAiLoading ? (
-        <div className="flex items-center gap-3 text-slate-400">
-          <Spinner size="w-6 h-6" color="border-slate-400" />
-          <span>{labels.generating}</span>
+        <div className="flex flex-col items-start gap-3 text-slate-400">
+          <div className="flex items-center gap-3">
+            <Spinner size="w-6 h-6 animate-spin" color="border-slate-400" />
+            <span>
+              <strong>{banglaEnabled ? 'আপনার জন্য ব্যক্তিগত এআই বিশ্লেষণ তৈরি হচ্ছে…' : 'Generating your personalized AI analysis…'}</strong>
+              <br />
+              {banglaEnabled
+                ? 'বিশ্লেষণটি জটিল হওয়ায় এটি সম্পন্ন হতে কিছুটা সময় লাগতে পারে।'
+                : 'This may take a few moments due to the complexity of the analysis.'}
+              <br />
+              <span className="text-xs">{banglaEnabled ? 'সাধারণত ১০–২০ সেকেন্ড সময় লাগে।' : 'Usually takes 10–20 seconds.'}</span>
+            </span>
+          </div>
+          <div className="mt-2 text-slate-500 italic">
+            {waitedLong
+              ? <>{banglaEnabled
+                  ? <>এখনো কাজ চলছে… দেরির জন্য দুঃখিত! কখনো কখনো একটু বেশি সময় লাগতে পারে।<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={() => window.location.reload()}>{'আবার চেষ্টা করুন'}</button></>
+                  : <>Still working… Sorry for the delay! Sometimes this takes a bit longer.<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={() => window.location.reload()}>Try Again</button></>
+                }</>
+              : randomTip}
+          </div>
         </div>
       ) : !aiSummary ? (
         <div className="text-slate-400">{labels.couldNotGenerate}</div>
