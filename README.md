@@ -1,4 +1,6 @@
-# DESCO Account Manager
+# DescoWise
+
+> Be wise with your Desco account: your electricity accounts, simplified.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

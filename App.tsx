@@ -159,9 +159,9 @@ const App: React.FC = () => {
                         <header className="text-center mb-8 sm:mb-12">
                             <div className="inline-flex items-center gap-3">
                                  <BoltIcon className="w-8 h-8 text-cyan-400"/>
-                                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">DESCO Account Manager</h1>
+                                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">DescoWise</h1>
                             </div>
-                            <p className="text-lg sm:text-xl text-slate-400 mt-2">Your electricity accounts, simplified.</p>
+                            <p className="text-lg sm:text-xl text-slate-400 mt-2">Be wise with your Desco account: your electricity accounts, simplified.</p>
                         </header>
 
                         <main>

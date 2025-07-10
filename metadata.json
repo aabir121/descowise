@@ -1,6 +1,6 @@
 {
-  "name": "DESCO Account Manager",
-  "description": "An application to manage your DESCO electricity accounts, view balances, and add new accounts.",
+  "name": "DescoWise",
+  "description": "Be wise with your Desco account: your electricity accounts, simplified.",
   "requestFramePermissions": [],
   "prompt": ""
 }
