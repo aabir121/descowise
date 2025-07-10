@@ -3,6 +3,7 @@ import React from 'react';
 import Section from '../common/Section';
 import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
+import { formatCurrency, sanitizeCurrency } from '../common/format';
 
 const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled }) => {
   if (!isAiAvailable) return null;
@@ -79,7 +80,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
                   <p className="text-sm text-orange-300">{aiSummary.currentMonthBillForecast.details}</p>
                   {aiSummary.currentMonthBillForecast.estimatedTotal !== null && (
                     <div className="mt-2 text-lg font-bold text-orange-200">
-                      {labels.estimatedTotalBill} ৳{aiSummary.currentMonthBillForecast.estimatedTotal.toLocaleString()}
+                      {labels.estimatedTotalBill} {formatCurrency(sanitizeCurrency(aiSummary.currentMonthBillForecast?.estimatedTotal))}
                     </div>
                   )}
                 </div>
@@ -106,7 +107,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
                         <tr key={f.month || idx}>
                           <td className="pr-4">{f.month}</td>
                           <td className="pr-4">{f.estimatedConsumption !== null ? f.estimatedConsumption.toLocaleString() : '-'}</td>
-                          <td className="pr-4">{f.estimatedBill !== null ? `৳${f.estimatedBill.toLocaleString()}` : '-'}</td>
+                          <td className="pr-4">{formatCurrency(sanitizeCurrency(f.estimatedBill))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -148,7 +149,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
                   <h4 className="font-semibold text-cyan-400 mb-1">{labels.recommendedRecharge}</h4>
-                  <p className="text-2xl font-bold text-cyan-300 mb-2">৳{aiSummary.rechargeRecommendation.recommendedAmountBDT.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-cyan-300 mb-2">{formatCurrency(sanitizeCurrency(aiSummary.rechargeRecommendation?.recommendedAmountBDT))}</p>
                   <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.justification}</p>
                 </div>
               </div>

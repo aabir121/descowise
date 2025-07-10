@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React from 'react';
+import { formatCurrency, sanitizeCurrency } from './format';
 
 interface CustomTooltipProps {
     active?: boolean;
@@ -13,7 +14,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label })
             <div className="bg-slate-700/80 backdrop-blur-sm p-3 rounded-md border border-slate-600 shadow-lg text-sm">
                 <p className="font-bold text-cyan-300 mb-2">{label}</p>
                 {payload.map((p, i) => (
-                    <div key={i} style={{ color: p.color }}>{`${p.name}: ${p.value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}`}</div>
+                    <div key={i} style={{ color: p.color }}>{`${p.name}: ${formatCurrency(sanitizeCurrency(p.value))}`}</div>
                 ))}
             </div>
         );

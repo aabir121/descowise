@@ -7,6 +7,12 @@ const formatDate = (date: Date): string => date.toISOString().split('T')[0];
 // Helper to format a date as YYYY-MM
 const formatMonth = (date: Date): string => date.toISOString().substring(0, 7);
 
+// Helper to sanitize currency values (null/undefined to 0.00, else to two decimals)
+const sanitizeCurrency = (value: any): number => {
+    if (value === null || value === undefined || isNaN(Number(value))) return 0.00;
+    return parseFloat(Number(value).toFixed(2));
+};
+
 // Helper to process recharge history into monthly format
 const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[]): Array<{month: string, rechargeAmount: number, rechargeCount: number}> => {
     const monthlyRecharge: Record<string, {amount: number, count: number}> = {};
@@ -16,13 +22,13 @@ const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[])
         if (!monthlyRecharge[month]) {
             monthlyRecharge[month] = { amount: 0, count: 0 };
         }
-        monthlyRecharge[month].amount += item.totalAmount;
+        monthlyRecharge[month].amount += sanitizeCurrency(item.totalAmount);
         monthlyRecharge[month].count += 1;
     });
     
     return Object.entries(monthlyRecharge).map(([month, data]) => ({
         month,
-        rechargeAmount: data.amount,
+        rechargeAmount: sanitizeCurrency(data.amount),
         rechargeCount: data.count
     })).sort((a, b) => a.month.localeCompare(b.month));
 };
@@ -67,7 +73,7 @@ ${JSON.stringify(recentDailyConsumption)}
     "details": "বর্তমান ব্যালান্স মাসের বাকি সময়ের জন্য যথেষ্ট কি না, সহজ ভাষায় বলুন। কম হলে কারণ ব্যাখ্যা করুন এবং উৎসাহব্যঞ্জক পরামর্শ দিন।"
   },
   "rechargeRecommendation": {
-    "recommendedAmountBDT": সংখ্যা বা null,
+    "recommendedAmountBDT": সংখ্যা বা 0.00,
     "justification": "গত বছরের এই মাসের গড় খরচ দেখে, কত টাকা রিচার্জ করলে ভালো হয়, সহজ ভাষায় বলুন এবং একটি ছোট গল্প বা উদাহরণ দিন।"
   },
   "rechargeTimingInsight": "কখন রিচার্জ করলে ভালো হয়, সহজ ও গল্পের ছলে বলুন (যেমন: 'গরমে মাসের শুরুতেই রিচার্জ করুন, তাহলে হঠাৎ ব্যালান্স শেষ হবে না')। বাস্তব জীবনের পরিস্থিতি বা অভিজ্ঞতা যোগ করুন।",
@@ -229,7 +235,11 @@ export const getAccountBalance = async (accountNo: string): Promise<{ success: t
         const result: { code: number; desc: string; data: BalanceData | null; message?: string } = await response.json();
 
         if (result.code === 200 && result.data) {
-            return { success: true, data: result.data };
+            // Sanitize all currency fields in BalanceData
+            const sanitizedData = { ...result.data };
+            if ('balance' in sanitizedData) sanitizedData.balance = sanitizeCurrency(sanitizedData.balance);
+            if ('emergencyBalance' in sanitizedData) sanitizedData.emergencyBalance = sanitizeCurrency(sanitizedData.emergencyBalance);
+            return { success: true, data: sanitizedData };
         }
         
         return { success: false, message: result.message || 'Could not fetch balance from API response.' };
@@ -247,6 +257,24 @@ export const getAiDashboardSummary = async (
     recentDailyConsumption: DailyConsumption[],
     banglaEnabled: boolean = false
 ): Promise<AiSummary> => {
+    // Sanitize currency in monthlyConsumption
+    const sanitizedMonthlyConsumption = monthlyConsumption.map(item => ({
+        ...item,
+        consumedTaka: sanitizeCurrency(item.consumedTaka)
+    }));
+    // Sanitize currency in rechargeHistory
+    const sanitizedRechargeHistory = rechargeHistory.map(item => ({
+        ...item,
+        totalAmount: sanitizeCurrency(item.totalAmount)
+    }));
+    // Sanitize currency in recentDailyConsumption
+    const sanitizedRecentDailyConsumption = recentDailyConsumption.map(item => ({
+        ...item,
+        consumedTaka: sanitizeCurrency(item.consumedTaka)
+    }));
+    // Sanitize currentBalance
+    const sanitizedCurrentBalance = sanitizeCurrency(currentBalance);
+
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
         throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
@@ -262,11 +290,11 @@ export const getAiDashboardSummary = async (
     }
 
     // Process recharge history into monthly format
-    const monthlyRechargeData = processRechargeHistoryToMonthly(rechargeHistory);
+    const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
 
     const prompt = banglaEnabled
-        ? generateBanglaAiDashboardPrompt(monthlyConsumption, monthlyRechargeData, recentDailyConsumption, currentBalance, currentMonth)
-        : generateEnglishAiDashboardPrompt(monthlyConsumption, monthlyRechargeData, recentDailyConsumption, currentBalance, currentMonth);
+        ? generateBanglaAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth)
+        : generateEnglishAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth);
 
     const response: GenerateContentResponse = await ai.models.generateContent({
         model,
@@ -292,6 +320,48 @@ export const getAiDashboardSummary = async (
     }
 };
 
+/**
+ * Ask Gemini a free-form question about the user's account, using available data.
+ * @param question The user's question
+ * @param data The raw account data (e.g., from useDashboardData)
+ * @param processedData The processed dashboard data
+ * @param banglaEnabled Whether to answer in Bangla
+ * @returns Gemini's answer as a string
+ */
+export async function askGeminiAboutAccount(
+    question: string,
+    data: any,
+    processedData: any,
+    banglaEnabled: boolean = false
+): Promise<string> {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
+    let temperature = 0.3;
+    if (process.env.GEMINI_TEMPERATURE) {
+        const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
+        if (!isNaN(parsed)) temperature = parsed;
+    }
+    // Compose a prompt with the user's question and available data
+    let prompt = '';
+    if (banglaEnabled) {
+        prompt = `আপনি একজন বিদ্যুৎ বিল ও রিচার্জ বিশ্লেষক, যিনি সাধারণ মানুষের জন্য সহজ ভাষায়, বন্ধুর মতো বোঝান।\n\nনিচে গ্রাহকের বিদ্যুৎ সংক্রান্ত তথ্য ও ব্যবহারকারীর প্রশ্ন দেয়া হলো।\n\n*গ্রাহকের তথ্য (JSON):*\n${JSON.stringify(data, null, 2)}\n\n*প্রসেসড ড্যাশবোর্ড ডেটা (JSON):*\n${JSON.stringify(processedData, null, 2)}\n\n*প্রশ্ন:*\n${question}\n\nসহজ, গল্পের মতো, বন্ধুর মতো উত্তর দিন। কঠিন শব্দ বা জটিলতা এড়িয়ে চলুন।`; 
+    } else {
+        prompt = `You are an expert electricity bill and recharge analyst for residential customers.\n\nBelow is the user's account data and their question.\n\n*Account Data (JSON):*\n${JSON.stringify(data, null, 2)}\n\n*Processed Dashboard Data (JSON):*\n${JSON.stringify(processedData, null, 2)}\n\n*User's Question:*\n${question}\n\nAnswer in a friendly, conversational, and encouraging tone. Use simple language and examples if helpful.`;
+    }
+    const response: GenerateContentResponse = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+            responseMimeType: "text/plain",
+            temperature
+        }
+    });
+    return response.text?.trim() || 'Sorry, I could not get an answer.';
+}
 
 // --- New Dashboard APIs ---
 
@@ -313,7 +383,11 @@ export const getCustomerDailyConsumption = async (accountNo: string, meterNo: st
     if (!response.ok) throw new Error('Failed to fetch daily consumption');
     const result = await response.json();
     if (result.code !== 200 || !result.data) throw new Error(result.message || 'Invalid data for daily consumption');
-    return result.data;
+    // Sanitize currency in result.data
+    return result.data.map((item: DailyConsumption) => ({
+        ...item,
+        consumedTaka: sanitizeCurrency(item.consumedTaka)
+    }));
 };
 
 
@@ -326,7 +400,11 @@ export const getRechargeHistory = async (accountNo: string, meterNo: string, yea
     if (!response.ok) throw new Error(`Failed to fetch recharge history for ${year}`);
     const result = await response.json();
     if (result.code !== 200 || !result.data) return []; // Return empty array if no data
-    return result.data;
+    // Sanitize currency in result.data
+    return result.data.map((item: RechargeHistoryItem) => ({
+        ...item,
+        totalAmount: sanitizeCurrency(item.totalAmount)
+    }));
 };
 
 export const getCustomerMonthlyConsumption = async (accountNo: string, meterNo: string, months: number = 24): Promise<MonthlyConsumption[]> => {
@@ -340,5 +418,9 @@ export const getCustomerMonthlyConsumption = async (accountNo: string, meterNo: 
     if (!response.ok) throw new Error('Failed to fetch monthly consumption');
     const result = await response.json();
     if (result.code !== 200 || !result.data) throw new Error(result.message || 'Invalid data for monthly consumption');
-    return result.data;
+    // Sanitize currency in result.data
+    return result.data.map((item: MonthlyConsumption) => ({
+        ...item,
+        consumedTaka: sanitizeCurrency(item.consumedTaka)
+    }));
 };

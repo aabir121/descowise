@@ -6,6 +6,7 @@ import Modal from '../common/Modal';
 import { useState } from 'react';
 import { useRef } from 'react';
 import { getDashboardLabel } from './dashboardLabels';
+import { formatCurrency, sanitizeCurrency } from '../common/format';
 
 const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
   const printRef = useRef();
@@ -52,12 +53,12 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
           {/* Charges */}
           <div className="mb-2">
             <div className="font-semibold mb-1 text-xs print:text-xs">Charges</div>
-            <div><span className="inline-block w-28">Energy Cost</span>: {recharge.energyAmount}</div>
-            <div><span className="inline-block w-28">Demand Charge</span>: {recharge.chargeItems?.find(i => i.chargeItemName === 'Demand Charge')?.chargeAmount ?? '-'}</div>
-            <div><span className="inline-block w-28">Meter Rent 1P</span>: {recharge.chargeItems?.find(i => i.chargeItemName === 'Meter Rent 1P')?.chargeAmount ?? '-'}</div>
-            <div><span className="inline-block w-28">VAT (5%)</span>: {recharge.VAT}</div>
-            <div><span className="inline-block w-28">Rebate</span>: {recharge.rebate}</div>
-            <div className="font-bold mt-1"><span className="inline-block w-28">Gross Amount</span>: {recharge.totalAmount}</div>
+            <div><span className="inline-block w-28">Energy Cost</span>: {formatCurrency(sanitizeCurrency(recharge.energyAmount))}</div>
+            <div><span className="inline-block w-28">Demand Charge</span>: {formatCurrency(sanitizeCurrency(recharge.chargeItems?.find(i => i.chargeItemName === 'Demand Charge')?.chargeAmount))}</div>
+            <div><span className="inline-block w-28">Meter Rent 1P</span>: {formatCurrency(sanitizeCurrency(recharge.chargeItems?.find(i => i.chargeItemName === 'Meter Rent 1P')?.chargeAmount))}</div>
+            <div><span className="inline-block w-28">VAT (5%)</span>: {formatCurrency(sanitizeCurrency(recharge.VAT))}</div>
+            <div><span className="inline-block w-28">Rebate</span>: {formatCurrency(sanitizeCurrency(recharge.rebate))}</div>
+            <div className="font-bold mt-1"><span className="inline-block w-28">Gross Amount</span>: {formatCurrency(sanitizeCurrency(recharge.totalAmount))}</div>
           </div>
 
           <div className="my-2 border-b border-dashed border-slate-300 print:border-black" />
@@ -128,7 +129,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
                 <td className="px-4 py-3"><button onClick={() => handleDetails(item)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">{banglaEnabled ? 'বিস্তারিত' : 'Details'}</button></td>
                 <td className="px-4 py-3 whitespace-nowrap">{new Date(item.rechargeDate).toLocaleString()}</td>
                 <td className="px-4 py-3">{item.meterNo}</td>
-                <td className="px-4 py-3 font-medium text-white">{item.totalAmount.toLocaleString()}</td>
+                <td className="px-4 py-3 font-medium text-white">{formatCurrency(sanitizeCurrency(item.totalAmount))}</td>
                 <td className="px-4 py-3">{item.energyAmount}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.orderStatus === 'Execution Successful' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>

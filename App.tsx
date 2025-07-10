@@ -222,58 +222,8 @@ const App: React.FC = () => {
                 cancelText="Cancel"
                 icon={<ExclamationTriangleIcon />}
             />
-            {/* Floating Buy Me a Coffee Button */}
-            <div>
-                <style>{`
-                    .floating-coffee-btn {
-                        position: fixed;
-                        bottom: 2rem;
-                        right: 2rem;
-                        z-index: 100;
-                        background: #22223b;
-                        color: #f2e9e4;
-                        border-radius: 50%;
-                        width: 56px;
-                        height: 56px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-                        cursor: pointer;
-                        transition: box-shadow 0.2s, transform 0.2s;
-                    }
-                    .floating-coffee-btn:hover {
-                        box-shadow: 0 8px 24px rgba(0,0,0,0.28);
-                        transform: scale(1.08);
-                    }
-                    .coffee-popover {
-                        position: fixed;
-                        bottom: 5.5rem;
-                        right: 2rem;
-                        background: #262626;
-                        color: #fff;
-                        border-radius: 1rem;
-                        box-shadow: 0 4px 24px rgba(0,0,0,0.22);
-                        padding: 1.5rem 1.25rem 1.25rem 1.25rem;
-                        min-width: 260px;
-                        max-width: 90vw;
-                        z-index: 101;
-                        animation: fade-in 0.3s cubic-bezier(0.4,0,0.2,1);
-                    }
-                    .coffee-popover a {
-                        display: inline-block;
-                        margin: 0.25rem 0.5rem 0.25rem 0;
-                        text-decoration: none;
-                        color: #f2e9e4;
-                        font-weight: 500;
-                        transition: color 0.2s;
-                    }
-                    .coffee-popover a:hover {
-                        color: #fbbf24;
-                    }
-                `}</style>
-                <FloatingCoffeeButton />
-            </div>
+            {/* Global Floating Buy Me a Coffee Button */}
+            <FloatingCoffeeButton />
         </>
     );
 };

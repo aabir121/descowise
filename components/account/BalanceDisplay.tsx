@@ -1,6 +1,7 @@
 import React from 'react';
 import Spinner from '../common/Spinner';
 import { BoltIcon } from '../common/Icons';
+import { formatCurrency } from '../common/format';
 
 interface BalanceDisplayProps {
   isLoading: boolean;
@@ -11,7 +12,7 @@ interface BalanceDisplayProps {
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, readingTime }) => {
   const hasBalance = balance !== null && balance !== undefined;
   const balanceValue = hasBalance ? parseFloat(String(balance).replace(/[^\d.-]/g, '')) : 0;
-  const balanceDisplay = hasBalance ? `৳ ${balanceValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A';
+  const balanceDisplay = formatCurrency(balance);
   const balanceColor = !isNaN(balanceValue) && balanceValue >= 0 ? 'text-cyan-400' : 'text-red-400';
 
   if (isLoading) {
@@ -20,9 +21,12 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
 
   return (
     <div className="text-right">
-      <div className="flex items-center gap-1.5">
-        <BoltIcon className={`w-5 h-5 ${balanceColor}`} />
-        <span className={`font-bold text-2xl ${balanceColor}`}>{balanceDisplay}</span>
+      <div className="flex items-center gap-1.5 align-middle">
+        <BoltIcon className={`w-5 h-5 ${balanceColor} align-middle relative top-[1px]`} />
+        <span className={`font-bold text-2xl ${balanceColor} flex items-baseline`}>
+          <span className="mr-0.5 align-middle">৳</span>
+          <span className="align-middle">{balanceDisplay.replace(/^৳/, '')}</span>
+        </span>
       </div>
       {readingTime && (
         <p className="text-xs text-slate-500 -mt-1">

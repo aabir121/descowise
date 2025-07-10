@@ -5,6 +5,7 @@ import { BoltIcon, TrashIcon, PencilIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
+import { formatCurrency, sanitizeCurrency } from './common/format';
 
 interface AccountCardProps {
     account: Account;
@@ -20,9 +21,8 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
     const displayName = account.displayName || `Account ${account.accountNo}`;
 
     const hasBalance = account.balance !== null && account.balance !== undefined;
-
-    const balanceValue = hasBalance ? parseFloat(String(account.balance).replace(/[^\d.-]/g, '')) : 0;
-    const balanceDisplay = hasBalance ? `৳ ${balanceValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'N/A';
+    const balanceValue = sanitizeCurrency(account.balance);
+    const balanceDisplay = formatCurrency(balanceValue);
 
     const balanceColor = !isNaN(balanceValue) && balanceValue >= 0 ? 'text-cyan-400' : 'text-red-400';
 
@@ -139,7 +139,7 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
                 <AccountInfoRow label="Meter No:" value={account.meterNo} />
                 <div className="flex justify-between items-start pt-2 min-h-[50px]">
                     <span className="font-medium text-slate-400 text-base">Balance:</span>
-                    <BalanceDisplay isLoading={isBalanceLoading} balance={account.balance !== null && account.balance !== undefined ? Number(account.balance) : null} readingTime={account.readingTime} />
+                    <BalanceDisplay isLoading={isBalanceLoading} balance={sanitizeCurrency(account.balance)} readingTime={account.readingTime} />
                 </div>
             </div>
         </div>

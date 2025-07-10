@@ -2,6 +2,7 @@
 import React from 'react';
 import Section from '../common/Section';
 import { getDashboardLabel } from './dashboardLabels';
+import { formatCurrency, sanitizeCurrency } from '../common/format';
 
 const AccountBalanceSection = ({ gaugeData, banglaEnabled }) => {
   if (!gaugeData) return null;
@@ -39,14 +40,18 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled }) => {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-cyan-400">৳{gaugeData.currentBalance.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-cyan-400">
+              {formatCurrency(sanitizeCurrency(gaugeData.currentBalance))}
+            </div>
             <div className="text-sm text-slate-400">{getDashboardLabel('balance', banglaEnabled)}</div>
           </div>
         </div>
         <div className="space-y-4">
           <div className="bg-slate-700/30 p-4 rounded-lg">
             <h5 className="text-sm font-semibold text-slate-300 mb-2">{getDashboardLabel('monthlyCostTrend', banglaEnabled)}</h5>
-            <div className="text-xl font-bold text-orange-400">৳{gaugeData.averageMonthlyCost.toFixed(0)}</div>
+            <div className="text-xl font-bold text-orange-400">
+              {formatCurrency(sanitizeCurrency(gaugeData.averageMonthlyCost))}
+            </div>
           </div>
           <div className="bg-slate-700/30 p-4 rounded-lg">
             <h5 className="text-sm font-semibold text-slate-300 mb-2">{banglaEnabled ? 'আনুমানিক বাকি দিন' : 'Estimated Days Remaining'}</h5>
