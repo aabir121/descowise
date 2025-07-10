@@ -22,15 +22,15 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
 
   return (
     <div className="text-right">
-      <div className="flex items-center gap-1.5 align-middle">
-        <BoltIcon className={`w-5 h-5 ${balanceColor} align-middle relative top-[1px]`} />
+      <div className="flex items-center justify-end gap-1.5">
+        <BoltIcon className={`w-5 h-5 mt-0.5 ${balanceColor}`} />
         <span className={`font-bold text-2xl ${balanceColor} flex items-baseline`}>
-          <span className="mr-0.5 align-middle">৳</span>
-          <span className="align-middle">{balanceDisplay.replace(/^৳/, '')}</span>
+          <span className="mr-0.5">৳</span>
+          <span>{balanceDisplay.replace(/^৳/, '')}</span>
         </span>
       </div>
       {readingTime && (
-        <p className="text-xs text-slate-500 -mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           As of {formatHumanDate(new Date(readingTime))}
         </p>
       )}
