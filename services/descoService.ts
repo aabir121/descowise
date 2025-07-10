@@ -34,9 +34,24 @@ const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[])
 };
 
 // --- Prompt Generators ---
-function generateBanglaAiDashboardPrompt(monthlyConsumption: MonthlyConsumption[], monthlyRechargeData: any, recentDailyConsumption: DailyConsumption[], currentBalance: number, currentMonth: string): string {
+function generateBanglaAiDashboardPrompt(monthlyConsumption: MonthlyConsumption[], monthlyRechargeData: any, recentDailyConsumption: DailyConsumption[], currentBalance: number, currentMonth: string, readingTime?: string): string {
+    // Only use readingTime for as-of date
+    let asOfNotice = '';
+    if (readingTime) {
+        const latestDate = new Date(readingTime).toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        const daysBehind = Math.floor((new Date(today).getTime() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24));
+        asOfNotice = daysBehind > 0
+            ? `তথ্য সর্বশেষ আপডেট হয়েছে ${latestDate} পর্যন্ত, যা আজকের (${today}) থেকে ${daysBehind} দিন পিছিয়ে থাকতে পারে (DESCO API দেরির কারণে)। দয়া করে আপনার মিটার দেখে সর্বশেষ তথ্য যাচাই করুন।`
+            : `তথ্য সর্বশেষ আপডেট: ${latestDate}`;
+    } else {
+        asOfNotice = '';
+    }
     return `
+${asOfNotice}
 আপনি একজন বিদ্যুৎ বিল ও রিচার্জ বিশ্লেষক, যিনি সাধারণ মানুষের জন্য সহজ ভাষায়, বন্ধুর মতো বোঝান। কঠিন শব্দ বা জটিল ব্যাখ্যা এড়িয়ে চলুন। দৈনন্দিন জীবনের মতো সহজ, গল্পের ছলে, মানুষের সাথে কথা বলার মতো করে ব্যাখ্যা দিন।
+
+${asOfNotice ? `আপনার ব্যাখ্যার শুরুতেই বা সারাংশে নিচের তথ্যটি বন্ধুর মতো স্বাভাবিকভাবে উল্লেখ করুন: "${asOfNotice}"।` : ''}
 
 আপনার ব্যাখ্যা যেন আরও বিস্তারিত, গল্পের মতো এবং উৎসাহব্যঞ্জক হয়। প্রতিটি অংশে উদাহরণ, ছোট গল্প, বা বাস্তব জীবনের তুলনা ব্যবহার করুন। ব্যবহারকারীর পাশে থেকে, বন্ধুর মতো সহানুভূতিশীল ও ইতিবাচক ভঙ্গিতে পরামর্শ দিন।
 
@@ -98,9 +113,24 @@ ${JSON.stringify(recentDailyConsumption)}
 `;
 }
 
-function generateEnglishAiDashboardPrompt(monthlyConsumption: MonthlyConsumption[], monthlyRechargeData: any, recentDailyConsumption: DailyConsumption[], currentBalance: number, currentMonth: string): string {
+function generateEnglishAiDashboardPrompt(monthlyConsumption: MonthlyConsumption[], monthlyRechargeData: any, recentDailyConsumption: DailyConsumption[], currentBalance: number, currentMonth: string, readingTime?: string): string {
+    // Only use readingTime for as-of date
+    let asOfNotice = '';
+    if (readingTime) {
+        const latestDate = new Date(readingTime).toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        const daysBehind = Math.floor((new Date(today).getTime() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24));
+        asOfNotice = daysBehind > 0
+            ? `The data is current as of ${latestDate}, which may be up to ${daysBehind} day(s) behind today (${today}) due to DESCO API delays. Please check your meter for the most up-to-date info.`
+            : `Data current as of: ${latestDate}`;
+    } else {
+        asOfNotice = '';
+    }
     return `
+${asOfNotice}
 Use a friendly, conversational tone as if you’re explaining to a friend or family member. Make your advice easy to follow, use simple language, and avoid technical jargon. Use analogies, relatable examples, and positive encouragement throughout.
+
+${asOfNotice ? `At the start or in the initial summary, naturally mention the following info in a friendly way: "${asOfNotice}".` : ''}
 
 You are an expert electricity bill and recharge analyst for residential customers. Your role is to generate concise, data-driven insights to help them optimize energy usage and financial planning, especially during high-consumption months. Your advice should be simple, actionable, and based on historical trends and recent activity.
 
@@ -255,7 +285,8 @@ export const getAiDashboardSummary = async (
     currentBalance: number, 
     currentMonth: string,
     recentDailyConsumption: DailyConsumption[],
-    banglaEnabled: boolean = false
+    banglaEnabled: boolean = false,
+    readingTime?: string
 ): Promise<AiSummary> => {
     // Sanitize currency in monthlyConsumption
     const sanitizedMonthlyConsumption = monthlyConsumption.map(item => ({
@@ -293,8 +324,8 @@ export const getAiDashboardSummary = async (
     const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
 
     const prompt = banglaEnabled
-        ? generateBanglaAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth)
-        : generateEnglishAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth);
+        ? generateBanglaAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, readingTime)
+        : generateEnglishAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, readingTime);
 
     const response: GenerateContentResponse = await ai.models.generateContent({
         model,
