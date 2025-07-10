@@ -2,6 +2,7 @@ import React from 'react';
 import Spinner from '../common/Spinner';
 import { BoltIcon } from '../common/Icons';
 import { formatCurrency } from '../common/format';
+import { formatHumanDate } from '../../utils/dataSanitization';
 
 interface BalanceDisplayProps {
   isLoading: boolean;
@@ -30,7 +31,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
       </div>
       {readingTime && (
         <p className="text-xs text-slate-500 -mt-1">
-          As of {new Date(readingTime).toLocaleDateString()}
+          As of {formatHumanDate(new Date(readingTime))}
         </p>
       )}
     </div>

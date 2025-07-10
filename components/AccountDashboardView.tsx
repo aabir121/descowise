@@ -10,6 +10,7 @@ import Footer from './common/Footer';
 import { useState } from 'react';
 import { askGeminiAboutAccount } from '../services/descoService';
 import FloatingCoffeeButton from './FloatingCoffeeButton';
+import { formatHumanDate } from '../utils/dataSanitization';
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const {
@@ -76,7 +77,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             {/* As of date display */}
             {data?.balance?.readingTime && (
                 <div className="text-xs text-slate-400 text-right px-4 sm:px-6 lg:px-8 mt-1 mb-2">
-                    Data as of {new Date(data.balance.readingTime).toLocaleString()}
+                    Data as of {formatHumanDate(new Date(data.balance.readingTime))}
                 </div>
             )}
             <main className="flex-grow p-4 sm:p-6 lg:p-8 overflow-y-auto">
