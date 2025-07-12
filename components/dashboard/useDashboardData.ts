@@ -52,7 +52,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getCustomerLocation(account.accountNo),
           api.getCustomerMonthlyConsumption(account.accountNo, account.meterNo, 24),
           api.getRechargeHistory(account.accountNo, account.meterNo, new Date().getFullYear()),
-          api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 60), // Increased to 60 days to support longer ranges
+          api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 90), // Increased to 90 days to ensure we have enough recent data
           api.getAccountBalance(account.accountNo)
         ]);
         
@@ -157,38 +157,83 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     const sortedDaily = [...data.dailyConsumption].sort((a, b) => a.date.localeCompare(b.date));
     const formatMonth = (monthStr: string) => new Date(monthStr + '-02').toLocaleString('default', { month: 'short', year: '2-digit' });
     
+    // Helper function to fill missing dates with zeros and mark missing
+    const fillMissingDates = (data: any[], startDate: Date, endDate: Date) => {
+      const dateMap = new Map();
+      data.forEach(item => {
+        dateMap.set(item.date, item);
+      });
+      
+      const result = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const existingData = dateMap.get(dateStr);
+        
+        if (existingData) {
+          result.push({ ...existingData, missing: false });
+        } else {
+          // Fill missing date with zeros and mark as missing
+          result.push({
+            date: dateStr,
+            consumedUnit: 0,
+            consumedTaka: 0,
+            missing: true
+          });
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      return result;
+    };
+    
     // Calculate consumption chart data based on time range
     let consumptionChartData;
     if (consumptionTimeRange === '7days') {
-      const last7Days = sortedDaily.slice(-7);
+      // Get the last 7 days from today
+      const today = new Date();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(today.getDate() - 6); // 7 days including today
+      
+      // Fill missing dates with zeros
+      const last7Days = fillMissingDates(sortedDaily, sevenDaysAgo, today);
+      
       consumptionChartData = last7Days.map(d => ({ 
         name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
         kWh: (d.consumedUnit || 0), 
-        BDT: d.consumedTaka 
+        BDT: d.consumedTaka,
+        missing: d.missing
       }));
     } else if (consumptionTimeRange === '30days') {
-      const last30Days = sortedDaily.slice(-30);
+      // Get the last 30 days from today
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 29); // 30 days including today
+      
+      // Fill missing dates with zeros
+      const last30Days = fillMissingDates(sortedDaily, thirtyDaysAgo, today);
+      
       consumptionChartData = last30Days.map(d => ({ 
         name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
         kWh: (d.consumedUnit || 0), 
-        BDT: d.consumedTaka 
+        BDT: d.consumedTaka,
+        missing: d.missing
       }));
     } else if (consumptionTimeRange === 'thisMonth') {
-      // Get current month's data from 1st day to current date
+      // Get current month's data from 1st day to today
       const currentDate = new Date();
       const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const currentMonthStr = currentDate.toISOString().substring(0, 7); // YYYY-MM format
-      
-      // Filter daily consumption for current month only
-      const thisMonthData = sortedDaily.filter(d => {
-        const date = new Date(d.date);
-        return date >= firstDayOfMonth && date <= currentDate;
-      });
+      // End at today, not last day of month
+      // Fill missing dates with zeros
+      const thisMonthData = fillMissingDates(sortedDaily, firstDayOfMonth, currentDate);
       
       consumptionChartData = thisMonthData.map(d => ({ 
         name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
         kWh: (d.consumedUnit || 0), 
-        BDT: d.consumedTaka 
+        BDT: d.consumedTaka,
+        missing: d.missing
       }));
     } else {
       // For monthly ranges, determine how many months to show
