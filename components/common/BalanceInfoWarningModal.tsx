@@ -9,8 +9,18 @@ interface BalanceInfoWarningModalProps {
 
 const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
+  
+  const handleModalClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+  
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClose();
+  };
+  
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={handleModalClick}>
       <div className="flex flex-col max-h-[70vh] w-full max-w-sm bg-slate-800 rounded-lg shadow-2xl my-4">
         {/* Fixed Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
@@ -19,7 +29,7 @@ const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpe
             <h3 className="text-base font-semibold text-slate-100">Balance Info Unavailable</h3>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-slate-700 transition-colors"
             aria-label="Close modal"
           >
@@ -55,7 +65,7 @@ const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpe
         {/* Fixed Footer */}
         <div className="flex justify-end px-4 py-3 border-t border-slate-700 flex-shrink-0">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-slate-100 rounded-lg text-xs transition-colors"
           >
             Got it
