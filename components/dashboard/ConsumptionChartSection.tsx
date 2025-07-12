@@ -5,7 +5,7 @@ import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 
-type TimeRange = '7days' | '14days' | '30days' | '6months' | '1year' | '2years';
+type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
 
 const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled }) => {
@@ -19,9 +19,14 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
   
   if (!consumptionChartData || consumptionChartData.length === 0) return null;
 
+  // Calculate total based on chart view and data
+  const totalValue = consumptionChartData.reduce((sum, item) => {
+    return sum + (chartView === 'energy' ? (item.kWh || 0) : (item.BDT || 0));
+  }, 0);
+
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
     { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
-    { value: '14days', label: getDashboardLabel('last14Days', banglaEnabled) },
+    { value: 'thisMonth', label: getDashboardLabel('thisMonth', banglaEnabled) },
     { value: '30days', label: getDashboardLabel('last30Days', banglaEnabled) },
     { value: '6months', label: getDashboardLabel('last6Months', banglaEnabled) },
     { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) },
@@ -33,8 +38,23 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
     { value: 'energy', label: getDashboardLabel('energyConsumption', banglaEnabled) },
   ];
 
+  // Create summary value for header
+  const summaryValue = (
+    <div className="text-right">
+      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}>
+        {totalValue.toLocaleString('en-US', { 
+          minimumFractionDigits: 0, 
+          maximumFractionDigits: chartView === 'energy' ? 1 : 0 
+        })}
+        <span className="text-slate-400 text-xs sm:text-sm font-medium ml-1">
+          {chartView === 'energy' ? 'kWh' : 'BDT'}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen>
+    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen summaryValue={summaryValue}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
         {/* Chart View Toggle */}
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">

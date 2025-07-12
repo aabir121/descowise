@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import * as api from '../../services/descoService';
 import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, BalanceData } from '../../types';
 
-type TimeRange = '7days' | '30days' | '3months' | '6months' | '1year' | '2years';
+type TimeRange = '7days' | 'thisMonth' | '30days' | '3months' | '6months' | '1year' | '2years';
 
 type UseDashboardDataReturn = {
   processedData: any | null;
@@ -169,6 +169,23 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     } else if (consumptionTimeRange === '30days') {
       const last30Days = sortedDaily.slice(-30);
       consumptionChartData = last30Days.map(d => ({ 
+        name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
+        kWh: (d.consumedUnit || 0), 
+        BDT: d.consumedTaka 
+      }));
+    } else if (consumptionTimeRange === 'thisMonth') {
+      // Get current month's data from 1st day to current date
+      const currentDate = new Date();
+      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const currentMonthStr = currentDate.toISOString().substring(0, 7); // YYYY-MM format
+      
+      // Filter daily consumption for current month only
+      const thisMonthData = sortedDaily.filter(d => {
+        const date = new Date(d.date);
+        return date >= firstDayOfMonth && date <= currentDate;
+      });
+      
+      consumptionChartData = thisMonthData.map(d => ({ 
         name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
         kWh: (d.consumedUnit || 0), 
         BDT: d.consumedTaka 

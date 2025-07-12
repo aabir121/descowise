@@ -53,6 +53,14 @@ const dashboardLabels = {
     en: 'Cost Comparison',
     bn: 'খরচ তুলনা',
   },
+  totalEnergy: {
+    en: 'Total Energy',
+    bn: 'মোট শক্তি',
+  },
+  totalCost: {
+    en: 'Total Cost',
+    bn: 'মোট খরচ',
+  },
   status: {
     en: 'Status',
     bn: 'অবস্থা',
@@ -66,9 +74,9 @@ const dashboardLabels = {
     en: 'Last 7 Days',
     bn: 'গত ৭ দিন',
   },
-  last14Days: {
-    en: 'Last 14 Days',
-    bn: 'গত ১৪ দিন',
+  thisMonth: {
+    en: 'This Month',
+    bn: 'এই মাস',
   },
   last30Days: {
     en: 'Last 30 Days',

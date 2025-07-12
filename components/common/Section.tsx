@@ -5,12 +5,18 @@ interface SectionProps {
     title: string;
     children: ReactNode;
     defaultOpen?: boolean;
+    summaryValue?: ReactNode;
 }
 
-const Section: React.FC<SectionProps> = ({ title, children, defaultOpen }) => (
+const Section: React.FC<SectionProps> = ({ title, children, defaultOpen, summaryValue }) => (
     <details className="bg-slate-800 rounded-xl overflow-hidden" open={defaultOpen}>
-        <summary className="p-4 sm:p-6 text-lg font-bold text-slate-100 cursor-pointer hover:bg-slate-700/50 transition-colors">
-            {title}
+        <summary className="p-4 sm:p-6 text-lg font-bold text-slate-100 cursor-pointer hover:bg-slate-700/50 transition-colors flex items-center justify-between">
+            <span>{title}</span>
+            {summaryValue && (
+                <div className="text-right">
+                    {summaryValue}
+                </div>
+            )}
         </summary>
         <div className="p-4 sm:p-6 border-t border-slate-700">
             {children}
