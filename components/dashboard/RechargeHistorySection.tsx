@@ -91,10 +91,27 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
 const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled }) => {
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const handleDetails = (item) => {
     setSelectedRecharge(item);
     setModalOpen(true);
+  };
+
+  // Calculate pagination
+  const totalPages = rechargeHistory ? Math.ceil(rechargeHistory.length / itemsPerPage) : 0;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = rechargeHistory ? rechargeHistory.slice(startIndex, endIndex) : [];
+
+  // Reset to first page when year changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [rechargeYear]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -124,7 +141,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
           <tbody>
             {isHistoryLoading ? (
               <tr><td colSpan={6} className="text-center py-8"><Spinner/></td></tr>
-            ) : rechargeHistory && rechargeHistory.length > 0 ? rechargeHistory.map((item) => (
+            ) : currentItems && currentItems.length > 0 ? currentItems.map((item) => (
               <tr key={item.orderID} className="border-b border-slate-700 hover:bg-slate-700/50">
                 <td className="px-4 py-3"><button onClick={() => handleDetails(item)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">{banglaEnabled ? 'বিস্তারিত' : 'Details'}</button></td>
                 <td className="px-4 py-3 whitespace-nowrap">{new Date(item.rechargeDate).toLocaleString()}</td>
@@ -143,6 +160,48 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {!isHistoryLoading && rechargeHistory && rechargeHistory.length > 0 && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 px-2 py-2 bg-slate-700/30 rounded-lg w-full gap-2">
+          <div className="text-xs sm:text-sm text-slate-300 mb-2 sm:mb-0">
+            {banglaEnabled ? 
+              `পৃষ্ঠা ${currentPage} এর ${totalPages} (মোট ${rechargeHistory.length} আইটেম)` :
+              `Page ${currentPage} of ${totalPages} (${rechargeHistory.length} total items)`
+            }
+          </div>
+          <div className="flex gap-1 sm:gap-2 overflow-x-auto w-full sm:w-auto pb-1">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-600 hover:bg-slate-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-200 rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
+            >
+              {banglaEnabled ? 'পূর্ববর্তী' : 'Previous'}
+            </button>
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => handlePageChange(i + 1)}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm transition whitespace-nowrap ${
+                  currentPage === i + 1
+                    ? 'bg-cyan-600 text-white'
+                    : 'bg-slate-600 hover:bg-slate-500 text-slate-200'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-600 hover:bg-slate-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-200 rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
+            >
+              {banglaEnabled ? 'পরবর্তী' : 'Next'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <RechargeDetailsModal isOpen={modalOpen} onClose={() => setModalOpen(false)} recharge={selectedRecharge} />
     </Section>
   );
