@@ -41,8 +41,11 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [comparisonMetric, setComparisonMetric] = useState<'bdt' | 'kwh'>('bdt');
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchEssentialData = async () => {
       try {
+        if (!isMounted) return;
         setIsLoading(true);
         setError(null);
         const [location, monthlyConsumption, rechargeHistory, dailyConsumption, balanceResult] = await Promise.all([
@@ -52,7 +55,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 60), // Increased to 60 days to support longer ranges
           api.getAccountBalance(account.accountNo)
         ]);
+        
+        if (!isMounted) return;
         setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null, banglaEnabled: account.banglaEnabled, account });
+        
         if (balanceResult.success) {
           if (account.aiInsightsEnabled) {
             if (balanceResult.data?.balance !== null && balanceResult.data?.balance !== undefined) {
@@ -62,18 +68,23 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
               fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data, dailyConsumption);
             }
           } else {
+            if (!isMounted) return;
             setIsAiAvailable(false);
             setData(prevData => prevData ? { ...prevData, aiSummary: null } : null);
           }
         }
       } catch (err: any) {
+        if (!isMounted) return;
         setError(err.message || 'Failed to load dashboard data. Please try again later.');
       } finally {
+        if (!isMounted) return;
         setIsLoading(false);
       }
     };
+    
     const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[]) => {
       try {
+        if (!isMounted) return;
         setIsAiLoading(true);
         setIsAiAvailable(true);
         const currentMonth = new Date().toISOString().substring(0, 7);
@@ -83,18 +94,27 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           : [];
         const readingTime = balanceData?.readingTime;
         const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
+        
+        if (!isMounted) return;
         setData(prevData => prevData ? { 
           ...prevData, 
           aiSummary,
           balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined
         } : null);
       } catch (err) {
+        if (!isMounted) return;
         setIsAiAvailable(false);
       } finally {
+        if (!isMounted) return;
         setIsAiLoading(false);
       }
     };
+    
     fetchEssentialData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [account.accountNo, account.meterNo]);
 
   useEffect(() => {

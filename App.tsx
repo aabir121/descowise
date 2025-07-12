@@ -24,6 +24,14 @@ const App: React.FC = () => {
         accountName: ''
     });
     const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
+    
+    // Ref to track if we're currently fetching balances to prevent double calls
+    const isFetchingBalances = useRef(false);
+    const lastAccountsLength = useRef(0);
+
+    const showNotification = useCallback((message: string, type: 'info' | 'warning' | 'error' = 'info') => {
+        setNotification({ message, type });
+    }, []);
 
     useEffect(() => {
         // Check if the notice was dismissed within the last 6 hours
@@ -41,8 +49,14 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (accounts.length > 0) {
+        // Only fetch balances if:
+        // 1. We have accounts
+        // 2. We're not already fetching
+        // 3. The number of accounts has actually changed
+        if (accounts.length > 0 && !isFetchingBalances.current && accounts.length !== lastAccountsLength.current) {
             const fetchAllBalances = async () => {
+                isFetchingBalances.current = true;
+                lastAccountsLength.current = accounts.length;
                 setLoadingBalances(new Set(accounts.map(a => a.accountNo)));
                 const accountsWithNullValues: string[] = [];
                 
@@ -72,12 +86,13 @@ const App: React.FC = () => {
                     const accountList = accountsWithNullValues.join(', ');
                     showNotification(`Warning: Balance information temporarily unavailable for account(s): ${accountList}`, 'warning');
                 }
+                
+                isFetchingBalances.current = false;
             };
 
             fetchAllBalances();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [accounts.length]);
+    }, [accounts.length, updateAccount, showNotification]);
     
     useEffect(() => {
         if (notification) {
@@ -87,10 +102,6 @@ const App: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [notification]);
-
-    const showNotification = useCallback((message: string, type: 'info' | 'warning' | 'error' = 'info') => {
-        setNotification({ message, type });
-    }, []);
 
     const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
     const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
