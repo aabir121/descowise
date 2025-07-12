@@ -174,10 +174,40 @@ export const getCustomerDailyConsumption = async (accountNo: string, meterNo: st
     const url = `https://prepaid.desco.org.bd/api/unified/customer/getCustomerDailyConsumption?accountNo=${accountNo}&meterNo=${meterNo}&dateFrom=${formatDate(fromDate)}&dateTo=${formatDate(today)}`;
     const result = await fetchJsonWithHandling(url);
     if (result.code !== 200 || !result.data) throw new Error(result.message || 'Invalid data for daily consumption');
-    return result.data.map((item: DailyConsumption) => ({
-        ...item,
-        consumedTaka: sanitizeCurrency(item.consumedTaka)
-    }));
+    
+    // Sort data by date to ensure proper calculation
+    const sortedData = result.data.sort((a: DailyConsumption, b: DailyConsumption) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    // Calculate daily consumption by subtracting previous day's accumulated value
+    return sortedData.map((item: DailyConsumption, index: number) => {
+        const currentAccumulatedTaka = sanitizeCurrency(item.consumedTaka);
+        const currentAccumulatedUnit = item.consumedUnit || 0;
+        
+        let dailyTaka = currentAccumulatedTaka;
+        let dailyUnit = currentAccumulatedUnit;
+        
+        // If not the first item, calculate daily difference
+        if (index > 0) {
+            const previousItem = sortedData[index - 1];
+            const previousAccumulatedTaka = sanitizeCurrency(previousItem.consumedTaka);
+            const previousAccumulatedUnit = previousItem.consumedUnit || 0;
+            
+            dailyTaka = currentAccumulatedTaka - previousAccumulatedTaka;
+            dailyUnit = currentAccumulatedUnit - previousAccumulatedUnit;
+            
+            // Ensure non-negative values (in case of data inconsistencies)
+            dailyTaka = Math.max(0, dailyTaka);
+            dailyUnit = Math.max(0, dailyUnit);
+        }
+        
+        return {
+            ...item,
+            consumedTaka: dailyTaka,
+            consumedUnit: dailyUnit
+        };
+    });
 };
 
 export const getRechargeHistory = async (accountNo: string, meterNo: string, year: number): Promise<RechargeHistoryItem[]> => {

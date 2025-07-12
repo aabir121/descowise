@@ -135,16 +135,16 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     const monthlyConsumptionLast12 = sortedMonthly.slice(-12);
     const formatMonth = (monthStr: string) => new Date(monthStr + '-02').toLocaleString('default', { month: 'short', year: '2-digit' });
     const consumptionChartData = consumptionTimeframe === 'daily'
-      ? [...data.dailyConsumption].sort((a,b) => a.date.localeCompare(b.date)).map(d => ({ name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), kWh: (d.consumedUnit || 0) / 1000, BDT: d.consumedTaka }))
-      : monthlyConsumptionLast12.map(m => ({ name: formatMonth(m.month), kWh: (m.consumedUnit || 0) / 1000, BDT: m.consumedTaka }));
+      ? [...data.dailyConsumption].sort((a,b) => a.date.localeCompare(b.date)).map(d => ({ name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), kWh: (d.consumedUnit || 0), BDT: d.consumedTaka }))
+      : monthlyConsumptionLast12.map(m => ({ name: formatMonth(m.month), kWh: (m.consumedUnit || 0), BDT: m.consumedTaka }));
     const prev12Months = sortedMonthly.slice(0, 12);
     const comparisonData = monthlyConsumptionLast12.map((currentMonthData, index) => {
       const prevYearMonthStr = `${parseInt(currentMonthData.month.substring(0, 4)) - 1}-${currentMonthData.month.substring(5, 7)}`;
       const prevYearData = prev12Months.find(p => p.month === prevYearMonthStr);
       return {
         month: new Date(currentMonthData.month + '-02').toLocaleString('default', { month: 'long' }),
-        'Current Year': comparisonMetric === 'bdt' ? (currentMonthData?.consumedTaka ?? 0) : ((currentMonthData?.consumedUnit ?? 0) / 1000),
-        'Previous Year': comparisonMetric === 'bdt' ? (prevYearData?.consumedTaka ?? 0) : ((prevYearData?.consumedUnit ?? 0) / 1000),
+        'Current Year': comparisonMetric === 'bdt' ? (currentMonthData?.consumedTaka ?? 0) : ((currentMonthData?.consumedUnit ?? 0)),
+        'Previous Year': comparisonMetric === 'bdt' ? (prevYearData?.consumedTaka ?? 0) : ((prevYearData?.consumedUnit ?? 0)),
       };
     });
     const rechargeVsConsumptionData = monthlyConsumptionLast12.map(mc => {
@@ -170,10 +170,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     }));
     const cumulativeData = sortedMonthly.map((item, index, array) => ({
       month: formatMonth(item.month),
-      cumulativeKWh: array.slice(0, index + 1).reduce((sum, m) => sum + ((m.consumedUnit || 0) / 1000), 0),
+      cumulativeKWh: array.slice(0, index + 1).reduce((sum, m) => sum + ((m.consumedUnit || 0)), 0),
       cumulativeBDT: array.slice(0, index + 1).reduce((sum, m) => sum + m.consumedTaka, 0)
     }));
-    const consumptionValues = data.dailyConsumption.map(d => (d.consumedUnit || 0) / 1000).sort((a, b) => a - b);
+    const consumptionValues = data.dailyConsumption.map(d => (d.consumedUnit || 0)).sort((a, b) => a - b);
     const boxPlotData = consumptionValues.length > 0 ? {
       min: consumptionValues[0],
       q1: consumptionValues[Math.floor(consumptionValues.length * 0.25)],
