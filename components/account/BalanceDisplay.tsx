@@ -10,9 +10,10 @@ interface BalanceDisplayProps {
   isLoading: boolean;
   balance: string | number | null | undefined;
   readingTime?: string;
+  naClassName?: string; // Add this prop
 }
 
-const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, readingTime }) => {
+const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, readingTime, naClassName }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const hasBalance = balance !== null && balance !== undefined;
   const balanceValue = hasBalance ? parseFloat(String(balance).replace(/[^\d.-]/g, '')) : 0;
@@ -28,7 +29,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
       <>
         <div className="text-right">
           <div className="flex items-center justify-end gap-1.5">
-            <span className="font-bold text-2xl text-yellow-400 flex items-baseline">
+            <span className={naClassName ? naClassName + " flex items-baseline" : "font-bold text-2xl text-yellow-400 flex items-baseline"}>
               N/A
             </span>
             <button

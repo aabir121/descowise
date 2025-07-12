@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Account } from '../types';
-import Spinner from './common/Spinner';
-import { BoltIcon, TrashIcon, PencilIcon } from './common/Icons';
+import { TrashIcon, PencilIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
@@ -139,7 +138,8 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
                 <AccountInfoRow label="Meter No:" value={account.meterNo} />
                 <div className="flex justify-between items-start pt-2 min-h-[50px]">
                     <span className="font-medium text-slate-400 text-base">Balance:</span>
-                    <BalanceDisplay isLoading={isBalanceLoading} balance={account.balance} readingTime={account.readingTime} />
+                    {/* Make N/A more mobile friendly by adjusting BalanceDisplay props/styles if balance is unavailable */}
+                    <BalanceDisplay isLoading={isBalanceLoading} balance={account.balance} readingTime={account.readingTime} naClassName="text-yellow-400 font-extrabold text-2xl sm:text-3xl md:text-4xl break-words" />
                 </div>
             </div>
         </div>
