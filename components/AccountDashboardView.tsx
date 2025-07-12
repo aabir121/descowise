@@ -151,6 +151,8 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         handleYearChange={handleYearChange}
                         banglaEnabled={account.banglaEnabled}
                         balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null))}
+                        account={account}
+                        showNotification={showNotification}
                     />
                 )}
             </main>
