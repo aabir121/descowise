@@ -2,7 +2,7 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AccountInfo, BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary } from '../types';
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
 import { fetchJsonWithHandling } from '../utils/api';
-import { generateBanglaAiDashboardPrompt, generateEnglishAiDashboardPrompt } from '../ai/promptGenerators';
+import { generateAiDashboardPrompt } from '../ai/promptGenerators';
 
 // Helper to process recharge history into monthly format
 const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[]): Array<{month: string, rechargeAmount: number, rechargeCount: number}> => {
@@ -103,9 +103,7 @@ export const getAiDashboardSummary = async (
         if (!isNaN(parsed)) temperature = parsed;
     }
     const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
-    const prompt = banglaEnabled
-        ? generateBanglaAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, readingTime)
-        : generateEnglishAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, readingTime);
+    const prompt = generateAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, readingTime, banglaEnabled ? 'bn' : 'en');
     const response: GenerateContentResponse = await ai.models.generateContent({
         model,
         contents: prompt,
