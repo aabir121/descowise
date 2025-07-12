@@ -2,7 +2,7 @@ import React from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import ConfirmationDialog from './common/ConfirmationDialog';
-import { BuildingOfficeIcon, ExclamationTriangleIcon } from './common/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { askGeminiAboutAccount } from '../services/descoService';
 import FloatingCoffeeButton from './FloatingCoffeeButton';
 import { formatHumanDate } from '../utils/dataSanitization';
+import Modal from './common/Modal';
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const {
@@ -40,6 +41,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     const [chatInput, setChatInput] = useState('');
     const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'bot', content: string}>>([]);
     const [chatLoading, setChatLoading] = useState(false);
+    const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
 
     // Placeholder for Gemini Q&A function
     async function handleSendMessage() {
@@ -80,6 +82,20 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     Data as of {formatHumanDate(new Date(data.balance.readingTime))}
                 </div>
             )}
+            {/* Show notification if balance data is null */}
+            {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
+                <div className="flex items-center justify-center bg-yellow-100 text-yellow-900 border border-yellow-400 px-6 py-4 rounded-lg shadow-md w-full text-base font-semibold mb-4 gap-3" style={{ minHeight: '64px' }}>
+                    <ExclamationTriangleIcon className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+                    <span>Balance information temporarily unavailable</span>
+                    <button
+                        onClick={() => setIsBalanceModalOpen(true)}
+                        className="p-1 rounded hover:bg-yellow-200 focus:outline-none ml-2"
+                        aria-label="More information about unavailable balance"
+                    >
+                        <InformationCircleIcon className="w-5 h-5 text-yellow-500 hover:text-yellow-600" />
+                    </button>
+                </div>
+            )}
             <main className="flex-grow p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {isLoading ? (
                     <div className="flex justify-center items-center h-full"><Spinner size="w-12 h-12" /></div>
@@ -99,6 +115,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         isHistoryLoading={isHistoryLoading}
                         handleYearChange={handleYearChange}
                         banglaEnabled={account.banglaEnabled}
+                        balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null))}
                     />
                 )}
             </main>
@@ -164,6 +181,39 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 confirmButtonClass="bg-cyan-600 hover:bg-cyan-700"
                 icon={<BuildingOfficeIcon className="w-6 h-6" />}
             />
+            
+            {/* Balance Information Modal */}
+            <Modal isOpen={isBalanceModalOpen} onClose={() => setIsBalanceModalOpen(false)}>
+                <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <InformationCircleIcon className="w-6 h-6 text-yellow-400" />
+                        <h3 className="text-lg font-semibold text-slate-100">Balance Information Unavailable</h3>
+                    </div>
+                    <div className="text-slate-300 text-sm space-y-3">
+                        <p>
+                            We're unable to display your current balance at this time. This could be due to:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>Temporary service maintenance</li>
+                            <li>Account status changes</li>
+                            <li>Network connectivity issues</li>
+                            <li>Recent meter reading updates</li>
+                        </ul>
+                        <p className="text-slate-400 text-xs mt-4">
+                            Your balance information will be updated automatically once available. You can also check your balance directly through the official DESCO portal.
+                        </p>
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={() => setIsBalanceModalOpen(false)}
+                            className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-slate-100 rounded-lg transition-colors"
+                        >
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            
             <Footer />
         </div>
     );

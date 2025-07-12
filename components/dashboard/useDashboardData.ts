@@ -53,7 +53,12 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null, banglaEnabled: account.banglaEnabled, account });
         if (balanceResult.success) {
           if (account.aiInsightsEnabled) {
-            fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
+            if (balanceResult.data?.balance !== null && balanceResult.data?.balance !== undefined) {
+              fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
+            } else {
+              // Generate AI summary even when balance is unavailable
+              fetchAiSummary(monthlyConsumption, rechargeHistory, null);
+            }
           } else {
             setIsAiAvailable(false);
             setData(prevData => prevData ? { ...prevData, aiSummary: null } : null);
@@ -65,7 +70,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsLoading(false);
       }
     };
-    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], currentBalance: number) => {
+    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], currentBalance: number | null) => {
       try {
         setIsAiLoading(true);
         setIsAiAvailable(true);
@@ -76,7 +81,11 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           : [];
         const readingTime = data?.balance?.readingTime;
         const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, currentBalance, currentMonth, recentDailyConsumption, account.banglaEnabled, readingTime);
-        setData(prevData => prevData ? { ...prevData, aiSummary } : null);
+        setData(prevData => prevData ? { 
+          ...prevData, 
+          aiSummary,
+          balanceUnavailable: currentBalance === null || currentBalance === undefined
+        } : null);
       } catch (err) {
         setIsAiAvailable(false);
       } finally {
@@ -177,7 +186,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       'Monthly Cost (BDT)': item.consumedTaka
     }));
     const averageMonthlyCost = sortedMonthly.slice(-6).reduce((sum, m) => sum + m.consumedTaka, 0) / 6;
-    const gaugeData = data.balance ? {
+    const gaugeData = data.balance && data.balance.balance !== null && data.balance.balance !== undefined ? {
       currentBalance: data.balance.balance,
       averageMonthlyCost,
       daysRemaining: Math.floor(data.balance.balance / (averageMonthlyCost / 30)),

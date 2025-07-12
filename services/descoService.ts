@@ -1,5 +1,5 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { AccountInfo, BalanceData, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary } from '../types';
+import { AccountInfo, BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary } from '../types';
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
 import { fetchJsonWithHandling } from '../utils/api';
 import { generateBanglaAiDashboardPrompt, generateEnglishAiDashboardPrompt } from '../ai/promptGenerators';
@@ -39,15 +39,29 @@ export const verifyAccount = async (accountNo: string) => {
     }
 };
 
-export const getAccountBalance = async (accountNo: string) => {
+export const getAccountBalance = async (accountNo: string): Promise<BalanceResponse> => {
     try {
         const url = `https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${accountNo}`;
         const result = await fetchJsonWithHandling(url);
         if (result.code === 200 && result.data) {
             const sanitizedData = { ...result.data };
-            if ('balance' in sanitizedData) sanitizedData.balance = sanitizeCurrency(sanitizedData.balance);
-            if ('emergencyBalance' in sanitizedData) sanitizedData.emergencyBalance = sanitizeCurrency(sanitizedData.emergencyBalance);
-            return { success: true, data: sanitizedData };
+            const hasNullValues = sanitizedData.balance === null || sanitizedData.balance === undefined || 
+                                sanitizedData.currentMonthConsumption === null || sanitizedData.currentMonthConsumption === undefined;
+            
+            // Only sanitize if values are not null/undefined
+            if ('balance' in sanitizedData && sanitizedData.balance !== null && sanitizedData.balance !== undefined) {
+                sanitizedData.balance = sanitizeCurrency(sanitizedData.balance);
+            }
+            if ('emergencyBalance' in sanitizedData && sanitizedData.emergencyBalance !== null && sanitizedData.emergencyBalance !== undefined) {
+                sanitizedData.emergencyBalance = sanitizeCurrency(sanitizedData.emergencyBalance);
+            }
+            
+            return { 
+                success: true, 
+                data: sanitizedData,
+                hasNullValues: hasNullValues,
+                nullValueMessage: hasNullValues ? 'Balance information temporarily unavailable' : undefined
+            };
         }
         return { success: false, message: result.message || 'Could not fetch balance from API response.' };
     } catch (error: any) {
@@ -58,7 +72,7 @@ export const getAccountBalance = async (accountNo: string) => {
 export const getAiDashboardSummary = async (
     monthlyConsumption: MonthlyConsumption[], 
     rechargeHistory: RechargeHistoryItem[], 
-    currentBalance: number, 
+    currentBalance: number | null | undefined, 
     currentMonth: string,
     recentDailyConsumption: DailyConsumption[],
     banglaEnabled: boolean = false,
@@ -76,7 +90,7 @@ export const getAiDashboardSummary = async (
         ...item,
         consumedTaka: sanitizeCurrency(item.consumedTaka)
     }));
-    const sanitizedCurrentBalance = sanitizeCurrency(currentBalance);
+    const sanitizedCurrentBalance = currentBalance !== null && currentBalance !== undefined ? sanitizeCurrency(currentBalance) : 0;
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
         throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");

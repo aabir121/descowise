@@ -5,7 +5,33 @@ import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
 
-const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled }) => {
+const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled, balanceUnavailable }) => {
+  // Define all section labels in both English and Bangla
+  const labels = {
+    aiInsights: banglaEnabled ? 'আপনার জন্য কিছু তথ্য' : 'AI-Powered Insights',
+    generating: banglaEnabled ? 'আপনার জন্য তথ্য প্রস্তুত হচ্ছে...' : 'Generating your personalized summary...',
+    couldNotGenerate: banglaEnabled ? 'দুঃখিত, বিশ্লেষণ দেখানো যাচ্ছে না।' : 'Could not generate AI summary.',
+    balanceDepletion: banglaEnabled ? '⏳ ব্যালেন্স কখন শেষ হতে পারে' : '⏳ Balance Depletion Forecast',
+    estimatedDays: banglaEnabled ? 'সম্ভাব্য বাকি দিন:' : 'Estimated Days Remaining:',
+    expectedDepletionDate: banglaEnabled ? 'সম্ভাব্য শেষের তারিখ:' : 'Expected Depletion Date:',
+    currentMonthBill: banglaEnabled ? '📅 এই মাসের সম্ভাব্য বিল' : '📅 Estimated Bill for This Month',
+    estimatedTotalBill: banglaEnabled ? 'মোট অনুমানকৃত বিল:' : 'Estimated Total Bill:',
+    next3Months: banglaEnabled ? '🔮 পরের ৩ মাসের পূর্বাভাস' : '🔮 Next 3 Months Forecast',
+    month: banglaEnabled ? 'মাস' : 'Month',
+    estConsumption: banglaEnabled ? 'সম্ভাব্য খরচ (কিলোওয়াট-ঘণ্টা)' : 'Est. Consumption (kWh)',
+    estBill: banglaEnabled ? 'সম্ভাব্য বিল (৳)' : 'Est. Bill (৳)',
+    balanceStatus: banglaEnabled ? 'ব্যালেন্সের অবস্থা' : 'Balance Status',
+    recommendedRecharge: banglaEnabled ? '💰 রিচার্জের পরামর্শ' : '💰 Recommended Recharge',
+    optimalRechargeTiming: banglaEnabled ? '⏰ কখন রিচার্জ করবেন' : '⏰ Optimal Recharge Timing',
+    anomalyDetected: banglaEnabled ? '⚠️ কিছু অস্বাভাবিক লেগেছে' : '⚠️ Anomaly Detected',
+    seasonalPattern: banglaEnabled ? '🌡️ মৌসুমি প্রবণতা' : '🌡️ Seasonal Pattern',
+    rechargePattern: banglaEnabled ? '📊 রিচার্জের অভ্যাস' : '📊 Recharge Pattern Analysis',
+    actionableTip: banglaEnabled ? '💡 সহজ টিপস' : '💡 Actionable Tip',
+    balanceUnavailable: banglaEnabled ? '⚠️ ব্যালেন্স তথ্য অপ্রাপ্য' : '⚠️ Balance Information Unavailable',
+    checkMeter: banglaEnabled ? 'মিটার থেকে ব্যালেন্স দেখুন' : 'Check balance from your meter',
+    contactDesco: banglaEnabled ? 'ডেসকো-তে যোগাযোগ করুন' : 'Contact DESCO',
+  };
+
   // Timeout handling for long waits
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -38,28 +64,6 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
   const randomTip = tips[tipIdx];
 
   if (!isAiAvailable) return null;
-  // Define all section labels in both English and Bangla
-  const labels = {
-    aiInsights: banglaEnabled ? 'আপনার জন্য কিছু তথ্য' : 'AI-Powered Insights',
-    generating: banglaEnabled ? 'আপনার জন্য তথ্য প্রস্তুত হচ্ছে...' : 'Generating your personalized summary...',
-    couldNotGenerate: banglaEnabled ? 'দুঃখিত, বিশ্লেষণ দেখানো যাচ্ছে না।' : 'Could not generate AI summary.',
-    balanceDepletion: banglaEnabled ? '⏳ ব্যালেন্স কখন শেষ হতে পারে' : '⏳ Balance Depletion Forecast',
-    estimatedDays: banglaEnabled ? 'সম্ভাব্য বাকি দিন:' : 'Estimated Days Remaining:',
-    expectedDepletionDate: banglaEnabled ? 'সম্ভাব্য শেষের তারিখ:' : 'Expected Depletion Date:',
-    currentMonthBill: banglaEnabled ? '📅 এই মাসের সম্ভাব্য বিল' : '📅 Estimated Bill for This Month',
-    estimatedTotalBill: banglaEnabled ? 'মোট অনুমানকৃত বিল:' : 'Estimated Total Bill:',
-    next3Months: banglaEnabled ? '🔮 পরের ৩ মাসের পূর্বাভাস' : '🔮 Next 3 Months Forecast',
-    month: banglaEnabled ? 'মাস' : 'Month',
-    estConsumption: banglaEnabled ? 'সম্ভাব্য খরচ (কিলোওয়াট-ঘণ্টা)' : 'Est. Consumption (kWh)',
-    estBill: banglaEnabled ? 'সম্ভাব্য বিল (৳)' : 'Est. Bill (৳)',
-    balanceStatus: banglaEnabled ? 'ব্যালেন্সের অবস্থা' : 'Balance Status',
-    recommendedRecharge: banglaEnabled ? '💰 রিচার্জের পরামর্শ' : '💰 Recommended Recharge',
-    optimalRechargeTiming: banglaEnabled ? '⏰ কখন রিচার্জ করবেন' : '⏰ Optimal Recharge Timing',
-    anomalyDetected: banglaEnabled ? '⚠️ কিছু অস্বাভাবিক লেগেছে' : '⚠️ Anomaly Detected',
-    seasonalPattern: banglaEnabled ? '🌡️ মৌসুমি প্রবণতা' : '🌡️ Seasonal Pattern',
-    rechargePattern: banglaEnabled ? '📊 রিচার্জের অভ্যাস' : '📊 Recharge Pattern Analysis',
-    actionableTip: banglaEnabled ? '💡 সহজ টিপস' : '💡 Actionable Tip',
-  };
   return (
     <Section title={labels.aiInsights} defaultOpen>
       {isAiLoading ? (
@@ -89,6 +93,34 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
         <div className="text-slate-400">{labels.couldNotGenerate}</div>
       ) : (
         <div className="space-y-6">
+          {/* Balance Unavailable Notice */}
+          {balanceUnavailable && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 border-l-4 border-l-yellow-400 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-yellow-400 mb-2">{labels.balanceUnavailable}</h4>
+                  <p className="text-sm text-yellow-300 mb-3">
+                    {banglaEnabled 
+                      ? 'বর্তমানে আপনার ব্যালেন্স তথ্য অপ্রাপ্য। নিচের বিশ্লেষণে ব্যালেন্স-সংক্রান্ত তথ্য অন্তর্ভুক্ত নয়।'
+                      : 'Your balance information is currently unavailable. Balance-related insights are not included in the analysis below.'
+                    }
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-300">💡</span>
+                      <span className="text-yellow-200">{labels.checkMeter}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-300">📞</span>
+                      <span className="text-yellow-200">{labels.contactDesco}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Header */}
           <div className="flex items-start gap-4">
             <WandSparklesIcon className="w-8 h-8 text-cyan-400 flex-shrink-0 mt-1" />
@@ -98,7 +130,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
             </div>
           </div>
           {/* 8. Balance Depletion Forecast */}
-          {aiSummary.balanceDepletionForecast && (
+          {!balanceUnavailable && aiSummary.balanceDepletionForecast && (
             <div className="bg-red-500/10 border border-red-500/20 border-l-4 border-l-red-400 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0" />
@@ -166,33 +198,35 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
             </div>
           )}
           {/* 1. Balance Status and Advice */}
-          <div className={`rounded-lg p-4 border-l-4 ${
-            aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
-            aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-500/10 border-yellow-500/20 border-l-yellow-400' :
-            'bg-green-500/10 border-green-500/20 border-l-green-400'
-          }`}>
-            <div className="flex items-start gap-3">
-              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-400' :
-                aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-400' :
-                'bg-green-400'
-              }`} />
-              <div>
-                <h4 className={`font-semibold mb-1 ${
-                  aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'text-red-400' :
-                  aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'text-yellow-400' :
-                  'text-green-400'
-                }`}>
-                  {labels.balanceStatus}: {aiSummary.balanceStatusAndAdvice?.status ? (banglaEnabled
-                    ? aiSummary.balanceStatusAndAdvice.status === 'low' ? 'কম' : aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'মাঝারি' : 'ভালো'
-                    : aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1)) : (banglaEnabled ? 'অজানা' : 'Unknown')}
-                </h4>
-                <p className="text-sm text-slate-300">{aiSummary.balanceStatusAndAdvice?.details}</p>
+          {!balanceUnavailable && (
+            <div className={`rounded-lg p-4 border-l-4 ${
+              aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
+              aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-500/10 border-yellow-500/20 border-l-yellow-400' :
+              'bg-green-500/10 border-green-500/20 border-l-green-400'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-400' :
+                  aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-400' :
+                  'bg-green-400'
+                }`} />
+                <div>
+                  <h4 className={`font-semibold mb-1 ${
+                    aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'text-red-400' :
+                    aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'text-yellow-400' :
+                    'text-green-400'
+                  }`}>
+                    {labels.balanceStatus}: {aiSummary.balanceStatusAndAdvice?.status ? (banglaEnabled
+                      ? aiSummary.balanceStatusAndAdvice.status === 'low' ? 'কম' : aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'মাঝারি' : 'ভালো'
+                      : aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1)) : (banglaEnabled ? 'অজানা' : 'Unknown')}
+                  </h4>
+                  <p className="text-sm text-slate-300">{aiSummary.balanceStatusAndAdvice?.details}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {/* 2. Suggested Recharge Amount (now rechargeRecommendation) */}
-          {aiSummary.rechargeRecommendation?.recommendedAmountBDT && (
+          {!balanceUnavailable && aiSummary.rechargeRecommendation?.recommendedAmountBDT && (
             <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />

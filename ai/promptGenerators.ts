@@ -20,7 +20,7 @@ export function generateBanglaAiDashboardPrompt(
     monthlyConsumption: MonthlyConsumption[],
     monthlyRechargeData: any,
     recentDailyConsumption: DailyConsumption[],
-    currentBalance: number,
+    currentBalance: number | null | undefined,
     currentMonth: string,
     readingTime?: string
 ): string {
@@ -45,8 +45,11 @@ ${JSON.stringify(monthlyRechargeData)}
 ${JSON.stringify(recentDailyConsumption)}
 
 *বর্তমান তথ্য:*
-- মিটার ব্যালান্স: ${currentBalance} টাকা
+- মিটার ব্যালান্স: ${currentBalance !== null && currentBalance !== undefined ? currentBalance + ' টাকা' : 'অপ্রাপ্য (N/A)'}
 - বর্তমান মাস: ${currentMonth}
+
+${currentBalance === null || currentBalance === undefined ? `
+**গুরুত্বপূর্ণ:** বর্তমানে মিটার ব্যালান্স অপ্রাপ্য। এই ক্ষেত্রে ব্যালান্স-সংক্রান্ত বিশ্লেষণ (balanceStatusAndAdvice, rechargeRecommendation, balanceDepletionForecast) প্রদান করবেন না। তবে অন্যান্য সব বিশ্লেষণ (ব্যবহারের প্রবণতা, মৌসুমি ধারা, রিচার্জের অভ্যাস ইত্যাদি) প্রদান করুন।` : ''}
 
 নিচের কাঠামোতে শুধুমাত্র JSON আকারে উত্তর দিন (কোনো ব্যাখ্যা ছাড়াই):
 {
@@ -61,21 +64,21 @@ ${JSON.stringify(recentDailyConsumption)}
     "details": "কোনো মৌসুমি প্রবণতা থাকলে (যেমন: 'গরমে এসি চালানোর জন্য বেশি ব্যবহার'), সংক্ষেপে বলুন, এবং বাস্তব জীবনের উদাহরণ বা গল্প যোগ করুন, না থাকলে ফাঁকা রাখুন।"
   },
   "rechargePatternInsight": "রিচার্জের ধরন সহজ ভাষায় বলুন—যেমন, 'প্রতি মাসে ২-৩ বার রিচার্জ করেন, সাধারণত ব্যবহার অনুযায়ী'। আরও বিস্তারিত দিন—কখন বেশি রিচার্জ করেন, কোনো বিশেষ উপলক্ষ্যে কি বেশি রিচার্জ করেন ইত্যাদি।",
-  "balanceStatusAndAdvice": {
+  ${currentBalance !== null && currentBalance !== undefined ? `"balanceStatusAndAdvice": {
     "status": "low", "normal", বা "good",
     "details": "বর্তমান ব্যালান্স মাসের বাকি সময়ের জন্য যথেষ্ট কি না, সহজ ভাষায় বলুন। কম হলে কারণ ব্যাখ্যা করুন এবং উৎসাহব্যঞ্জক পরামর্শ দিন।"
-  },
-  "rechargeRecommendation": {
+  },` : ''}
+  ${currentBalance !== null && currentBalance !== undefined ? `"rechargeRecommendation": {
     "recommendedAmountBDT": সংখ্যা বা 0.00,
     "justification": "গত বছরের এই মাসের গড় খরচ দেখে, কত টাকা রিচার্জ করলে ভালো হয়, সহজ ভাষায় বলুন এবং একটি ছোট গল্প বা উদাহরণ দিন।"
-  },
+  },` : ''}
   "rechargeTimingInsight": "কখন রিচার্জ করলে ভালো হয়, সহজ ও গল্পের ছলে বলুন (যেমন: 'গরমে মাসের শুরুতেই রিচার্জ করুন, তাহলে হঠাৎ ব্যালান্স শেষ হবে না')। বাস্তব জীবনের পরিস্থিতি বা অভিজ্ঞতা যোগ করুন।",
   "actionableTip": "ব্যবহার, সময় ও রিচার্জ নিয়ে এক লাইনের সহজ টিপস দিন (যেমন: 'জুলাইয়ের শুরুতেই ১০,০০০ টাকা রিচার্জ করুন, তাহলে মাঝপথে বিদ্যুৎ শেষ হবে না!')। টিপসটি যেন বন্ধুর মতো উৎসাহ দেয়।",
-  "balanceDepletionForecast": {
+  ${currentBalance !== null && currentBalance !== undefined ? `"balanceDepletionForecast": {
     "daysRemaining": সংখ্যা,
     "expectedDepletionDate": "YYYY-MM-DD",
     "details": "সাম্প্রতিক দৈনিক গড় খরচ দেখে, ব্যালান্স কতদিন চলবে, সহজ ভাষায় বলুন এবং একটি ছোট গল্প বা তুলনা দিন।"
-  },
+  },` : ''}
   "currentMonthBillForecast": {
     "estimatedTotal": সংখ্যা,
     "details": "এই মাসের মোট বিল কত হতে পারে, সহজ ভাষায় বলুন এবং পূর্ববর্তী মাসের সাথে তুলনা করুন।"
@@ -95,7 +98,7 @@ export function generateEnglishAiDashboardPrompt(
     monthlyConsumption: MonthlyConsumption[],
     monthlyRechargeData: any,
     recentDailyConsumption: DailyConsumption[],
-    currentBalance: number,
+    currentBalance: number | null | undefined,
     currentMonth: string,
     readingTime?: string
 ): string {
@@ -134,8 +137,11 @@ ${JSON.stringify(monthlyRechargeData)}
 ${JSON.stringify(recentDailyConsumption)}
 
 *Current Customer Info:* 
-- Current Meter Balance: ${currentBalance} BDT
+- Current Meter Balance: ${currentBalance !== null && currentBalance !== undefined ? currentBalance + ' BDT' : 'Unavailable (N/A)'}
 - Current Month (YYYY-MM): ${currentMonth}
+
+${currentBalance === null || currentBalance === undefined ? `
+**IMPORTANT:** Current meter balance is unavailable. In this case, do NOT provide balance-related analysis (balanceStatusAndAdvice, rechargeRecommendation, balanceDepletionForecast). However, provide all other analysis (usage trends, seasonal patterns, recharge habits, etc.).` : ''}
 
 Generate a JSON object using this structure:
 
@@ -156,15 +162,15 @@ Generate a JSON object using this structure:
 
   "rechargePatternInsight": "Describe recharge behavior briefly — e.g., ‘2-3 top-ups monthly, usually matching or slightly exceeding usage’. Add more detail—when do they recharge most, any special occasions, and how this pattern helps them manage their balance.",
 
-  "balanceStatusAndAdvice": {
+  ${currentBalance !== null && currentBalance !== undefined ? `"balanceStatusAndAdvice": {
     "status": "low", "normal", or "good",
     "details": "Assess whether the current balance is sufficient for the rest of the current month, based on historical average consumption for this month (${currentMonth}). If low, explain why (e.g., 'Your current balance of ${currentBalance} BDT is not enough to cover typical July usage of X BDT.'). Give supportive, encouraging advice."
-  },
+  },` : ''}
 
-  "rechargeRecommendation": {
+  ${currentBalance !== null && currentBalance !== undefined ? `"rechargeRecommendation": {
     "recommendedAmountBDT": number or null,
     "justification": "Based on average cost for ${currentMonth} in past years, recommend an amount (e.g., 'To match your typical July usage of X BDT, recharge ৳10,000 to ensure coverage and a small buffer.'). Add a short story or example to make it relatable."
-  },
+  },` : ''}
 
   "rechargeTimingInsight": "Suggest optimal recharge timing based on past patterns and seasonal need (e.g., 'To avoid low balance during summer, recharge at the start of July and August.'). Add a real-life scenario or experience to make it more engaging. Avoid repeating previous info; focus on when to recharge.",
 

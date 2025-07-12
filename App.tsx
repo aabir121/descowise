@@ -49,10 +49,15 @@ const App: React.FC = () => {
                     const result = await getAccountBalance(account.accountNo);
                     if (result.success) {
                         updateAccount(account.accountNo, { 
-                            balance: result.data.balance,
-                            readingTime: result.data.readingTime,
-                            currentMonthConsumption: result.data.currentMonthConsumption
+                            balance: result.data?.balance,
+                            readingTime: result.data?.readingTime,
+                            currentMonthConsumption: result.data?.currentMonthConsumption
                         });
+                        
+                        // Show notification if DESCO API returned null values
+                        if (result.hasNullValues && result.nullValueMessage) {
+                            showNotification('Balance information temporarily unavailable for this account');
+                        }
                     }
                     setLoadingBalances(prev => {
                         const newSet = new Set(prev);

@@ -26,6 +26,7 @@ const DashboardSections: React.FC<any> = ({
   isHistoryLoading,
   handleYearChange,
   banglaEnabled,
+  balanceUnavailable,
 }) => (
   <div className="space-y-6">
     <AIDashboardInsightsSection
@@ -33,8 +34,9 @@ const DashboardSections: React.FC<any> = ({
       isAiLoading={isAiLoading}
       isAiAvailable={isAiAvailable}
       banglaEnabled={banglaEnabled}
+      balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
     />
-    <AccountBalanceSection gaugeData={processedData?.gaugeData} banglaEnabled={banglaEnabled} />
+    <AccountBalanceSection gaugeData={processedData?.gaugeData} banglaEnabled={banglaEnabled} balanceUnavailable={balanceUnavailable} />
     <ConsumptionChartSection
       consumptionChartData={processedData?.consumptionChartData}
       consumptionTimeframe={consumptionTimeframe}

@@ -139,7 +139,7 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
                 <AccountInfoRow label="Meter No:" value={account.meterNo} />
                 <div className="flex justify-between items-start pt-2 min-h-[50px]">
                     <span className="font-medium text-slate-400 text-base">Balance:</span>
-                    <BalanceDisplay isLoading={isBalanceLoading} balance={sanitizeCurrency(account.balance)} readingTime={account.readingTime} />
+                    <BalanceDisplay isLoading={isBalanceLoading} balance={account.balance} readingTime={account.readingTime} />
                 </div>
             </div>
         </div>

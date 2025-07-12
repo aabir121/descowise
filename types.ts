@@ -1,9 +1,17 @@
 export interface BalanceData {
   accountNo: string;
   meterNo: string;
-  balance: number;
-  currentMonthConsumption: number;
+  balance: number | null;
+  currentMonthConsumption: number | null;
   readingTime: string;
+}
+
+export interface BalanceResponse {
+  success: boolean;
+  data?: BalanceData;
+  message?: string;
+  hasNullValues?: boolean;
+  nullValueMessage?: string;
 }
 
 export interface AccountInfo {
@@ -15,9 +23,9 @@ export interface AccountInfo {
   meterNo: string;
   tariffSolution: string;
   sanctionLoad: string;
-  balance?: string | number;
+  balance?: string | number | null;
   readingTime?: string;
-  currentMonthConsumption?: number;
+  currentMonthConsumption?: number | null;
 }
 
 export interface Account extends AccountInfo {
