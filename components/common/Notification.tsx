@@ -19,7 +19,7 @@ const Notification: React.FC<NotificationProps> = ({ message, type = 'info', cla
   };
 
   return (
-    <div className={`fixed top-5 left-1/2 z-[60] ${getNotificationStyles()} px-6 py-3 rounded-full shadow-lg animate-fade-in-down -translate-x-1/2 ${className}`}>
+    <div className={`fixed top-4 left-1/2 z-[60] ${getNotificationStyles()} px-6 py-3 rounded-lg shadow-lg animate-fade-in-down -translate-x-1/2 max-w-xs w-full mx-4 sm:max-w-md sm:px-8 sm:py-4 text-center ${className}`}>
       {message}
     </div>
   );

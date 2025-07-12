@@ -109,12 +109,12 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             )}
             {/* Show notification if balance data is null */}
             {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
-                <div className="flex items-center justify-center bg-yellow-100 text-yellow-900 border border-yellow-400 px-6 py-4 rounded-lg shadow-md w-full text-base font-semibold mb-4 gap-3" style={{ minHeight: '64px' }}>
-                    <ExclamationTriangleIcon className="w-6 h-6 text-yellow-500 flex-shrink-0" />
-                    <div className="flex flex-col">
-                        <span>Balance information temporarily unavailable</span>
+                <div className="flex flex-row items-start w-full bg-yellow-100 text-yellow-900 border border-yellow-400 px-4 pt-4 pb-4 sm:px-8 sm:pt-4 sm:pb-4 rounded-lg shadow-md text-base font-semibold mb-4 gap-2 sm:gap-3">
+                    <ExclamationTriangleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500 flex-shrink-0 mt-1" />
+                    <div className="flex-1 flex flex-col">
+                        <span className="break-words text-sm sm:text-base">Balance information temporarily unavailable</span>
                         {stalenessInfo.isStale && (
-                            <span className="text-sm font-normal mt-1">
+                            <span className="text-xs sm:text-sm font-normal mt-1 break-words">
                                 {account.banglaEnabled 
                                     ? `(DESCO থেকে তথ্য আসতে দেরি হচ্ছে - ${stalenessInfo.message})`
                                     : `(DESCO data may be delayed - ${stalenessInfo.message})`
@@ -124,14 +124,14 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     </div>
                     <button
                         onClick={() => setIsBalanceModalOpen(true)}
-                        className="p-1 rounded hover:bg-yellow-200 focus:outline-none ml-2"
+                        className="p-1 rounded hover:bg-yellow-200 focus:outline-none ml-2 mt-1"
                         aria-label="More information about unavailable balance"
                     >
                         <InformationCircleIcon className="w-5 h-5 text-yellow-500 hover:text-yellow-600" />
                     </button>
                 </div>
             )}
-            <main className="flex-grow p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-grow px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8 lg:pt-8 lg:pb-8 overflow-y-auto">
                 {isLoading ? (
                     <div className="flex justify-center items-center h-full"><Spinner size="w-12 h-12" /></div>
                 ) : error ? (
