@@ -23,15 +23,15 @@ export function generateAiDashboardPrompt(
     currentBalance: number | null | undefined,
     currentMonth: string,
     readingTime?: string,
+    currentMonthConsumption?: number | null,
     language: 'bn' | 'en' = 'en'
 ): string {
     const asOfNotice = getAsOfNotice(readingTime, language);
     return `
 ${asOfNotice}
-
 You are an electricity bill and recharge analyst who explains things like you're talking to a friend over coffee. Use everyday language, avoid technical jargon, and keep it conversational. Whether responding in English or Bengali, maintain the same friendly, casual tone that regular people use in daily conversations.
 
-${asOfNotice ? `Mention this info naturally in your response: "${asOfNotice}".` : ''}
+${asOfNotice ? `IMPORTANT: Start your response by naturally acknowledging the data freshness. If there's a delay, mention it conversationally like "Hey, just a heads up - the info I'm looking at is from ${readingTime ? new Date(readingTime).toISOString().split('T')[0] : 'recent data'}, so it might be a bit behind what you see on your meter right now. But let me walk you through what I can see from the data we have!" or in Bengali "হ্যালো, একটা কথা বলি - আমি যে তথ্য দেখছি সেটা ${readingTime ? new Date(readingTime).toISOString().split('T')[0] : 'সাম্প্রতিক তথ্য'} পর্যন্ত, তাই আপনার মিটারে যা দেখছেন তার থেকে একটু পিছিয়ে থাকতে পারে। কিন্তু আমি যা দেখতে পাচ্ছি সেটা নিয়ে কথা বলি!"` : ''}
 
 Your job is to help people understand their electricity usage and give practical advice. Think of yourself as a helpful neighbor who knows about electricity bills and wants to share useful tips. Use examples from daily life, make comparisons people can relate to, and be encouraging.
 
@@ -60,6 +60,8 @@ ${JSON.stringify(recentDailyConsumption)}
 
 *Current Customer Info:* 
 - Current Meter Balance: ${currentBalance !== null && currentBalance !== undefined ? currentBalance + ' BDT' : 'Unavailable (N/A)'}
+- Current Month Consumption: ${currentMonthConsumption !== null && currentMonthConsumption !== undefined ? currentMonthConsumption + ' BDT' : 'Unavailable (N/A)'}
+- Reading Time: ${readingTime || 'Unavailable (N/A)'}
 - Current Month (YYYY-MM): ${currentMonth}
 
 ${currentBalance === null || currentBalance === undefined ? `
@@ -70,7 +72,7 @@ Generate a JSON object using this structure. Respond in ${language === 'bn' ? 'B
 {
   "title": "A friendly, personalized title (like 'Your July Power Check-in' or 'Smart Recharge Tips for Hot Weather')",
 
-  "overallSummary": "Give a quick overview of their average monthly usage and recharge amounts. Talk about their patterns like you're catching up with a friend. Add a personal touch - maybe compare to recent months or use a relatable example.",
+  "overallSummary": "Give a quick overview of their average monthly usage and recharge amounts. Talk about their patterns like you're catching up with a friend. Add a personal touch - maybe compare to recent months or use a relatable example. ${asOfNotice ? 'Start this section by naturally mentioning the data freshness in a conversational way, then transition into the analysis.' : ''}",
 
   "anomaly": {
     "detected": true or false,

@@ -72,11 +72,10 @@ export const getAccountBalance = async (accountNo: string): Promise<BalanceRespo
 export const getAiDashboardSummary = async (
     monthlyConsumption: MonthlyConsumption[], 
     rechargeHistory: RechargeHistoryItem[], 
-    currentBalance: number | null | undefined, 
+    balanceData: BalanceData | null, 
     currentMonth: string,
     recentDailyConsumption: DailyConsumption[],
-    banglaEnabled: boolean = false,
-    readingTime?: string
+    banglaEnabled: boolean = false
 ): Promise<AiSummary> => {
     const sanitizedMonthlyConsumption = monthlyConsumption.map(item => ({
         ...item,
@@ -90,7 +89,8 @@ export const getAiDashboardSummary = async (
         ...item,
         consumedTaka: sanitizeCurrency(item.consumedTaka)
     }));
-    const sanitizedCurrentBalance = currentBalance !== null && currentBalance !== undefined ? sanitizeCurrency(currentBalance) : 0;
+    const sanitizedCurrentBalance = balanceData?.balance !== null && balanceData?.balance !== undefined ? sanitizeCurrency(balanceData.balance) : 0;
+    const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
         throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
@@ -103,7 +103,7 @@ export const getAiDashboardSummary = async (
         if (!isNaN(parsed)) temperature = parsed;
     }
     const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
-    const prompt = generateAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, readingTime, banglaEnabled ? 'bn' : 'en');
+    const prompt = generateAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, balanceData?.readingTime, currentMonthConsumption, banglaEnabled ? 'bn' : 'en');
     const response: GenerateContentResponse = await ai.models.generateContent({
         model,
         contents: prompt,

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import * as api from '../../services/descoService';
-import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption } from '../../types';
+import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, BalanceData } from '../../types';
 
 type UseDashboardDataReturn = {
   processedData: any | null;
@@ -54,10 +54,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         if (balanceResult.success) {
           if (account.aiInsightsEnabled) {
             if (balanceResult.data?.balance !== null && balanceResult.data?.balance !== undefined) {
-              fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data.balance);
+              fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data, dailyConsumption);
             } else {
               // Generate AI summary even when balance is unavailable
-              fetchAiSummary(monthlyConsumption, rechargeHistory, null);
+              fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data, dailyConsumption);
             }
           } else {
             setIsAiAvailable(false);
@@ -70,21 +70,21 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsLoading(false);
       }
     };
-    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], currentBalance: number | null) => {
+    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[]) => {
       try {
         setIsAiLoading(true);
         setIsAiAvailable(true);
         const currentMonth = new Date().toISOString().substring(0, 7);
         // Get the last 14 days of dailyConsumption
-        const recentDailyConsumption = data?.dailyConsumption
-          ? [...data.dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
+        const recentDailyConsumption = dailyConsumption
+          ? [...dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
           : [];
-        const readingTime = data?.balance?.readingTime;
-        const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, currentBalance, currentMonth, recentDailyConsumption, account.banglaEnabled, readingTime);
+        const readingTime = balanceData?.readingTime;
+        const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
         setData(prevData => prevData ? { 
           ...prevData, 
           aiSummary,
-          balanceUnavailable: currentBalance === null || currentBalance === undefined
+          balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined
         } : null);
       } catch (err) {
         setIsAiAvailable(false);
