@@ -64,6 +64,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'bot', content: string}>>([]);
     const [chatLoading, setChatLoading] = useState(false);
     const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+    const [showBalanceWarning, setShowBalanceWarning] = useState(true);
 
     // Calculate data staleness
     const stalenessInfo = getDataStalenessInfo(data?.balance?.readingTime, account.banglaEnabled ? 'bn' : 'en');
@@ -108,26 +109,24 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 </div>
             )}
             {/* Show notification if balance data is null */}
-            {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
-                <div className="flex flex-row items-start w-full bg-yellow-100 text-yellow-900 border border-yellow-400 px-4 pt-4 pb-4 sm:px-8 sm:pt-4 sm:pb-4 rounded-lg shadow-md text-base font-semibold mb-4 gap-2 sm:gap-3">
-                    <ExclamationTriangleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500 flex-shrink-0 mt-1" />
-                    <div className="flex-1 flex flex-col">
-                        <span className="break-words text-sm sm:text-base">Balance information temporarily unavailable</span>
-                        {stalenessInfo.isStale && (
-                            <span className="text-xs sm:text-sm font-normal mt-1 break-words">
-                                {account.banglaEnabled 
-                                    ? `(DESCO থেকে তথ্য আসতে দেরি হচ্ছে - ${stalenessInfo.message})`
-                                    : `(DESCO data may be delayed - ${stalenessInfo.message})`
-                                }
-                            </span>
-                        )}
+            {showBalanceWarning && data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
+                <div className="flex items-center justify-between max-w-md mx-auto bg-yellow-50 text-yellow-800 border border-yellow-200 px-3 py-2 rounded-md text-sm mb-3">
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium">DESCO balance data unavailable</span>
+                        <button
+                            onClick={() => setIsBalanceModalOpen(true)}
+                            className="p-1 rounded hover:bg-yellow-100 focus:outline-none"
+                            aria-label="More information about unavailable balance"
+                        >
+                            <InformationCircleIcon className="w-4 h-4 text-yellow-600 hover:text-yellow-700" />
+                        </button>
                     </div>
                     <button
-                        onClick={() => setIsBalanceModalOpen(true)}
-                        className="p-1 rounded hover:bg-yellow-200 focus:outline-none ml-2 mt-1"
-                        aria-label="More information about unavailable balance"
+                        onClick={() => setShowBalanceWarning(false)}
+                        className="text-yellow-600 hover:text-yellow-800 text-xs font-medium"
+                        aria-label="Dismiss warning"
                     >
-                        <InformationCircleIcon className="w-5 h-5 text-yellow-500 hover:text-yellow-600" />
+                        Dismiss
                     </button>
                 </div>
             )}
