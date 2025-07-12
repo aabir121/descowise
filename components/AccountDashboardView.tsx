@@ -14,6 +14,27 @@ import { formatHumanDate } from '../utils/dataSanitization';
 import Modal from './common/Modal';
 import BalanceInfoWarningModal from './common/BalanceInfoWarningModal';
 
+// Helper function to calculate data staleness
+function getDataStalenessInfo(readingTime?: string, language: 'bn' | 'en' = 'en'): { isStale: boolean; message: string } {
+    if (!readingTime) return { isStale: false, message: '' };
+    
+    const latestDate = new Date(readingTime).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    const daysBehind = Math.floor((new Date(today).getTime() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysBehind > 0) {
+        const message = language === 'bn' 
+            ? `সর্বশেষ তথ্য ${latestDate} পর্যন্ত, ${daysBehind} দিন আগের`
+            : `Last updated ${latestDate} (${daysBehind} day${daysBehind > 1 ? 's' : ''} ago)`;
+        return { isStale: true, message };
+    } else {
+        const message = language === 'bn'
+            ? `সর্বশেষ আপডেট: ${latestDate}`
+            : `Last updated: ${latestDate}`;
+        return { isStale: false, message };
+    }
+}
+
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const {
         processedData,
@@ -43,6 +64,9 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'bot', content: string}>>([]);
     const [chatLoading, setChatLoading] = useState(false);
     const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+
+    // Calculate data staleness
+    const stalenessInfo = getDataStalenessInfo(data?.balance?.readingTime, account.banglaEnabled ? 'bn' : 'en');
 
     // Placeholder for Gemini Q&A function
     async function handleSendMessage() {
@@ -80,14 +104,24 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             {/* As of date display */}
             {data?.balance?.readingTime && (
                 <div className="text-xs text-slate-400 text-right px-4 sm:px-6 lg:px-8 mt-1 mb-2">
-                    Data as of {formatHumanDate(new Date(data.balance.readingTime))}
+                    {stalenessInfo.message}
                 </div>
             )}
             {/* Show notification if balance data is null */}
             {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
                 <div className="flex items-center justify-center bg-yellow-100 text-yellow-900 border border-yellow-400 px-6 py-4 rounded-lg shadow-md w-full text-base font-semibold mb-4 gap-3" style={{ minHeight: '64px' }}>
                     <ExclamationTriangleIcon className="w-6 h-6 text-yellow-500 flex-shrink-0" />
-                    <span>Balance information temporarily unavailable</span>
+                    <div className="flex flex-col">
+                        <span>Balance information temporarily unavailable</span>
+                        {stalenessInfo.isStale && (
+                            <span className="text-sm font-normal mt-1">
+                                {account.banglaEnabled 
+                                    ? `(DESCO থেকে তথ্য আসতে দেরি হচ্ছে - ${stalenessInfo.message})`
+                                    : `(DESCO data may be delayed - ${stalenessInfo.message})`
+                                }
+                            </span>
+                        )}
+                    </div>
                     <button
                         onClick={() => setIsBalanceModalOpen(true)}
                         className="p-1 rounded hover:bg-yellow-200 focus:outline-none ml-2"
