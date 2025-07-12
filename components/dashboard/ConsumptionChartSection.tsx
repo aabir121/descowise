@@ -54,7 +54,7 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
   );
 
   return (
-    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen summaryValue={summaryValue}>
+    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen sectionId="consumption-chart" summaryValue={summaryValue}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
         {/* Chart View Toggle */}
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">

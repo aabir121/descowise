@@ -8,7 +8,7 @@ import { getDashboardLabel } from './dashboardLabels';
 const ComparisonChartSection = ({ comparisonData, comparisonMetric, setComparisonMetric, banglaEnabled }) => {
   if (!comparisonData || comparisonData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('comparison', banglaEnabled)} defaultOpen>
+    <Section title={getDashboardLabel('comparison', banglaEnabled)} defaultOpen sectionId="comparison-chart">
       <div className="flex justify-end mb-4">
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600">
           <button

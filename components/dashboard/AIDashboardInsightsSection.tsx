@@ -65,7 +65,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
 
   if (!isAiAvailable) return null;
   return (
-    <Section title={labels.aiInsights} defaultOpen>
+    <Section title={labels.aiInsights} defaultOpen={true} sectionId="ai-powered-insights" alwaysExpanded={true}>
       {isAiLoading ? (
         <div className="flex flex-col items-start gap-3 text-slate-400">
           <div className="flex items-center gap-3">

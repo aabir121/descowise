@@ -10,7 +10,11 @@ import BalanceInfoWarningModal from '../common/BalanceInfoWarningModal';
 const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   return (
-    <Section title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)} defaultOpen>
+    <Section 
+      title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)} 
+      defaultOpen
+      sectionId="account-balance-status"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col items-center justify-center p-6 bg-slate-700/50 rounded-xl">
           {balanceUnavailable ? (

@@ -7,7 +7,7 @@ import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Le
 const RechargeVsConsumptionSection = ({ rechargeVsConsumptionData }) => {
   if (!rechargeVsConsumptionData || rechargeVsConsumptionData.length === 0) return null;
   return (
-    <Section title="Recharge vs. Consumption" defaultOpen>
+    <Section title="Recharge vs. Consumption" defaultOpen sectionId="recharge-vs-consumption">
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <BarChart data={rechargeVsConsumptionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

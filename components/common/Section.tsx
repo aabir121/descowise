@@ -1,28 +1,115 @@
 // @ts-nocheck
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect, useCallback } from 'react';
+import { ChevronDownIcon, ChevronRightIcon } from './Icons';
 
 interface SectionProps {
     title: string;
     children: ReactNode;
     defaultOpen?: boolean;
     summaryValue?: ReactNode;
+    sectionId?: string; // Unique identifier for localStorage persistence
+    onToggle?: (isOpen: boolean) => void; // Callback for parent components
+    alwaysExpanded?: boolean; // If true, section is always expanded and not managed by preferences
 }
 
-const Section: React.FC<SectionProps> = ({ title, children, defaultOpen, summaryValue }) => (
-    <details className="bg-slate-800 rounded-xl overflow-hidden" open={defaultOpen}>
-        <summary className="p-4 sm:p-6 text-lg font-bold text-slate-100 cursor-pointer hover:bg-slate-700/50 transition-colors flex items-center justify-between">
-            <span>{title}</span>
-            {summaryValue && (
-                <div className="text-right">
-                    {summaryValue}
+const Section: React.FC<SectionProps> = ({ 
+    title, 
+    children, 
+    defaultOpen = true, 
+    summaryValue, 
+    sectionId,
+    onToggle,
+    alwaysExpanded = false
+}) => {
+    // Generate a unique ID if not provided
+    const uniqueId = sectionId || `section-${title.toLowerCase().replace(/\s+/g, '-')}`;
+    const storageKey = `section-preference-${uniqueId}`;
+    
+    // Initialize state from localStorage or default
+    const [isOpen, setIsOpen] = useState<boolean>(() => {
+        // If always expanded, ignore localStorage and always be open
+        if (alwaysExpanded) return true;
+        
+        try {
+            const stored = localStorage.getItem(storageKey);
+            return stored !== null ? JSON.parse(stored) : defaultOpen;
+        } catch (error) {
+            console.error('Failed to load section preference from localStorage:', error);
+            return defaultOpen;
+        }
+    });
+
+    // Save preference to localStorage whenever it changes
+    const savePreference = useCallback((open: boolean) => {
+        // Don't save preferences for always expanded sections
+        if (alwaysExpanded) return;
+        
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(open));
+        } catch (error) {
+            console.error('Failed to save section preference to localStorage:', error);
+        }
+    }, [storageKey, alwaysExpanded]);
+
+    // Handle toggle with persistence
+    const handleToggle = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        // Don't allow toggling for always expanded sections
+        if (alwaysExpanded) return;
+        
+        const newState = !isOpen;
+        setIsOpen(newState);
+        savePreference(newState);
+        onToggle?.(newState);
+    }, [isOpen, savePreference, onToggle, alwaysExpanded]);
+
+    // Sync with localStorage on mount
+    useEffect(() => {
+        savePreference(isOpen);
+    }, [isOpen, savePreference]);
+
+    return (
+        <div className="bg-slate-800 rounded-xl overflow-hidden">
+            <button
+                onClick={handleToggle}
+                className={`w-full p-4 sm:p-6 text-lg font-bold text-slate-100 transition-colors flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-inset ${
+                    alwaysExpanded ? 'cursor-default' : 'cursor-pointer hover:bg-slate-700/50'
+                }`}
+                aria-expanded={isOpen}
+                aria-controls={`${uniqueId}-content`}
+                disabled={alwaysExpanded}
+            >
+                <div className="flex items-center gap-3">
+                    {!alwaysExpanded && (
+                        <span className="text-slate-400 transition-transform duration-200">
+                            {isOpen ? (
+                                <ChevronDownIcon className="w-5 h-5" />
+                            ) : (
+                                <ChevronRightIcon className="w-5 h-5" />
+                            )}
+                        </span>
+                    )}
+                    <span>{title}</span>
                 </div>
-            )}
-        </summary>
-        <div className="p-4 sm:p-6 border-t border-slate-700">
-            {children}
+                {summaryValue && (
+                    <div className="text-right">
+                        {summaryValue}
+                    </div>
+                )}
+            </button>
+            <div
+                id={`${uniqueId}-content`}
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+            >
+                <div className="p-4 sm:p-6 border-t border-slate-700">
+                    {children}
+                </div>
+            </div>
         </div>
-    </details>
-);
+    );
+};
 
 // Reusable DetailItem for label-value pairs
 export const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
@@ -48,5 +135,54 @@ export const DeleteButton: React.FC<{
         {children}
     </button>
 );
+
+// Hook for managing section preferences globally
+export const useSectionPreferences = () => {
+    const resetAllPreferences = useCallback(() => {
+        try {
+            // Find all section preference keys and remove them
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('section-preference-')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+        } catch (error) {
+            console.error('Failed to reset section preferences:', error);
+        }
+    }, []);
+
+    const getSectionPreference = useCallback((sectionId: string, defaultValue: boolean = true) => {
+        // Don't get preferences for always expanded sections
+        if (sectionId === 'ai-powered-insights') return true;
+        
+        try {
+            const stored = localStorage.getItem(`section-preference-${sectionId}`);
+            return stored !== null ? JSON.parse(stored) : defaultValue;
+        } catch (error) {
+            console.error('Failed to get section preference:', error);
+            return defaultValue;
+        }
+    }, []);
+
+    const setSectionPreference = useCallback((sectionId: string, isOpen: boolean) => {
+        // Don't set preferences for always expanded sections
+        if (sectionId === 'ai-powered-insights') return;
+        
+        try {
+            localStorage.setItem(`section-preference-${sectionId}`, JSON.stringify(isOpen));
+        } catch (error) {
+            console.error('Failed to set section preference:', error);
+        }
+    }, []);
+
+    return {
+        resetAllPreferences,
+        getSectionPreference,
+        setSectionPreference
+    };
+};
 
 export default Section; 

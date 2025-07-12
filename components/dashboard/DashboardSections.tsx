@@ -1,6 +1,7 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Account, AiSummary, RechargeHistoryItem } from '../../types';
+import { useSectionPreferences } from '../common/Section';
 import AIDashboardInsightsSection from './AIDashboardInsightsSection';
 import AccountBalanceSection from './AccountBalanceSection';
 import ConsumptionChartSection from './ConsumptionChartSection';
@@ -13,6 +14,20 @@ import BoxPlotSection from './BoxPlotSection';
 import MonthlyCostTrendSection from './MonthlyCostTrendSection';
 import RechargeHistorySection from './RechargeHistorySection';
 import ConsumerInformationSection from './ConsumerInformationSection';
+
+const SECTION_CONFIGS = [
+  { id: 'account-balance-status', defaultOpen: true },
+  { id: 'consumption-chart', defaultOpen: true },
+  { id: 'comparison-chart', defaultOpen: true },
+  { id: 'recharge-vs-consumption', defaultOpen: true },
+  { id: 'recharge-distribution', defaultOpen: true },
+  { id: 'max-demand', defaultOpen: true },
+  { id: 'cumulative-consumption', defaultOpen: true },
+  { id: 'box-plot', defaultOpen: true },
+  { id: 'monthly-cost-trend', defaultOpen: true },
+  { id: 'recharge-history', defaultOpen: true },
+  { id: 'consumer-information', defaultOpen: true },
+];
 
 const DashboardSections: React.FC<any> = ({
   processedData,
@@ -30,71 +45,132 @@ const DashboardSections: React.FC<any> = ({
   balanceUnavailable,
   account,
   showNotification,
-}) => (
-  <div className="space-y-6">
-    {/* 1. AI Insights - Most valuable, actionable insights */}
-    <AIDashboardInsightsSection
-      aiSummary={data?.aiSummary}
-      isAiLoading={isAiLoading}
-      isAiAvailable={isAiAvailable}
-      banglaEnabled={banglaEnabled}
-      balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
-    />
-    
-    {/* 2. Consumer Information - Essential account context (collapsible) */}
-    <ConsumerInformationSection
-      account={account}
-      locationData={data?.location}
-      banglaEnabled={banglaEnabled}
-      showNotification={showNotification}
-    />
-    
-    {/* 3. Account Balance - Current status */}
-    <AccountBalanceSection gaugeData={processedData?.gaugeData} banglaEnabled={banglaEnabled} balanceUnavailable={balanceUnavailable} />
-    
-    {/* 4. Consumption Chart - Primary usage visualization */}
-    <ConsumptionChartSection
-      consumptionChartData={processedData?.consumptionChartData}
-      consumptionTimeRange={consumptionTimeRange}
-      setConsumptionTimeRange={setConsumptionTimeRange}
-      banglaEnabled={banglaEnabled}
-    />
-    
-    {/* 5. Recharge History - Important transaction history */}
-    <RechargeHistorySection
-      rechargeHistory={data?.rechargeHistory}
-      rechargeYear={rechargeYear}
-      isHistoryLoading={isHistoryLoading}
-      setRechargeYear={handleYearChange}
-      banglaEnabled={banglaEnabled}
-    />
-    
-    {/* 6. Comparison Chart - Performance analysis */}
-    <ComparisonChartSection
-      comparisonData={processedData?.comparisonData}
-      comparisonMetric={comparisonMetric}
-      setComparisonMetric={setComparisonMetric}
-      banglaEnabled={banglaEnabled}
-    />
-    
-    {/* 7. Recharge vs Consumption - Usage patterns */}
-    <RechargeVsConsumptionSection rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData} banglaEnabled={banglaEnabled} />
-    
-    {/* 8. Recharge Distribution - Payment patterns */}
-    <RechargeDistributionSection pieChartData={processedData?.pieChartData} banglaEnabled={banglaEnabled} />
-    
-    {/* 9. Max Demand - Peak usage insights */}
-    <MaxDemandSection maxDemandData={processedData?.maxDemandData} banglaEnabled={banglaEnabled} />
-    
-    {/* 10. Cumulative Consumption - Long-term trends */}
-    <CumulativeConsumptionSection cumulativeData={processedData?.cumulativeData} banglaEnabled={banglaEnabled} />
-    
-    {/* 11. Box Plot - Statistical analysis */}
-    <BoxPlotSection boxPlotData={processedData?.boxPlotData} banglaEnabled={banglaEnabled} />
-    
-    {/* 12. Monthly Cost Trend - Financial trends */}
-    <MonthlyCostTrendSection monthlyCostData={processedData?.monthlyCostData} banglaEnabled={banglaEnabled} />
-  </div>
-);
+}) => {
+  const { getSectionPreference } = useSectionPreferences();
+  const [preferencesVersion, setPreferencesVersion] = useState(0);
+
+  // Listen for changes in localStorage (from modal or other tabs)
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('section-preference-')) {
+        setPreferencesVersion(v => v + 1);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    // Listen for custom event for same-tab updates
+    const handleCustom = () => setPreferencesVersion(v => v + 1);
+    window.addEventListener('section-preferences-updated', handleCustom);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('section-preferences-updated', handleCustom);
+    };
+  }, []);
+
+  // Helper to get defaultOpen for a section
+  const getDefaultOpen = useCallback((sectionId, fallback = true) => {
+    const config = SECTION_CONFIGS.find(c => c.id === sectionId);
+    return getSectionPreference(sectionId, config ? config.defaultOpen : fallback);
+  }, [getSectionPreference]);
+
+  return (
+    <div className="space-y-6" key={preferencesVersion}>
+      {/* 1. AI Insights - Most valuable, actionable insights */}
+      <AIDashboardInsightsSection
+        aiSummary={data?.aiSummary}
+        isAiLoading={isAiLoading}
+        isAiAvailable={isAiAvailable}
+        banglaEnabled={banglaEnabled}
+        balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
+      />
+      {/* 2. Consumer Information - Essential account context (collapsible) */}
+      <ConsumerInformationSection
+        account={account}
+        locationData={data?.location}
+        banglaEnabled={banglaEnabled}
+        showNotification={showNotification}
+        defaultOpen={getDefaultOpen('consumer-information')}
+        sectionId="consumer-information"
+      />
+      {/* 3. Account Balance - Current status */}
+      <AccountBalanceSection
+        gaugeData={processedData?.gaugeData}
+        banglaEnabled={banglaEnabled}
+        balanceUnavailable={balanceUnavailable}
+        defaultOpen={getDefaultOpen('account-balance-status')}
+        sectionId="account-balance-status"
+      />
+      {/* 4. Consumption Chart - Primary usage visualization */}
+      <ConsumptionChartSection
+        consumptionChartData={processedData?.consumptionChartData}
+        consumptionTimeRange={consumptionTimeRange}
+        setConsumptionTimeRange={setConsumptionTimeRange}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('consumption-chart')}
+        sectionId="consumption-chart"
+      />
+      {/* 5. Recharge History - Important transaction history */}
+      <RechargeHistorySection
+        rechargeHistory={data?.rechargeHistory}
+        rechargeYear={rechargeYear}
+        isHistoryLoading={isHistoryLoading}
+        setRechargeYear={handleYearChange}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('recharge-history')}
+        sectionId="recharge-history"
+      />
+      {/* 6. Comparison Chart - Performance analysis */}
+      <ComparisonChartSection
+        comparisonData={processedData?.comparisonData}
+        comparisonMetric={comparisonMetric}
+        setComparisonMetric={setComparisonMetric}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('comparison-chart')}
+        sectionId="comparison-chart"
+      />
+      {/* 7. Recharge vs Consumption - Usage patterns */}
+      <RechargeVsConsumptionSection
+        rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('recharge-vs-consumption')}
+        sectionId="recharge-vs-consumption"
+      />
+      {/* 8. Recharge Distribution - Payment patterns */}
+      <RechargeDistributionSection
+        pieChartData={processedData?.pieChartData}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('recharge-distribution')}
+        sectionId="recharge-distribution"
+      />
+      {/* 9. Max Demand - Peak usage insights */}
+      <MaxDemandSection
+        maxDemandData={processedData?.maxDemandData}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('max-demand')}
+        sectionId="max-demand"
+      />
+      {/* 10. Cumulative Consumption - Long-term trends */}
+      <CumulativeConsumptionSection
+        cumulativeData={processedData?.cumulativeData}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('cumulative-consumption')}
+        sectionId="cumulative-consumption"
+      />
+      {/* 11. Box Plot - Statistical analysis */}
+      <BoxPlotSection
+        boxPlotData={processedData?.boxPlotData}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('box-plot')}
+        sectionId="box-plot"
+      />
+      {/* 12. Monthly Cost Trend - Financial trends */}
+      <MonthlyCostTrendSection
+        monthlyCostData={processedData?.monthlyCostData}
+        banglaEnabled={banglaEnabled}
+        defaultOpen={getDefaultOpen('monthly-cost-trend')}
+        sectionId="monthly-cost-trend"
+      />
+    </div>
+  );
+};
 
 export default DashboardSections; 
