@@ -4,6 +4,7 @@ import { BoltIcon, InformationCircleIcon } from '../common/Icons';
 import { formatCurrency } from '../common/format';
 import { formatHumanDate } from '../../utils/dataSanitization';
 import Modal from '../common/Modal';
+import BalanceInfoWarningModal from '../common/BalanceInfoWarningModal';
 
 interface BalanceDisplayProps {
   isLoading: boolean;
@@ -51,36 +52,10 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
           )}
         </div>
         
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <InformationCircleIcon className="w-6 h-6 text-yellow-400" />
-              <h3 className="text-lg font-semibold text-slate-100">Balance Information Unavailable</h3>
-            </div>
-            <div className="text-slate-300 text-sm space-y-3">
-              <p>
-                We're unable to display your current balance at this time. This could be due to:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Temporary service maintenance</li>
-                <li>Account status changes</li>
-                <li>Network connectivity issues</li>
-                <li>Recent meter reading updates</li>
-              </ul>
-              <p className="text-slate-400 text-xs mt-4">
-                Your balance information will be updated automatically once available. You can also check your balance directly through the official DESCO portal.
-              </p>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-slate-100 rounded-lg transition-colors"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <BalanceInfoWarningModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+        />
       </>
     );
   }
