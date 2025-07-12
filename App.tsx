@@ -17,7 +17,7 @@ const App: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [selectedAccountNo, setSelectedAccountNo] = useState<string | null>(null);
-    const [notification, setNotification] = useState<string | null>(null);
+    const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo: string | null; accountName: string }>({
         isOpen: false,
         accountNo: null,
@@ -44,6 +44,7 @@ const App: React.FC = () => {
         if (accounts.length > 0) {
             const fetchAllBalances = async () => {
                 setLoadingBalances(new Set(accounts.map(a => a.accountNo)));
+                const accountsWithNullValues: string[] = [];
                 
                 await Promise.all(accounts.map(async (account) => {
                     const result = await getAccountBalance(account.accountNo);
@@ -54,9 +55,9 @@ const App: React.FC = () => {
                             currentMonthConsumption: result.data?.currentMonthConsumption
                         });
                         
-                        // Show notification if DESCO API returned null values
-                        if (result.hasNullValues && result.nullValueMessage) {
-                            showNotification('Balance information temporarily unavailable for this account');
+                        // Collect accounts with null values
+                        if (result.hasNullValues) {
+                            accountsWithNullValues.push(account.accountNo);
                         }
                     }
                     setLoadingBalances(prev => {
@@ -65,6 +66,12 @@ const App: React.FC = () => {
                         return newSet;
                     });
                 }));
+
+                // Show consolidated warning if any accounts have null values
+                if (accountsWithNullValues.length > 0) {
+                    const accountList = accountsWithNullValues.join(', ');
+                    showNotification(`Warning: Balance information temporarily unavailable for account(s): ${accountList}`, 'warning');
+                }
             };
 
             fetchAllBalances();
@@ -81,8 +88,8 @@ const App: React.FC = () => {
         }
     }, [notification]);
 
-    const showNotification = useCallback((message: string) => {
-        setNotification(message);
+    const showNotification = useCallback((message: string, type: 'info' | 'warning' | 'error' = 'info') => {
+        setNotification({ message, type });
     }, []);
 
     const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
@@ -158,7 +165,7 @@ const App: React.FC = () => {
                         </div>
                     )}
                     {notification && (
-                        <Notification message={notification} />
+                        <Notification message={notification.message} type={notification.type} />
                     )}
                     <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                         <header className="text-center mb-8 sm:mb-12">

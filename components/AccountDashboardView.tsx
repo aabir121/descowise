@@ -35,7 +35,7 @@ function getDataStalenessInfo(readingTime?: string, language: 'bn' | 'en' = 'en'
     }
 }
 
-const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string) => void; }> = ({ account, onClose, onDelete, showNotification }) => {
+const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const {
         processedData,
         isLoading,
