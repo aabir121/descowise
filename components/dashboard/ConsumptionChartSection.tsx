@@ -1,41 +1,105 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useState } from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 
-const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeframe, setConsumptionTimeframe, banglaEnabled }) => {
+type TimeRange = '7days' | '14days' | '30days' | '6months' | '1year' | '2years';
+type ChartView = 'energy' | 'cost';
+
+const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled }) => {
+  const [chartView, setChartView] = useState<ChartView>('cost');
+  // Default to 7days if not set
+  React.useEffect(() => {
+    if (!consumptionTimeRange) {
+      setConsumptionTimeRange('7days');
+    }
+  }, [consumptionTimeRange, setConsumptionTimeRange]);
+  
   if (!consumptionChartData || consumptionChartData.length === 0) return null;
+
+  const timeRangeOptions: { value: TimeRange; label: string }[] = [
+    { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
+    { value: '14days', label: getDashboardLabel('last14Days', banglaEnabled) },
+    { value: '30days', label: getDashboardLabel('last30Days', banglaEnabled) },
+    { value: '6months', label: getDashboardLabel('last6Months', banglaEnabled) },
+    { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) },
+    { value: '2years', label: getDashboardLabel('last2Years', banglaEnabled) },
+  ];
+
+  const chartViewOptions: { value: ChartView; label: string }[] = [
+    { value: 'cost', label: getDashboardLabel('costComparison', banglaEnabled) },
+    { value: 'energy', label: getDashboardLabel('energyConsumption', banglaEnabled) },
+  ];
+
   return (
     <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen>
-      <div className="flex justify-end mb-4">
-        <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600">
-          <button
-            className={`px-4 py-2 font-semibold rounded-l-lg ${consumptionTimeframe === 'daily' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-            onClick={() => setConsumptionTimeframe('daily')}
-          >
-            {banglaEnabled ? 'দৈনিক' : 'Daily'}
-          </button>
-          <button
-            className={`px-4 py-2 font-semibold rounded-r-lg ${consumptionTimeframe === 'monthly' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-            onClick={() => setConsumptionTimeframe('monthly')}
-          >
-            {banglaEnabled ? 'মাসিক' : 'Monthly'}
-          </button>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+        {/* Chart View Toggle */}
+        <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">
+          {chartViewOptions.map((option, index) => (
+            <button
+              key={option.value}
+              className={`px-4 py-2 text-sm sm:text-base font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:z-10
+                ${chartView === option.value 
+                  ? 'bg-cyan-600 text-white' 
+                  : 'text-slate-300 hover:bg-slate-600'}
+                ${index === 0 ? 'rounded-l-lg' : ''}
+                ${index === chartViewOptions.length - 1 ? 'rounded-r-lg' : ''}
+                ${index > 0 && index < chartViewOptions.length - 1 ? 'border-l border-slate-600' : ''}
+              `}
+              onClick={() => setChartView(option.value)}
+              style={{ minWidth: 90 }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Time Range Toggle - wrap on mobile, more margin */}
+        <div className="my-3 sm:my-0">
+          <div className="flex flex-wrap gap-2 rounded-lg bg-slate-700/50 border border-slate-600 p-1">
+            {timeRangeOptions.map((option, index) => (
+              <button
+                key={option.value}
+                className={`px-3 py-2 text-sm sm:text-base font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:z-10
+                  ${consumptionTimeRange === option.value 
+                    ? 'bg-cyan-600 text-white' 
+                    : 'text-slate-300 hover:bg-slate-600'}
+                  ${index === 0 ? 'rounded-l-lg' : ''}
+                  ${index === timeRangeOptions.length - 1 ? 'rounded-r-lg' : ''}
+                `}
+                onClick={() => setConsumptionTimeRange(option.value)}
+                style={{ minWidth: 90 }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="h-80 w-full">
-        <ResponsiveContainer>
+      
+      <div className="w-full h-60 sm:h-80 px-1 sm:px-0">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={consumptionChartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="name" tick={{ fill: '#9ca3af' }} stroke="#4b5563" fontSize={12} />
-            <YAxis yAxisId="left" tick={{ fill: '#fb923c' }} stroke="#f97316" label={{ value: 'kWh', angle: -90, position: 'insideLeft', fill: '#fb923c', dx: -10 }} />
-            <YAxis yAxisId="right" orientation="right" tick={{ fill: '#22d3ee' }} stroke="#06b6d4" label={{ value: 'BDT', angle: -90, position: 'insideRight', fill: '#22d3ee', dx: 10 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px' }} />
-            <Line yAxisId="left" type="monotone" dataKey="kWh" stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 2, r: 4 }} name="kWh" />
-            <Line yAxisId="right" type="monotone" dataKey="BDT" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 2, r: 4 }} name="BDT" />
+            <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} stroke="#4b5563" fontSize={12} />
+            {chartView === 'energy' ? (
+              <>
+                <YAxis tick={{ fill: '#fb923c', fontSize: 12 }} stroke="#f97316" label={{ value: 'kWh', angle: -90, position: 'insideLeft', fill: '#fb923c', dx: -10, fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px', fontSize: 12 }} />
+                <Line type="monotone" dataKey="kWh" stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 2, r: 4 }} name="kWh" />
+              </>
+            ) : (
+              <>
+                <YAxis tick={{ fill: '#22d3ee', fontSize: 12 }} stroke="#06b6d4" label={{ value: 'BDT', angle: -90, position: 'insideLeft', fill: '#22d3ee', dx: -10, fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px', fontSize: 12 }} />
+                <Line type="monotone" dataKey="BDT" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 2, r: 4 }} name="BDT" />
+              </>
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>

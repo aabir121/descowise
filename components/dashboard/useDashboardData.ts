@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import * as api from '../../services/descoService';
 import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, BalanceData } from '../../types';
 
+type TimeRange = '7days' | '30days' | '3months' | '6months' | '1year' | '2years';
+
 type UseDashboardDataReturn = {
   processedData: any | null;
   isLoading: boolean;
@@ -12,8 +14,8 @@ type UseDashboardDataReturn = {
   rechargeYear: number;
   setRechargeYear: (year: number) => void;
   isHistoryLoading: boolean;
-  consumptionTimeframe: 'daily' | 'monthly';
-  setConsumptionTimeframe: (tf: 'daily' | 'monthly') => void;
+  consumptionTimeRange: TimeRange;
+  setConsumptionTimeRange: (range: TimeRange) => void;
   comparisonMetric: 'bdt' | 'kwh';
   setComparisonMetric: (metric: 'bdt' | 'kwh') => void;
   notification: string | null;
@@ -35,7 +37,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [notification, setNotification] = useState<string | null>(null);
   const [portalConfirmation, setPortalConfirmation] = useState<{ isOpen: boolean }>({ isOpen: false });
   const [rechargeYear, setRechargeYear] = useState<number>(new Date().getFullYear());
-  const [consumptionTimeframe, setConsumptionTimeframe] = useState<'daily' | 'monthly'>('daily');
+  const [consumptionTimeRange, setConsumptionTimeRange] = useState<TimeRange>('7days');
   const [comparisonMetric, setComparisonMetric] = useState<'bdt' | 'kwh'>('bdt');
 
   useEffect(() => {
@@ -47,7 +49,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getCustomerLocation(account.accountNo),
           api.getCustomerMonthlyConsumption(account.accountNo, account.meterNo, 24),
           api.getRechargeHistory(account.accountNo, account.meterNo, new Date().getFullYear()),
-          api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 30),
+          api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 60), // Increased to 60 days to support longer ranges
           api.getAccountBalance(account.accountNo)
         ]);
         setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null, banglaEnabled: account.banglaEnabled, account });
@@ -132,11 +134,41 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const processedData = useMemo<any | null>(() => {
     if (!data) return null;
     const sortedMonthly = [...data.monthlyConsumption].sort((a, b) => a.month.localeCompare(b.month));
-    const monthlyConsumptionLast12 = sortedMonthly.slice(-12);
+    const sortedDaily = [...data.dailyConsumption].sort((a, b) => a.date.localeCompare(b.date));
     const formatMonth = (monthStr: string) => new Date(monthStr + '-02').toLocaleString('default', { month: 'short', year: '2-digit' });
-    const consumptionChartData = consumptionTimeframe === 'daily'
-      ? [...data.dailyConsumption].sort((a,b) => a.date.localeCompare(b.date)).map(d => ({ name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), kWh: (d.consumedUnit || 0), BDT: d.consumedTaka }))
-      : monthlyConsumptionLast12.map(m => ({ name: formatMonth(m.month), kWh: (m.consumedUnit || 0), BDT: m.consumedTaka }));
+    
+    // Calculate consumption chart data based on time range
+    let consumptionChartData;
+    if (consumptionTimeRange === '7days') {
+      const last7Days = sortedDaily.slice(-7);
+      consumptionChartData = last7Days.map(d => ({ 
+        name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
+        kWh: (d.consumedUnit || 0), 
+        BDT: d.consumedTaka 
+      }));
+    } else if (consumptionTimeRange === '30days') {
+      const last30Days = sortedDaily.slice(-30);
+      consumptionChartData = last30Days.map(d => ({ 
+        name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
+        kWh: (d.consumedUnit || 0), 
+        BDT: d.consumedTaka 
+      }));
+    } else {
+      // For monthly ranges, determine how many months to show
+      let monthsToShow = 12; // default
+      if (consumptionTimeRange === '3months') monthsToShow = 3;
+      else if (consumptionTimeRange === '6months') monthsToShow = 6;
+      else if (consumptionTimeRange === '1year') monthsToShow = 12;
+      else if (consumptionTimeRange === '2years') monthsToShow = 24;
+      
+      const monthlyConsumptionForRange = sortedMonthly.slice(-monthsToShow);
+      consumptionChartData = monthlyConsumptionForRange.map(m => ({ 
+        name: formatMonth(m.month), 
+        kWh: (m.consumedUnit || 0), 
+        BDT: m.consumedTaka 
+      }));
+    }
+    const monthlyConsumptionLast12 = sortedMonthly.slice(-12);
     const prev12Months = sortedMonthly.slice(0, 12);
     const comparisonData = monthlyConsumptionLast12.map((currentMonthData, index) => {
       const prevYearMonthStr = `${parseInt(currentMonthData.month.substring(0, 4)) - 1}-${currentMonthData.month.substring(5, 7)}`;
@@ -203,7 +235,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       monthlyCostData,
       gaugeData
     };
-  }, [data, consumptionTimeframe, comparisonMetric]);
+  }, [data, consumptionTimeRange, comparisonMetric]);
 
   return {
     processedData,
@@ -214,8 +246,8 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     rechargeYear,
     setRechargeYear,
     isHistoryLoading,
-    consumptionTimeframe,
-    setConsumptionTimeframe,
+    consumptionTimeRange,
+    setConsumptionTimeRange,
     comparisonMetric,
     setComparisonMetric,
     notification,

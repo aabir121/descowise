@@ -45,8 +45,8 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         rechargeYear,
         setRechargeYear,
         isHistoryLoading,
-        consumptionTimeframe,
-        setConsumptionTimeframe,
+        consumptionTimeRange,
+        setConsumptionTimeRange,
         comparisonMetric,
         setComparisonMetric,
         notification,
@@ -142,8 +142,8 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         data={data}
                         isAiLoading={isAiLoading}
                         isAiAvailable={isAiAvailable}
-                        consumptionTimeframe={consumptionTimeframe}
-                        setConsumptionTimeframe={setConsumptionTimeframe}
+                        consumptionTimeRange={consumptionTimeRange}
+                        setConsumptionTimeRange={setConsumptionTimeRange}
                         comparisonMetric={comparisonMetric}
                         setComparisonMetric={setComparisonMetric}
                         rechargeYear={rechargeYear}

@@ -18,8 +18,8 @@ const DashboardSections: React.FC<any> = ({
   data,
   isAiLoading,
   isAiAvailable,
-  consumptionTimeframe,
-  setConsumptionTimeframe,
+  consumptionTimeRange,
+  setConsumptionTimeRange,
   comparisonMetric,
   setComparisonMetric,
   rechargeYear,
@@ -39,8 +39,8 @@ const DashboardSections: React.FC<any> = ({
     <AccountBalanceSection gaugeData={processedData?.gaugeData} banglaEnabled={banglaEnabled} balanceUnavailable={balanceUnavailable} />
     <ConsumptionChartSection
       consumptionChartData={processedData?.consumptionChartData}
-      consumptionTimeframe={consumptionTimeframe}
-      setConsumptionTimeframe={setConsumptionTimeframe}
+      consumptionTimeRange={consumptionTimeRange}
+      setConsumptionTimeRange={setConsumptionTimeRange}
       banglaEnabled={banglaEnabled}
     />
     <ComparisonChartSection

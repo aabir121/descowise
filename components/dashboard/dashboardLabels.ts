@@ -45,9 +45,46 @@ const dashboardLabels = {
     en: 'Consumption Chart',
     bn: 'ব্যবহার চার্ট',
   },
+  energyConsumption: {
+    en: 'Energy Consumption',
+    bn: 'শক্তি ব্যবহার',
+  },
+  costComparison: {
+    en: 'Cost Comparison',
+    bn: 'খরচ তুলনা',
+  },
   status: {
     en: 'Status',
     bn: 'অবস্থা',
+  },
+  // Time range options
+  timeRange: {
+    en: 'Time Range',
+    bn: 'সময়কাল',
+  },
+  last7Days: {
+    en: 'Last 7 Days',
+    bn: 'গত ৭ দিন',
+  },
+  last14Days: {
+    en: 'Last 14 Days',
+    bn: 'গত ১৪ দিন',
+  },
+  last30Days: {
+    en: 'Last 30 Days',
+    bn: 'গত ৩০ দিন',
+  },
+  last6Months: {
+    en: 'Last 6 Months',
+    bn: 'গত ৬ মাস',
+  },
+  last1Year: {
+    en: 'Last 1 Year',
+    bn: 'গত ১ বছর',
+  },
+  last2Years: {
+    en: 'Last 2 Years',
+    bn: 'গত ২ বছর',
   },
   // Add more labels as needed
 };
