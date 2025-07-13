@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import ConfirmationDialog from './common/ConfirmationDialog';
@@ -7,12 +7,11 @@ import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
 import Footer from './common/Footer';
-import { useState } from 'react';
 import { askGeminiAboutAccount } from '../services/descoService';
 import FloatingCoffeeButton from './FloatingCoffeeButton';
-
 import { useBalanceWarning } from '../hooks/useBalanceWarning';
 import { useTranslation } from 'react-i18next';
+import Notification from './common/Notification';
 
 // Helper function to calculate data staleness
 function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: string): { isStale: boolean; message: string } {
@@ -66,10 +65,28 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'bot', content: string}>>([]);
     const [chatLoading, setChatLoading] = useState(false);
     const { open: openBalanceWarning } = useBalanceWarning();
-    // Removed showBalanceWarning state
+    // Add notification state for dashboard view
+    const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
 
     // Calculate data staleness
     const stalenessInfo = getDataStalenessInfo(data?.balance?.readingTime, t);
+
+    // Override showNotification to also set local notification state
+    const handleShowNotification = useCallback((message: string, type: 'info' | 'warning' | 'error' = 'info') => {
+        setNotification({ message, type });
+        // Also call the parent showNotification for consistency
+        showNotification(message, type);
+    }, [showNotification]);
+
+    // Auto-hide notification after 3 seconds
+    useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => {
+                setNotification(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
 
     // Placeholder for Gemini Q&A function
     async function handleSendMessage() {
@@ -97,7 +114,10 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         <div className="fixed inset-0 z-40 bg-slate-900 text-slate-100 flex flex-col animate-fade-in">
             {/* Top-of-dashboard Coffee Button, hidden when chat is open */}
             {!chatOpen && <div className="mb-4"><FloatingCoffeeButton /></div>}
-            {/* {notification && <DashboardNotification message={notification} />} */}
+            {/* Show notification in dashboard view */}
+            {notification && (
+                <Notification message={notification.message} type={notification.type} />
+            )}
             <DashboardHeader
                 account={account}
                 onClose={onClose}
@@ -146,7 +166,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         banglaEnabled={account.banglaEnabled}
                         balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null))}
                         account={account}
-                        showNotification={showNotification}
+                        showNotification={handleShowNotification}
                     />
                 )}
             </main>
