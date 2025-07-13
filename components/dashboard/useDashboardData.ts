@@ -22,7 +22,10 @@ type UseDashboardDataReturn = {
   setNotification: (msg: string | null) => void;
   portalConfirmation: { isOpen: boolean };
   setPortalConfirmation: (state: { isOpen: boolean }) => void;
+  deleteConfirmation: { isOpen: boolean; accountNo?: string };
+  setDeleteConfirmation: (state: { isOpen: boolean; accountNo?: string }) => void;
   handleOpenPortal: () => void;
+  handleDeleteAccount: (accountNo: string) => void;
   handleYearChange: (year: number) => void;
   data: any | null;
 };
@@ -36,6 +39,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [portalConfirmation, setPortalConfirmation] = useState<{ isOpen: boolean }>({ isOpen: false });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo?: string }>({ isOpen: false });
   const [rechargeYear, setRechargeYear] = useState<number>(new Date().getFullYear());
   const [consumptionTimeRange, setConsumptionTimeRange] = useState<TimeRange>('7days');
   const [comparisonMetric, setComparisonMetric] = useState<'bdt' | 'kwh'>('bdt');
@@ -149,6 +153,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     } catch (err) {
       setNotification('Could not copy account number to clipboard.');
     }
+  };
+
+  const handleDeleteAccount = (accountNo: string) => {
+    setDeleteConfirmation({ isOpen: true, accountNo });
   };
 
   const processedData = useMemo<any | null>(() => {
@@ -342,7 +350,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     setNotification,
     portalConfirmation,
     setPortalConfirmation,
+    deleteConfirmation,
+    setDeleteConfirmation,
     handleOpenPortal,
+    handleDeleteAccount,
     handleYearChange,
     data,
   };

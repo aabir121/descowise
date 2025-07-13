@@ -2,7 +2,7 @@ import React from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import ConfirmationDialog from './common/ConfirmationDialog';
-import { BuildingOfficeIcon, InformationCircleIcon } from './common/Icons';
+import { BuildingOfficeIcon, InformationCircleIcon, TrashIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
@@ -49,7 +49,10 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         setComparisonMetric,
         portalConfirmation,
         setPortalConfirmation,
+        deleteConfirmation,
+        setDeleteConfirmation,
         handleOpenPortal,
+        handleDeleteAccount,
         handleYearChange,
         data,
     } = useDashboardData(account);
@@ -95,7 +98,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             <DashboardHeader
                 account={account}
                 onClose={onClose}
-                onDelete={onDelete}
+                onDelete={handleDeleteAccount}
                 setPortalConfirmation={setPortalConfirmation}
             />
             {/* As of date display */}
@@ -207,8 +210,29 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 icon={<BuildingOfficeIcon className="w-6 h-6" />}
             />
             
+            {deleteConfirmation.isOpen && (
+                <ConfirmationDialog
+                    isOpen={true}
+                    onClose={() => setDeleteConfirmation({ isOpen: false })}
+                    onConfirm={() => {
+                        if (deleteConfirmation.accountNo) {
+                            onDelete(deleteConfirmation.accountNo);
+                        }
+                        setDeleteConfirmation({ isOpen: false });
+                    }}
+                    title="Delete Account"
+                    message={
+                        deleteConfirmation.accountNo
+                            ? `Are you sure you want to delete account "${deleteConfirmation.accountNo}"? This action cannot be undone and all account data will be permanently removed.`
+                            : "No account selected for deletion."
+                    }
+                    confirmText="Delete Account"
+                    cancelText="Cancel"
+                    confirmButtonClass="bg-red-600 hover:bg-red-700"
+                    icon={<TrashIcon className="w-6 h-6" />}
+                />
+            )}
 
-            
             <Footer />
         </div>
     );
