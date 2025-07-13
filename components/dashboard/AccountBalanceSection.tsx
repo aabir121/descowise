@@ -1,14 +1,14 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React from 'react';
 import Section from '../common/Section';
 import { getDashboardLabel } from './dashboardLabels';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
 import { InformationCircleIcon } from '../common/Icons';
 import Modal from '../common/Modal';
-import BalanceInfoWarningModal from '../common/BalanceInfoWarningModal';
+import { useBalanceWarning } from '../../hooks/useBalanceWarning';
 
 const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { open: openBalanceWarning } = useBalanceWarning();
   return (
     <Section 
       title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)} 
@@ -23,7 +23,7 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable })
                 <div className="text-3xl font-bold text-yellow-400 flex items-center justify-center gap-2">
                   N/A
                   <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => openBalanceWarning()}
                     className="p-1 rounded hover:bg-slate-700 focus:outline-none"
                     aria-label="More information about unavailable balance"
                   >
@@ -32,10 +32,7 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable })
                 </div>
                 <div className="text-sm text-yellow-400 mt-2">Balance information temporarily unavailable</div>
               </div>
-              <BalanceInfoWarningModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-              />
+
             </>
           ) : (
             <>

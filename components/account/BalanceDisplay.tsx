@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Spinner from '../common/Spinner';
 import { BoltIcon, InformationCircleIcon } from '../common/Icons';
 import { formatCurrency } from '../common/format';
 import { formatHumanDate } from '../../utils/dataSanitization';
-import Modal from '../common/Modal';
-import BalanceInfoWarningModal from '../common/BalanceInfoWarningModal';
+
+import { useBalanceWarning } from '../../hooks/useBalanceWarning';
 
 interface BalanceDisplayProps {
   isLoading: boolean;
@@ -14,7 +14,7 @@ interface BalanceDisplayProps {
 }
 
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, readingTime, naClassName }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { open: openBalanceWarning } = useBalanceWarning();
   const hasBalance = balance !== null && balance !== undefined;
   const balanceValue = hasBalance ? parseFloat(String(balance).replace(/[^\d.-]/g, '')) : 0;
   const balanceDisplay = formatCurrency(balance);
@@ -35,7 +35,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setIsModalOpen(true);
+                openBalanceWarning();
               }}
               className="p-1 rounded hover:bg-slate-700 focus:outline-none"
               aria-label="More information about unavailable balance"
@@ -53,10 +53,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
           )}
         </div>
         
-        <BalanceInfoWarningModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-        />
+
       </>
     );
   }

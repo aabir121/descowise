@@ -2,7 +2,7 @@ import React from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import ConfirmationDialog from './common/ConfirmationDialog';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
+import { BuildingOfficeIcon, InformationCircleIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
@@ -10,9 +10,8 @@ import Footer from './common/Footer';
 import { useState } from 'react';
 import { askGeminiAboutAccount } from '../services/descoService';
 import FloatingCoffeeButton from './FloatingCoffeeButton';
-import { formatHumanDate } from '../utils/dataSanitization';
-import Modal from './common/Modal';
-import BalanceInfoWarningModal from './common/BalanceInfoWarningModal';
+
+import { useBalanceWarning } from '../hooks/useBalanceWarning';
 
 // Helper function to calculate data staleness
 function getDataStalenessInfo(readingTime?: string, language: 'bn' | 'en' = 'en'): { isStale: boolean; message: string } {
@@ -43,14 +42,11 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         isAiLoading,
         isAiAvailable,
         rechargeYear,
-        setRechargeYear,
         isHistoryLoading,
         consumptionTimeRange,
         setConsumptionTimeRange,
         comparisonMetric,
         setComparisonMetric,
-        notification,
-        setNotification,
         portalConfirmation,
         setPortalConfirmation,
         handleOpenPortal,
@@ -63,8 +59,8 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     const [chatInput, setChatInput] = useState('');
     const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'bot', content: string}>>([]);
     const [chatLoading, setChatLoading] = useState(false);
-    const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
-    const [showBalanceWarning, setShowBalanceWarning] = useState(true);
+    const { open: openBalanceWarning } = useBalanceWarning();
+    // Removed showBalanceWarning state
 
     // Calculate data staleness
     const stalenessInfo = getDataStalenessInfo(data?.balance?.readingTime, account.banglaEnabled ? 'bn' : 'en');
@@ -109,25 +105,18 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 </div>
             )}
             {/* Show notification if balance data is null */}
-            {showBalanceWarning && data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
+            {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
                 <div className="flex items-center justify-between max-w-md mx-auto bg-yellow-50 text-yellow-800 border border-yellow-200 px-3 py-2 rounded-md text-sm mb-3">
                     <div className="flex items-center gap-2">
                         <span className="font-medium">DESCO balance data unavailable</span>
                         <button
-                            onClick={() => setIsBalanceModalOpen(true)}
+                            onClick={() => openBalanceWarning()}
                             className="p-1 rounded hover:bg-yellow-100 focus:outline-none"
                             aria-label="More information about unavailable balance"
                         >
                             <InformationCircleIcon className="w-4 h-4 text-yellow-600 hover:text-yellow-700" />
                         </button>
                     </div>
-                    <button
-                        onClick={() => setShowBalanceWarning(false)}
-                        className="text-yellow-600 hover:text-yellow-800 text-xs font-medium"
-                        aria-label="Dismiss warning"
-                    >
-                        Dismiss
-                    </button>
                 </div>
             )}
             <main className="flex-grow px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8 lg:pt-8 lg:pb-8 overflow-y-auto">
@@ -218,11 +207,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 icon={<BuildingOfficeIcon className="w-6 h-6" />}
             />
             
-            {/* Balance Information Modal */}
-            <BalanceInfoWarningModal 
-                isOpen={isBalanceModalOpen} 
-                onClose={() => setIsBalanceModalOpen(false)} 
-            />
+
             
             <Footer />
         </div>

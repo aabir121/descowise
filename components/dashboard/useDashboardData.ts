@@ -157,24 +157,29 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     const sortedDaily = [...data.dailyConsumption].sort((a, b) => a.date.localeCompare(b.date));
     const formatMonth = (monthStr: string) => new Date(monthStr + '-02').toLocaleString('default', { month: 'short', year: '2-digit' });
     
+    // Helper function to set a date to local midnight
+    const toLocalMidnight = (date: Date) => {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    };
+
     // Helper function to fill missing dates with zeros and mark missing
     const fillMissingDates = (data: any[], startDate: Date, endDate: Date) => {
       const dateMap = new Map();
       data.forEach(item => {
-        dateMap.set(item.date, item);
+        // Clamp all data dates to local midnight for comparison
+        const d = new Date(item.date);
+        const localMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        dateMap.set(localMidnight.toISOString().split('T')[0], { ...item, date: localMidnight.toISOString().split('T')[0] });
       });
-      
       const result = [];
-      const currentDate = new Date(startDate);
-      
-      while (currentDate <= endDate) {
+      let currentDate = toLocalMidnight(new Date(startDate));
+      const end = toLocalMidnight(new Date(endDate));
+      while (currentDate <= end) {
         const dateStr = currentDate.toISOString().split('T')[0];
         const existingData = dateMap.get(dateStr);
-        
         if (existingData) {
           result.push({ ...existingData, missing: false });
         } else {
-          // Fill missing date with zeros and mark as missing
           result.push({
             date: dateStr,
             consumedUnit: 0,
@@ -182,10 +187,8 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
             missing: true
           });
         }
-        
         currentDate.setDate(currentDate.getDate() + 1);
       }
-      
       return result;
     };
     
@@ -222,13 +225,16 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         missing: d.missing
       }));
     } else if (consumptionTimeRange === 'thisMonth') {
-      // Get current month's data from 1st day to today
-      const currentDate = new Date();
-      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      // End at today, not last day of month
-      // Fill missing dates with zeros
-      const thisMonthData = fillMissingDates(sortedDaily, firstDayOfMonth, currentDate);
-      
+      // Get current month's data from 1st day to today, both at local midnight
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // Only use daily data from this month
+      const thisMonthDaily = sortedDaily.filter(d => {
+        const dDate = new Date(d.date);
+        return dDate >= firstDayOfMonth && dDate <= todayMidnight;
+      });
+      const thisMonthData = fillMissingDates(thisMonthDaily, firstDayOfMonth, todayMidnight);
       consumptionChartData = thisMonthData.map(d => ({ 
         name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
         kWh: (d.consumedUnit || 0), 

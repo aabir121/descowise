@@ -19,12 +19,6 @@ interface AccountCardProps {
 const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled, onUpdateBanglaEnabled }) => {
     const displayName = account.displayName || `Account ${account.accountNo}`;
 
-    const hasBalance = account.balance !== null && account.balance !== undefined;
-    const balanceValue = sanitizeCurrency(account.balance);
-    const balanceDisplay = formatCurrency(balanceValue);
-
-    const balanceColor = !isNaN(balanceValue) && balanceValue >= 0 ? 'text-cyan-400' : 'text-red-400';
-
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [editDisplayName, setEditDisplayName] = useState(displayName);
 

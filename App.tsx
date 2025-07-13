@@ -7,14 +7,15 @@ import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import AccountDashboardView from './components/AccountDashboardView';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, PlusIcon, ExclamationTriangleIcon, TrashIcon } from './components/common/Icons';
+import { BoltIcon, ExclamationTriangleIcon, TrashIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingCoffeeButton from './components/FloatingCoffeeButton';
 import Footer from './components/common/Footer';
+import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal';
+import { useBalanceWarning } from './hooks/useBalanceWarning';
 
 const App: React.FC = () => {
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [selectedAccountNo, setSelectedAccountNo] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
@@ -24,6 +25,10 @@ const App: React.FC = () => {
         accountName: ''
     });
     const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
+    const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
+    
+    // Global balance warning modal state
+    const { isOpen: isBalanceWarningOpen, close: closeBalanceWarning } = useBalanceWarning();
     
     // Ref to track if we're currently fetching balances to prevent double calls
     const isFetchingBalances = useRef(false);
@@ -103,12 +108,8 @@ const App: React.FC = () => {
         }
     }, [notification]);
 
-    const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
-    const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
-
     const handleAccountAdded = useCallback((newAccount: Account) => {
         addAccount(newAccount);
-        setIsModalOpen(false);
     }, [addAccount]);
     
     const handleDeleteAccount = useCallback((accountNo: string) => {
@@ -199,13 +200,12 @@ const App: React.FC = () => {
                                   </div>
                                   <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">No Accounts Yet</h2>
                                   <p className="text-slate-400 mb-8 max-w-md mx-auto">You haven’t added any electricity accounts.<br />Click below to get started.</p>
-                                  <button
-                                    onClick={handleOpenModal}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-semibold text-lg shadow-lg transition focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
-                                  >
-                                    <span className="text-2xl">+</span>
-                                    Add Account
-                                  </button>
+                                  <AddAccountModal
+                                    isOpen={addAccountModalOpen}
+                                    onClose={() => setAddAccountModalOpen(false)}
+                                    onAccountAdded={handleAccountAdded}
+                                    existingAccounts={accounts}
+                                  />
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
@@ -221,7 +221,7 @@ const App: React.FC = () => {
                                             onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
                                         />
                                     ))}
-                                    <AddAccountCard onClick={handleOpenModal} />
+                                    <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
                                 </div>
                             )}
                         </main>
@@ -230,8 +230,8 @@ const App: React.FC = () => {
                 </div>
             )}
             <AddAccountModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
+                isOpen={addAccountModalOpen}
+                onClose={() => setAddAccountModalOpen(false)}
                 onAccountAdded={handleAccountAdded}
                 existingAccounts={accounts}
             />
@@ -245,6 +245,13 @@ const App: React.FC = () => {
                 cancelText="Cancel"
                 icon={<ExclamationTriangleIcon />}
             />
+            
+            {/* Global Balance Info Warning Modal - Always rendered at top level */}
+            <BalanceInfoWarningModal
+                isOpen={isBalanceWarningOpen}
+                onClose={closeBalanceWarning}
+            />
+            
             {/* Global Floating Buy Me a Coffee Button */}
             <FloatingCoffeeButton />
         </>
