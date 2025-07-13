@@ -21,6 +21,8 @@ While DESCO already provides excellent official Android and iOS apps, as well as
 - 🤖 AI-powered consumption insights and anomaly detection
 - 💳 Recharge history and payment tracking
 - 📱 Responsive design for all devices
+- 🌐 Bilingual support (English & Bangla)
+- 🎯 First-time user onboarding with language selection
 - 🔗 Integration with official DESCO APIs
 
 ## Run Locally
@@ -70,6 +72,28 @@ While DESCO already provides excellent official Android and iOS apps, as well as
 |----------|-------------|----------|
 | `GEMINI_API_KEY` | Google Gemini API key for AI insights | Yes (for AI features) |
 
+## First-Time User Onboarding
+
+DescoWise includes a comprehensive onboarding experience for new users that:
+
+### 🎯 **What it covers:**
+- **Welcome & Introduction**: Explains what DescoWise is and why it exists alongside the official DESCO portal
+- **Language Selection**: Allows users to choose between English and Bangla as their preferred language
+- **Key Features Overview**: Highlights the main benefits including AI insights, privacy, and cost optimization
+- **How It Works**: Simple 3-step guide explaining the account setup and usage process
+- **Privacy & Disclaimer**: Clear explanation that this is an unofficial client with privacy-first approach
+
+### 🔧 **Technical Implementation:**
+- Shows only on first visit (stored in localStorage)
+- Language selection immediately updates the app interface
+- Responsive design that works on all device sizes
+- Can be reset for testing by uncommenting a line in the code
+
+### 🌐 **Bilingual Support:**
+- Complete translations for all onboarding content
+- Seamless language switching during onboarding
+- Language preference persists across sessions
+
 ## Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite
@@ -77,6 +101,7 @@ While DESCO already provides excellent official Android and iOS apps, as well as
 - **Styling**: Tailwind CSS
 - **AI**: Google Gemini API
 - **Deployment**: Vercel
+- **Internationalization**: react-i18next
 
 ## License
 

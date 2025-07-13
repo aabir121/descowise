@@ -7,17 +7,18 @@ import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import AccountDashboardView from './components/AccountDashboardView';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, ExclamationTriangleIcon, TrashIcon } from './components/common/Icons';
+import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingCoffeeButton from './components/FloatingCoffeeButton';
 import Footer from './components/common/Footer';
 import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal';
 import { useBalanceWarning } from './hooks/useBalanceWarning';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
+import OnboardingModal from './components/OnboardingModal';
 import { useTranslation } from 'react-i18next';
 
 const App: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [selectedAccountNo, setSelectedAccountNo] = useState<string | null>(null);
@@ -29,6 +30,7 @@ const App: React.FC = () => {
     });
     const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
     const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     
     // Global balance warning modal state
     const { isOpen: isBalanceWarningOpen, close: closeBalanceWarning } = useBalanceWarning();
@@ -43,6 +45,17 @@ const App: React.FC = () => {
 
     const showNotification = useCallback((message: string, type: 'info' | 'warning' | 'error' = 'info') => {
         setNotification({ message, type });
+    }, []);
+
+    useEffect(() => {
+        // Check if onboarding has been completed
+        const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+        if (!onboardingCompleted) {
+            setShowOnboarding(true);
+        }
+        
+        // For testing: uncomment the line below to reset onboarding
+        // localStorage.removeItem('onboardingCompleted');
     }, []);
 
     useEffect(() => {
@@ -197,6 +210,14 @@ const App: React.FC = () => {
         setShowDataNotice(false);
     }, []);
 
+    const handleLanguageSelect = useCallback((language: 'en' | 'bn') => {
+        i18n.changeLanguage(language);
+    }, [i18n]);
+
+    const handleCloseOnboarding = useCallback(() => {
+        setShowOnboarding(false);
+    }, []);
+
     const selectedAccount = accounts.find(acc => acc.accountNo === selectedAccountNo);
 
     return (
@@ -253,12 +274,13 @@ const App: React.FC = () => {
                                   </div>
                                   <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">{t('noAccountsTitle')}</h2>
                                   <p className="text-slate-400 mb-8 max-w-md mx-auto">{t('noAccountsSubtitle')}<br />{t('noAccountsAction')}</p>
-                                  <AddAccountModal
-                                    isOpen={addAccountModalOpen}
-                                    onClose={() => setAddAccountModalOpen(false)}
-                                    onAccountAdded={handleAccountAdded}
-                                    existingAccounts={accounts}
-                                  />
+                                  <button
+                                    onClick={() => setAddAccountModalOpen(true)}
+                                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+                                  >
+                                    <PlusIcon className="w-5 h-5" />
+                                    {t('addNewAccount')}
+                                  </button>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
@@ -307,6 +329,13 @@ const App: React.FC = () => {
             
             {/* Global Floating Buy Me a Coffee Button */}
             <FloatingCoffeeButton />
+            
+            {/* Onboarding Modal */}
+            <OnboardingModal
+                isOpen={showOnboarding}
+                onClose={handleCloseOnboarding}
+                onLanguageSelect={handleLanguageSelect}
+            />
         </>
     );
 };
