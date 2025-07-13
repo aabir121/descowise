@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import { useSectionPreferences } from './Section';
 import { CogIcon } from './Icons';
@@ -12,20 +13,21 @@ interface SectionSettingsModalProps {
 // Define all possible sections with their IDs and labels
 // Note: ai-powered-insights is excluded as it's always expanded
 const SECTION_CONFIGS = [
-  { id: 'account-balance-status', label: 'Account Balance & Status', defaultOpen: true },
-  { id: 'consumption-chart', label: 'Consumption Chart', defaultOpen: true },
-  { id: 'comparison-chart', label: 'Comparison Chart', defaultOpen: true },
-  { id: 'recharge-vs-consumption', label: 'Recharge vs Consumption', defaultOpen: true },
-  { id: 'recharge-distribution', label: 'Recharge Distribution', defaultOpen: true },
-  { id: 'max-demand', label: 'Max Demand', defaultOpen: true },
-  { id: 'cumulative-consumption', label: 'Cumulative Consumption', defaultOpen: true },
-  { id: 'box-plot', label: 'Box Plot Analysis', defaultOpen: true },
-  { id: 'monthly-cost-trend', label: 'Monthly Cost Trend', defaultOpen: true },
-  { id: 'recharge-history', label: 'Recharge History', defaultOpen: true },
-  { id: 'consumer-information', label: 'Consumer Information', defaultOpen: true },
+  { id: 'account-balance-status', label: 'accountBalanceStatus', defaultOpen: true },
+  { id: 'consumption-chart', label: 'consumptionChart', defaultOpen: true },
+  { id: 'comparison-chart', label: 'comparisonChart', defaultOpen: true },
+  { id: 'recharge-vs-consumption', label: 'rechargeVsConsumption', defaultOpen: true },
+  { id: 'recharge-distribution', label: 'rechargeDistribution', defaultOpen: true },
+  { id: 'max-demand', label: 'maxDemand', defaultOpen: true },
+  { id: 'cumulative-consumption', label: 'cumulativeConsumption', defaultOpen: true },
+  { id: 'box-plot', label: 'boxPlotAnalysis', defaultOpen: true },
+  { id: 'monthly-cost-trend', label: 'monthlyCostTrend', defaultOpen: true },
+  { id: 'recharge-history', label: 'rechargeHistory', defaultOpen: true },
+  { id: 'consumer-information', label: 'consumerInformation', defaultOpen: true },
 ];
 
 const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const { getSectionPreference, setSectionPreference, resetAllPreferences } = useSectionPreferences();
   const [preferences, setPreferences] = useState<Record<string, boolean>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -84,17 +86,17 @@ const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onC
 
   // Filtered sections
   const filteredSections = SECTION_CONFIGS.filter(config =>
-    config.label.toLowerCase().includes(search.toLowerCase())
+    t(config.label).toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={null}>
       {/* Custom header with close button */}
       <div className="flex items-center justify-between mb-2 px-2 pt-2">
-        <h2 className="text-base font-semibold text-slate-100">Section Preferences</h2>
+        <h2 className="text-base font-semibold text-slate-100">{t('sectionPreferences')}</h2>
         <button
           onClick={handleClose}
-          aria-label="Close"
+          aria-label={t('close')}
           className="p-2 rounded-full hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -104,19 +106,19 @@ const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onC
       </div>
       <div className="space-y-4 p-2 sm:p-4 max-w-sm w-full mx-auto">
         <div className="text-xs text-slate-300 leading-relaxed mb-1">
-          Choose which sections you want to see expanded by default. Your preferences will be remembered across sessions.
+          {t('sectionPreferencesDescription')}
         </div>
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search sections..."
+          placeholder={t('searchSections')}
           className="w-full px-2 py-1.5 rounded bg-slate-800 text-slate-100 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm mb-2"
-          aria-label="Search sections"
+          aria-label={t('searchSections')}
         />
         <div className="divide-y divide-slate-700 max-h-64 overflow-y-auto custom-scrollbar">
           {filteredSections.length === 0 && (
-            <div className="text-slate-400 text-center py-6 text-sm">No sections found.</div>
+            <div className="text-slate-400 text-center py-6 text-sm">{t('noSectionsFound')}</div>
           )}
           {filteredSections.map(config => (
             <label
@@ -124,14 +126,14 @@ const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onC
               className="flex items-center justify-between py-2 px-1 cursor-pointer select-none"
             >
               <span className="text-slate-100 text-sm font-medium pr-2 truncate">
-                {config.label}
+                {t(config.label)}
               </span>
               <input
                 type="checkbox"
                 checked={preferences[config.id]}
                 onChange={e => handlePreferenceChange(config.id, e.target.checked)}
                 className="toggle-checkbox h-5 w-10 rounded-full border-2 border-slate-500 bg-slate-700 focus:ring-cyan-500 transition-colors"
-                aria-label={preferences[config.id] ? 'Section visible' : 'Section hidden'}
+                aria-label={preferences[config.id] ? t('sectionVisible') : t('sectionHidden')}
               />
             </label>
           ))}
@@ -143,20 +145,20 @@ const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onC
             className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm
               ${hasChanges ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'bg-slate-600 text-slate-400 cursor-not-allowed'}`}
           >
-            {hasChanges ? 'Save Changes' : 'No Changes to Save'}
+            {hasChanges ? t('saveChanges') : t('noChangesToSave')}
           </button>
           <div className="flex gap-2">
             <button
               onClick={handleReset}
               className="flex-1 px-2 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium border border-slate-600"
             >
-              Reset to Defaults
+              {t('resetToDefaults')}
             </button>
             <button
               onClick={handleResetAll}
               className="flex-1 px-2 py-2 bg-red-700/20 hover:bg-red-700/40 text-red-300 rounded-lg text-xs font-medium border border-red-700/30"
             >
-              Clear All
+              {t('clearAll')}
             </button>
           </div>
         </div>

@@ -1,11 +1,13 @@
 // @ts-nocheck
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
 import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
 import SectionSettingsModal from '../common/SectionSettingsModal';
 
 const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; setPortalConfirmation: (state: { isOpen: boolean }) => void }> = ({ account, onClose, onDelete, setPortalConfirmation }) => {
+  const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = React.useRef(null);
@@ -20,13 +22,13 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
           <div className="relative group max-w-xs sm:max-w-md">
             <h3
               className="text-xl sm:text-2xl font-bold truncate max-w-[140px] sm:max-w-[300px]"
-              title={account.displayName || `Account ${account.accountNo}`}
+              title={account.displayName || `${t('account')} ${account.accountNo}`}
             >
-              {account.displayName || `Account ${account.accountNo}`}
+              {account.displayName || `${t('account')} ${account.accountNo}`}
             </h3>
             {/* Tooltip for full title on hover (desktop) */}
             <span className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-slate-900 text-white text-xs rounded px-2 py-1 shadow-lg whitespace-nowrap">
-              {account.displayName || `Account ${account.accountNo}`}
+              {account.displayName || `${t('account')} ${account.accountNo}`}
             </span>
           </div>
         </div>
@@ -35,26 +37,26 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
           <IconButton
             onClick={() => setIsSettingsOpen(true)}
             className="bg-slate-600/80 hover:bg-slate-500 text-white py-2 px-4"
-            title="Section preferences and settings"
+            title={t('sectionPreferencesAndSettings')}
           >
             <CogIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Settings</span>
+            <span className="hidden sm:inline">{t('settings')}</span>
           </IconButton>
           <IconButton
             onClick={() => setPortalConfirmation({ isOpen: true })}
             className="bg-cyan-500/80 hover:bg-cyan-600 text-white py-2 px-4"
-            title="Copy account ID and open official DESCO customer portal"
+            title={t('openDescoPortal')}
           >
             <BuildingOfficeIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Official Portal</span>
+            <span className="hidden sm:inline">{t('officialPortal')}</span>
           </IconButton>
           <IconButton
             onClick={() => onDelete(account.accountNo)}
             className="bg-red-500/80 hover:bg-red-600 text-white py-2 px-4"
-            title="Delete this account"
+            title={t('deleteAccount')}
           >
             <TrashIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Delete</span>
+            <span className="hidden sm:inline">{t('delete')}</span>
           </IconButton>
         </div>
         {/* Mobile overflow menu */}
@@ -63,7 +65,7 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
             ref={menuButtonRef}
             onClick={() => setIsMenuOpen((v) => !v)}
             className="p-2 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
-            aria-label="Show more actions"
+            aria-label={t('showMoreActions')}
           >
             <DotsVerticalIcon className="w-6 h-6" />
           </button>
@@ -77,21 +79,21 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
                 className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
               >
                 <CogIcon className="w-5 h-5" />
-                <span>Settings</span>
+                <span>{t('settings')}</span>
               </button>
               <button
                 onClick={() => { setPortalConfirmation({ isOpen: true }); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
               >
                 <BuildingOfficeIcon className="w-5 h-5" />
-                <span>Official Portal</span>
+                <span>{t('officialPortal')}</span>
               </button>
               <button
                 onClick={() => { onDelete(account.accountNo); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 text-left text-red-400 w-full"
               >
                 <TrashIcon className="w-5 h-5" />
-                <span>Delete</span>
+                <span>{t('delete')}</span>
               </button>
             </div>
           )}
