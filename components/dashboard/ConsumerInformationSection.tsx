@@ -2,7 +2,7 @@ import React from 'react';
 import { Account, CustomerLocation } from '../../types';
 import Section from '../common/Section';
 import { DetailItem } from '../common/Section';
-import { UserIcon, MapPinIcon, PhoneIcon, BuildingOfficeIcon, BoltIcon, HomeIcon } from '../common/Icons';
+import { UserIcon, MapPinIcon, BuildingOfficeIcon, HomeIcon, CopyIcon } from '../common/Icons';
 
 interface ConsumerInformationSectionProps {
     account: Account;
@@ -115,8 +115,8 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                                     await navigator.clipboard.writeText(account.accountNo);
                                     showNotification(
                                         banglaEnabled 
-                                            ? `অ্যাকাউন্ট নম্বর "${account.accountNo}" কপি করা হয়েছে!`
-                                            : `Account number "${account.accountNo}" copied to clipboard!`,
+                                            ? `অ্যাকাউন্ট নম্বর কপি করা হয়েছে: ${account.accountNo}`
+                                            : `Account number copied: ${account.accountNo}`,
                                         'info'
                                     );
                                 } catch (err) {
@@ -130,7 +130,7 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                             }}
                             className="px-2 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-xs rounded transition-colors flex items-center gap-1.5"
                         >
-                            <PhoneIcon className="w-3 h-3" />
+                            <CopyIcon className="w-3 h-3" />
                             {banglaEnabled ? 'অ্যাকাউন্ট নম্বর' : 'Account No'}
                         </button>
                         <button
@@ -139,8 +139,8 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                                     await navigator.clipboard.writeText(account.contactNo);
                                     showNotification(
                                         banglaEnabled 
-                                            ? `যোগাযোগের নম্বর "${account.contactNo}" কপি করা হয়েছে!`
-                                            : `Contact number "${account.contactNo}" copied to clipboard!`,
+                                            ? `যোগাযোগের নম্বর কপি করা হয়েছে: ${account.contactNo}`
+                                            : `Contact number copied: ${account.contactNo}`,
                                         'info'
                                     );
                                 } catch (err) {
@@ -154,7 +154,7 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                             }}
                             className="px-2 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs rounded transition-colors flex items-center gap-1.5"
                         >
-                            <PhoneIcon className="w-3 h-3" />
+                            <CopyIcon className="w-3 h-3" />
                             {banglaEnabled ? 'যোগাযোগের নম্বর' : 'Contact No'}
                         </button>
                         <button
@@ -163,8 +163,8 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                                     await navigator.clipboard.writeText(account.meterNo);
                                     showNotification(
                                         banglaEnabled 
-                                            ? `মিটার নম্বর "${account.meterNo}" কপি করা হয়েছে!`
-                                            : `Meter number "${account.meterNo}" copied to clipboard!`,
+                                            ? `মিটার নম্বর কপি করা হয়েছে: ${account.meterNo}`
+                                            : `Meter number copied: ${account.meterNo}`,
                                         'info'
                                     );
                                 } catch (err) {
@@ -178,7 +178,7 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                             }}
                             className="px-2 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs rounded transition-colors flex items-center gap-1.5"
                         >
-                            <BoltIcon className="w-3 h-3" />
+                            <CopyIcon className="w-3 h-3" />
                             {banglaEnabled ? 'মিটার নম্বর' : 'Meter No'}
                         </button>
                     </div>
