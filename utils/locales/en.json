@@ -200,6 +200,140 @@
   "disableBanglaLanguage": "Disable Bangla Language",
   "enableBanglaLanguage": "Enable Bangla Language",
   "toggleBanglaLanguage": "Toggle Bangla Language",
+  "sectionInfo": "Section Information",
+  "sectionInfoDescription": "Learn how this section can help you understand and manage your electricity usage.",
+  "aiInsightsInfo": {
+    "title": "AI-Powered Insights",
+    "description": "Get personalized analysis and recommendations about your electricity usage patterns, balance forecasts, and cost optimization tips.",
+    "benefits": [
+      "Predicts when your balance will run out",
+      "Estimates your monthly electricity bill",
+      "Identifies unusual usage patterns",
+      "Provides actionable tips to save money",
+      "Forecasts costs for the next 3 months"
+    ]
+  },
+  "consumerInfoInfo": {
+    "title": "Consumer Information",
+    "description": "View your account details, contact information, and service location data in one place.",
+    "benefits": [
+      "Quick access to account and meter numbers",
+      "View your service address and zone details",
+      "Copy contact information with one click",
+      "Access official DESCO portal directly",
+      "Manage your account display name"
+    ]
+  },
+  "accountBalanceInfo": {
+    "title": "Account Balance & Status",
+    "description": "Monitor your current balance, recharge status, and get warnings when your balance is running low.",
+    "benefits": [
+      "Real-time balance monitoring",
+      "Visual balance status indicators",
+      "Low balance warnings",
+      "Quick recharge recommendations",
+      "Balance depletion forecasts"
+    ]
+  },
+  "consumptionChartInfo": {
+    "title": "Consumption Chart",
+    "description": "Track your daily electricity consumption patterns and identify trends in your usage over time.",
+    "benefits": [
+      "Daily consumption visualization",
+      "Usage pattern identification",
+      "Seasonal trend analysis",
+      "Peak usage time detection",
+      "Historical consumption comparison"
+    ]
+  },
+  "rechargeHistoryInfo": {
+    "title": "Recharge History",
+    "description": "View detailed records of all your electricity recharges, including amounts, dates, and transaction details.",
+    "benefits": [
+      "Complete recharge transaction history",
+      "Filter by year and date range",
+      "Download and print receipts",
+      "Track spending patterns",
+      "Verify transaction details"
+    ]
+  },
+  "comparisonChartInfo": {
+    "title": "Comparison Chart",
+    "description": "Compare your electricity usage across different time periods to understand your consumption patterns.",
+    "benefits": [
+      "Period-over-period comparisons",
+      "Usage trend analysis",
+      "Performance benchmarking",
+      "Seasonal pattern recognition",
+      "Cost impact assessment"
+    ]
+  },
+  "rechargeVsConsumptionInfo": {
+    "title": "Recharge vs. Consumption",
+    "description": "Analyze the relationship between your recharge amounts and actual electricity consumption.",
+    "benefits": [
+      "Balance management insights",
+      "Recharge timing optimization",
+      "Usage vs. payment correlation",
+      "Budget planning assistance",
+      "Over/under recharge detection"
+    ]
+  },
+  "rechargeDistributionInfo": {
+    "title": "Recharge Distribution",
+    "description": "Visualize how your recharge amounts are distributed and identify your typical recharge patterns.",
+    "benefits": [
+      "Recharge amount distribution",
+      "Payment pattern analysis",
+      "Budget allocation insights",
+      "Optimal recharge amount identification",
+      "Financial planning assistance"
+    ]
+  },
+  "maxDemandInfo": {
+    "title": "Max Demand",
+    "description": "Monitor your peak electricity demand to understand your maximum power requirements.",
+    "benefits": [
+      "Peak demand monitoring",
+      "Load management insights",
+      "Infrastructure planning",
+      "Cost optimization opportunities",
+      "Demand charge analysis"
+    ]
+  },
+  "cumulativeConsumptionInfo": {
+    "title": "Cumulative Consumption",
+    "description": "Track your total electricity consumption over time to understand long-term usage trends.",
+    "benefits": [
+      "Long-term usage tracking",
+      "Trend analysis and forecasting",
+      "Annual consumption patterns",
+      "Growth rate monitoring",
+      "Planning for future needs"
+    ]
+  },
+  "boxPlotInfo": {
+    "title": "Box Plot Analysis",
+    "description": "Statistical analysis of your consumption data showing distribution, outliers, and key percentiles.",
+    "benefits": [
+      "Statistical consumption overview",
+      "Outlier detection",
+      "Data distribution analysis",
+      "Usage variability assessment",
+      "Anomaly identification"
+    ]
+  },
+  "monthlyCostTrendInfo": {
+    "title": "Monthly Cost Trend",
+    "description": "Track your monthly electricity costs to understand spending patterns and budget accordingly.",
+    "benefits": [
+      "Monthly cost tracking",
+      "Budget planning assistance",
+      "Cost trend analysis",
+      "Seasonal cost patterns",
+      "Financial forecasting"
+    ]
+  },
   "addNewAccount": "Add New Account",
   "clickToAddNewAccount": "Click to add a new DESCO account",
   "pleaseEnterAccountNumber": "Please enter an account number.",

@@ -14,7 +14,9 @@ import BoxPlotSection from './BoxPlotSection';
 import MonthlyCostTrendSection from './MonthlyCostTrendSection';
 import RechargeHistorySection from './RechargeHistorySection';
 import ConsumerInformationSection from './ConsumerInformationSection';
+import SectionInfoModal from '../common/SectionInfoModal';
 import { getTranslationForLanguage } from '../../utils/i18n';
+import i18n from '../../utils/i18n';
 
 const SECTION_CONFIGS = [
   { id: 'account-balance-status', defaultOpen: true },
@@ -49,6 +51,7 @@ const DashboardSections: React.FC<any> = ({
 }) => {
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
+  const [infoModalOpen, setInfoModalOpen] = useState<string | null>(null);
 
   // Compute language and translation function
   const language = banglaEnabled ? 'bn' : 'en';
@@ -77,6 +80,29 @@ const DashboardSections: React.FC<any> = ({
     return getSectionPreference(sectionId, config ? config.defaultOpen : fallback);
   }, [getSectionPreference]);
 
+  // Section info data
+  const getSectionInfo = useCallback((sectionId: string) => {
+    const infoKey = `${sectionId}Info`;
+    // Get the translation data directly from the i18n instance
+    const translationData = i18n.getDataByLanguage(language)?.translation;
+    const info = translationData?.[infoKey];
+    return typeof info === 'object' ? info : {
+      title: sectionId,
+      description: 'Information about this section',
+      benefits: ['Provides useful insights', 'Helps with analysis', 'Improves understanding']
+    };
+  }, [language]);
+
+  // Handle info icon click
+  const handleInfoClick = useCallback((sectionId: string) => {
+    setInfoModalOpen(sectionId);
+  }, []);
+
+  // Handle modal close
+  const handleModalClose = useCallback(() => {
+    setInfoModalOpen(null);
+  }, []);
+
   return (
     <div className="space-y-6" key={preferencesVersion}>
       {/* 1. AI Insights - Most valuable, actionable insights */}
@@ -87,6 +113,8 @@ const DashboardSections: React.FC<any> = ({
         banglaEnabled={banglaEnabled}
         t={t}
         balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('aiInsights')}
       />
       {/* 2. Consumer Information - Essential account context (collapsible) */}
       <ConsumerInformationSection
@@ -97,6 +125,8 @@ const DashboardSections: React.FC<any> = ({
         showNotification={showNotification}
         defaultOpen={getDefaultOpen('consumer-information')}
         sectionId="consumer-information"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('consumerInfo')}
       />
       {/* 3. Account Balance - Current status */}
       <AccountBalanceSection
@@ -106,6 +136,8 @@ const DashboardSections: React.FC<any> = ({
         balanceUnavailable={balanceUnavailable}
         defaultOpen={getDefaultOpen('account-balance-status')}
         sectionId="account-balance-status"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('accountBalance')}
       />
       {/* 4. Consumption Chart - Primary usage visualization */}
       <ConsumptionChartSection
@@ -116,6 +148,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('consumption-chart')}
         sectionId="consumption-chart"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('consumptionChart')}
       />
       {/* 5. Recharge History - Important transaction history */}
       <RechargeHistorySection
@@ -127,6 +161,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('recharge-history')}
         sectionId="recharge-history"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('rechargeHistory')}
       />
       {/* 6. Comparison Chart - Performance analysis */}
       <ComparisonChartSection
@@ -137,6 +173,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('comparison-chart')}
         sectionId="comparison-chart"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('comparisonChart')}
       />
       {/* 7. Recharge vs Consumption - Usage patterns */}
       <RechargeVsConsumptionSection
@@ -145,6 +183,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('recharge-vs-consumption')}
         sectionId="recharge-vs-consumption"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('rechargeVsConsumption')}
       />
       {/* 8. Recharge Distribution - Payment patterns */}
       <RechargeDistributionSection
@@ -153,6 +193,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('recharge-distribution')}
         sectionId="recharge-distribution"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('rechargeDistribution')}
       />
       {/* 9. Max Demand - Peak usage insights */}
       <MaxDemandSection
@@ -161,6 +203,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('max-demand')}
         sectionId="max-demand"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('maxDemand')}
       />
       {/* 10. Cumulative Consumption - Long-term trends */}
       <CumulativeConsumptionSection
@@ -169,6 +213,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('cumulative-consumption')}
         sectionId="cumulative-consumption"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('cumulativeConsumption')}
       />
       {/* 11. Box Plot - Statistical analysis */}
       <BoxPlotSection
@@ -177,6 +223,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('box-plot')}
         sectionId="box-plot"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('boxPlot')}
       />
       {/* 12. Monthly Cost Trend - Financial trends */}
       <MonthlyCostTrendSection
@@ -185,7 +233,19 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         defaultOpen={getDefaultOpen('monthly-cost-trend')}
         sectionId="monthly-cost-trend"
+        showInfoIcon={true}
+        onInfoClick={() => handleInfoClick('monthlyCostTrend')}
       />
+      
+      {/* Section Info Modal */}
+      {infoModalOpen && (
+        <SectionInfoModal
+          isOpen={!!infoModalOpen}
+          onClose={handleModalClose}
+          sectionInfo={getSectionInfo(infoModalOpen)}
+          t={t}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { ReactNode, useState, useEffect, useCallback } from 'react';
-import { ChevronDownIcon, ChevronRightIcon } from './Icons';
+import { ChevronDownIcon, ChevronRightIcon, InformationCircleIcon } from './Icons';
 
 interface SectionProps {
     title: string;
@@ -10,6 +10,8 @@ interface SectionProps {
     sectionId?: string; // Unique identifier for localStorage persistence
     onToggle?: (isOpen: boolean) => void; // Callback for parent components
     alwaysExpanded?: boolean; // If true, section is always expanded and not managed by preferences
+    onInfoClick?: () => void; // Callback for info icon click
+    showInfoIcon?: boolean; // Whether to show the info icon
 }
 
 const Section: React.FC<SectionProps> = ({ 
@@ -19,7 +21,9 @@ const Section: React.FC<SectionProps> = ({
     summaryValue, 
     sectionId,
     onToggle,
-    alwaysExpanded = false
+    alwaysExpanded = false,
+    onInfoClick,
+    showInfoIcon = false
 }) => {
     // Generate a unique ID if not provided
     const uniqueId = sectionId || `section-${title.toLowerCase().replace(/\s+/g, '-')}`;
@@ -70,18 +74,10 @@ const Section: React.FC<SectionProps> = ({
 
     return (
         <div className="bg-slate-800 rounded-xl overflow-hidden">
-            <button
-                onClick={handleToggle}
-                className={`w-full p-4 sm:p-6 text-lg font-bold text-slate-100 transition-colors flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-inset ${
-                    alwaysExpanded ? 'cursor-default' : 'cursor-pointer hover:bg-slate-700/50'
-                }`}
-                aria-expanded={isOpen}
-                aria-controls={`${uniqueId}-content`}
-                disabled={alwaysExpanded}
-            >
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
                     {!alwaysExpanded && (
-                        <span className="text-slate-400 transition-transform duration-200">
+                        <span className="text-slate-400 transition-transform duration-200 ml-2">
                             {isOpen ? (
                                 <ChevronDownIcon className="w-5 h-5" />
                             ) : (
@@ -89,14 +85,40 @@ const Section: React.FC<SectionProps> = ({
                             )}
                         </span>
                     )}
-                    <span>{title}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-slate-100">{title}</span>
+                        {showInfoIcon && onInfoClick && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onInfoClick();
+                                }}
+                                className="p-1 text-slate-400 hover:text-cyan-400 transition-colors duration-200 flex-shrink-0"
+                                aria-label="Section information"
+                                title="Learn more about this section"
+                            >
+                                <InformationCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                        )}
+                    </div>
                 </div>
                 {summaryValue && (
                     <div className="text-right">
                         {summaryValue}
                     </div>
                 )}
-            </button>
+                <button
+                    onClick={handleToggle}
+                    className={`p-4 sm:p-6 text-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-inset ${
+                        alwaysExpanded ? 'cursor-default' : 'cursor-pointer hover:bg-slate-700/50'
+                    }`}
+                    aria-expanded={isOpen}
+                    aria-controls={`${uniqueId}-content`}
+                    disabled={alwaysExpanded}
+                >
+                    <span className="sr-only">Toggle section</span>
+                </button>
+            </div>
             <div
                 id={`${uniqueId}-content`}
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${

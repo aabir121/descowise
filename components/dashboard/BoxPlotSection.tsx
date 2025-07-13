@@ -2,10 +2,16 @@
 import React from 'react';
 import Section from '../common/Section';
 
-const BoxPlotSection = ({ boxPlotData, banglaEnabled, t }) => {
+const BoxPlotSection = ({ boxPlotData, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!boxPlotData) return null;
   return (
-    <Section title={t('dailyConsumptionDistribution')} defaultOpen>
+    <Section 
+      title={t('dailyConsumptionDistribution')} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h4 className="text-lg font-semibold text-slate-100">{t('statisticalSummary')}</h4>

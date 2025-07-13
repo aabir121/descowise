@@ -4,10 +4,16 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 
-const MonthlyCostTrendSection = ({ monthlyCostData, t }) => {
+const MonthlyCostTrendSection = ({ monthlyCostData, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!monthlyCostData || monthlyCostData.length === 0) return null;
   return (
-    <Section title={t('monthlyCostTrend')} defaultOpen>
+    <Section 
+      title={t('monthlyCostTrend')} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <LineChart data={monthlyCostData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

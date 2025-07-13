@@ -5,10 +5,16 @@ import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 
-const MaxDemandSection = ({ maxDemandData, banglaEnabled, t }) => {
+const MaxDemandSection = ({ maxDemandData, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!maxDemandData || maxDemandData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('maxDemand', banglaEnabled) + ' (kW)'} defaultOpen>
+    <Section 
+      title={getDashboardLabel('maxDemand', banglaEnabled) + ' (kW)'} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <LineChart data={maxDemandData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

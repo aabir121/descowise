@@ -9,10 +9,16 @@ const COLORS = [
   '#06b6d4', '#f59e42', '#fb7185', '#a78bfa', '#fbbf24', '#34d399', '#f472b6', '#818cf8', '#f87171', '#4ade80', '#facc15', '#60a5fa'
 ];
 
-const RechargeDistributionSection = ({ pieChartData, banglaEnabled, t }) => {
+const RechargeDistributionSection = ({ pieChartData, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!pieChartData || pieChartData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('rechargeDistribution', banglaEnabled)} defaultOpen>
+    <Section 
+      title={getDashboardLabel('rechargeDistribution', banglaEnabled)} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="h-80 w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

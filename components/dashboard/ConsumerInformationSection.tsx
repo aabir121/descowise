@@ -10,6 +10,10 @@ interface ConsumerInformationSectionProps {
     banglaEnabled: boolean;
     t: (key: string, options?: any) => string;
     showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void;
+    defaultOpen?: boolean;
+    sectionId?: string;
+    showInfoIcon?: boolean;
+    onInfoClick?: () => void;
 }
 
 const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({ 
@@ -17,7 +21,11 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
     locationData, 
     banglaEnabled,
     t,
-    showNotification
+    showNotification,
+    defaultOpen,
+    sectionId,
+    showInfoIcon,
+    onInfoClick
 }) => {
     const formatDate = (dateString: string) => {
         try {
@@ -35,7 +43,10 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
     return (
         <Section 
             title={t('consumerInfo')} 
-            defaultOpen={false}
+            defaultOpen={defaultOpen}
+            sectionId={sectionId}
+            showInfoIcon={showInfoIcon}
+            onInfoClick={onInfoClick}
         >
             <div className="space-y-3">
                 {/* Main Account & Service Info */}

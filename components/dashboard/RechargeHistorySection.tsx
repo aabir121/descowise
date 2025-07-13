@@ -88,7 +88,7 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
   );
 };
 
-const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled, t }) => {
+const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -115,7 +115,13 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   };
 
   return (
-    <Section title={getDashboardLabel('rechargeHistory', banglaEnabled) + ' ' + t('last1Year')} defaultOpen>
+    <Section 
+      title={getDashboardLabel('rechargeHistory', banglaEnabled) + ' ' + t('last1Year')} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="flex flex-wrap justify-end items-center gap-4 mb-4">
         <select
           value={rechargeYear}

@@ -4,10 +4,16 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 
-const RechargeVsConsumptionSection = ({ rechargeVsConsumptionData, t }) => {
+const RechargeVsConsumptionSection = ({ rechargeVsConsumptionData, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!rechargeVsConsumptionData || rechargeVsConsumptionData.length === 0) return null;
   return (
-    <Section title={t('rechargeVsConsumption')} defaultOpen sectionId="recharge-vs-consumption">
+    <Section 
+      title={t('rechargeVsConsumption')} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <BarChart data={rechargeVsConsumptionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

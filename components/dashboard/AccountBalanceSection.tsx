@@ -7,13 +7,15 @@ import { InformationCircleIcon } from '../common/Icons';
 import Modal from '../common/Modal';
 import { useBalanceWarning } from '../../hooks/useBalanceWarning';
 
-const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable, t }) => {
+const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   const { open: openBalanceWarning } = useBalanceWarning();
   return (
     <Section 
       title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)} 
-      defaultOpen
-      sectionId="account-balance-status"
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col items-center justify-center p-6 bg-slate-700/50 rounded-xl">

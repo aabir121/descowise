@@ -5,7 +5,7 @@ import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
 
-const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled, balanceUnavailable, t }) => {
+const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled, balanceUnavailable, t, showInfoIcon, onInfoClick }) => {
   // Timeout handling for long waits
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -29,7 +29,14 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
 
   if (!isAiAvailable) return null;
   return (
-    <Section title={t('aiInsights')} defaultOpen={true} sectionId="ai-powered-insights" alwaysExpanded={true}>
+    <Section 
+      title={t('aiInsights')} 
+      defaultOpen={true} 
+      sectionId="ai-powered-insights" 
+      alwaysExpanded={true}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       {isAiLoading ? (
         <div className="flex flex-col items-start gap-3 text-slate-400">
           <div className="flex items-center gap-3">

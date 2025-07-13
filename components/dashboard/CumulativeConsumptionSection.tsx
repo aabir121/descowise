@@ -5,10 +5,16 @@ import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Area } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 
-const CumulativeConsumptionSection = ({ cumulativeData, banglaEnabled, t }) => {
+const CumulativeConsumptionSection = ({ cumulativeData, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!cumulativeData || cumulativeData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('cumulativeConsumption', banglaEnabled)} defaultOpen>
+    <Section 
+      title={getDashboardLabel('cumulativeConsumption', banglaEnabled)} 
+      defaultOpen={defaultOpen}
+      sectionId={sectionId}
+      showInfoIcon={showInfoIcon}
+      onInfoClick={onInfoClick}
+    >
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <AreaChart data={cumulativeData} margin={{ top: 5, right: 20, left: -5, bottom: 5 }}>
