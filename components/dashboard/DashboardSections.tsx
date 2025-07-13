@@ -14,6 +14,7 @@ import BoxPlotSection from './BoxPlotSection';
 import MonthlyCostTrendSection from './MonthlyCostTrendSection';
 import RechargeHistorySection from './RechargeHistorySection';
 import ConsumerInformationSection from './ConsumerInformationSection';
+import { getTranslationForLanguage } from '../../utils/i18n';
 
 const SECTION_CONFIGS = [
   { id: 'account-balance-status', defaultOpen: true },
@@ -49,6 +50,10 @@ const DashboardSections: React.FC<any> = ({
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
 
+  // Compute language and translation function
+  const language = banglaEnabled ? 'bn' : 'en';
+  const t = getTranslationForLanguage(language);
+
   // Listen for changes in localStorage (from modal or other tabs)
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
@@ -80,6 +85,7 @@ const DashboardSections: React.FC<any> = ({
         isAiLoading={isAiLoading}
         isAiAvailable={isAiAvailable}
         banglaEnabled={banglaEnabled}
+        t={t}
         balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
       />
       {/* 2. Consumer Information - Essential account context (collapsible) */}
@@ -87,6 +93,7 @@ const DashboardSections: React.FC<any> = ({
         account={account}
         locationData={data?.location}
         banglaEnabled={banglaEnabled}
+        t={t}
         showNotification={showNotification}
         defaultOpen={getDefaultOpen('consumer-information')}
         sectionId="consumer-information"
@@ -95,6 +102,7 @@ const DashboardSections: React.FC<any> = ({
       <AccountBalanceSection
         gaugeData={processedData?.gaugeData}
         banglaEnabled={banglaEnabled}
+        t={t}
         balanceUnavailable={balanceUnavailable}
         defaultOpen={getDefaultOpen('account-balance-status')}
         sectionId="account-balance-status"
@@ -105,6 +113,7 @@ const DashboardSections: React.FC<any> = ({
         consumptionTimeRange={consumptionTimeRange}
         setConsumptionTimeRange={setConsumptionTimeRange}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('consumption-chart')}
         sectionId="consumption-chart"
       />
@@ -115,6 +124,7 @@ const DashboardSections: React.FC<any> = ({
         isHistoryLoading={isHistoryLoading}
         setRechargeYear={handleYearChange}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('recharge-history')}
         sectionId="recharge-history"
       />
@@ -124,6 +134,7 @@ const DashboardSections: React.FC<any> = ({
         comparisonMetric={comparisonMetric}
         setComparisonMetric={setComparisonMetric}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('comparison-chart')}
         sectionId="comparison-chart"
       />
@@ -131,6 +142,7 @@ const DashboardSections: React.FC<any> = ({
       <RechargeVsConsumptionSection
         rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('recharge-vs-consumption')}
         sectionId="recharge-vs-consumption"
       />
@@ -138,6 +150,7 @@ const DashboardSections: React.FC<any> = ({
       <RechargeDistributionSection
         pieChartData={processedData?.pieChartData}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('recharge-distribution')}
         sectionId="recharge-distribution"
       />
@@ -145,6 +158,7 @@ const DashboardSections: React.FC<any> = ({
       <MaxDemandSection
         maxDemandData={processedData?.maxDemandData}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('max-demand')}
         sectionId="max-demand"
       />
@@ -152,6 +166,7 @@ const DashboardSections: React.FC<any> = ({
       <CumulativeConsumptionSection
         cumulativeData={processedData?.cumulativeData}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('cumulative-consumption')}
         sectionId="cumulative-consumption"
       />
@@ -159,6 +174,7 @@ const DashboardSections: React.FC<any> = ({
       <BoxPlotSection
         boxPlotData={processedData?.boxPlotData}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('box-plot')}
         sectionId="box-plot"
       />
@@ -166,6 +182,7 @@ const DashboardSections: React.FC<any> = ({
       <MonthlyCostTrendSection
         monthlyCostData={processedData?.monthlyCostData}
         banglaEnabled={banglaEnabled}
+        t={t}
         defaultOpen={getDefaultOpen('monthly-cost-trend')}
         sectionId="monthly-cost-trend"
       />

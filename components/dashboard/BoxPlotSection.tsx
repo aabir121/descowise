@@ -1,10 +1,8 @@
 // @ts-nocheck
 import React from 'react';
 import Section from '../common/Section';
-import { useTranslation } from 'react-i18next';
 
-const BoxPlotSection = ({ boxPlotData, banglaEnabled }) => {
-  const { t } = useTranslation();
+const BoxPlotSection = ({ boxPlotData, banglaEnabled, t }) => {
   if (!boxPlotData) return null;
   return (
     <Section title={t('dailyConsumptionDistribution')} defaultOpen>

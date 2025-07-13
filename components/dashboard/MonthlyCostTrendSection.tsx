@@ -1,13 +1,10 @@
 // @ts-nocheck
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 
-const MonthlyCostTrendSection = ({ monthlyCostData }) => {
-  const { t } = useTranslation();
-  
+const MonthlyCostTrendSection = ({ monthlyCostData, t }) => {
   if (!monthlyCostData || monthlyCostData.length === 0) return null;
   return (
     <Section title={t('monthlyCostTrend')} defaultOpen>

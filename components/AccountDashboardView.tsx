@@ -38,14 +38,6 @@ function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: 
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const { t, i18n } = useTranslation();
-    React.useEffect(() => {
-        if (account.banglaEnabled && i18n.language !== 'bn') {
-            i18n.changeLanguage('bn');
-        } else if (!account.banglaEnabled && i18n.language !== 'en') {
-            i18n.changeLanguage('en');
-        }
-        // Only run when account.banglaEnabled or i18n changes
-    }, [account.banglaEnabled, i18n]);
     const {
         processedData,
         isLoading,
@@ -151,7 +143,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         rechargeYear={rechargeYear}
                         isHistoryLoading={isHistoryLoading}
                         handleYearChange={handleYearChange}
-                        banglaEnabled={i18n.language === 'bn'}
+                        banglaEnabled={account.banglaEnabled}
                         balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null))}
                         account={account}
                         showNotification={showNotification}

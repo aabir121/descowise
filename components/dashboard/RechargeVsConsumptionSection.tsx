@@ -3,10 +3,8 @@ import React from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
-import { useTranslation } from 'react-i18next';
 
-const RechargeVsConsumptionSection = ({ rechargeVsConsumptionData }) => {
-  const { t } = useTranslation();
+const RechargeVsConsumptionSection = ({ rechargeVsConsumptionData, t }) => {
   if (!rechargeVsConsumptionData || rechargeVsConsumptionData.length === 0) return null;
   return (
     <Section title={t('rechargeVsConsumption')} defaultOpen sectionId="recharge-vs-consumption">

@@ -7,11 +7,9 @@ import { useState } from 'react';
 import { useRef } from 'react';
 import { getDashboardLabel } from './dashboardLabels';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
-import { useTranslation } from 'react-i18next';
 
-const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
+const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
   const printRef = useRef();
-  const { t } = useTranslation();
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -90,11 +88,10 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
   );
 };
 
-const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled }) => {
+const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled, t }) => {
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const { t, i18n } = useTranslation();
   const itemsPerPage = 5;
 
   const handleDetails = (item) => {
@@ -118,7 +115,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   };
 
   return (
-    <Section title={getDashboardLabel('rechargeHistory', i18n.language === 'bn') + ' ' + t('last1Year')} defaultOpen>
+    <Section title={getDashboardLabel('rechargeHistory', banglaEnabled) + ' ' + t('last1Year')} defaultOpen>
       <div className="flex flex-wrap justify-end items-center gap-4 mb-4">
         <select
           value={rechargeYear}
@@ -138,7 +135,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
               <th className="px-4 py-3">{t('meterNo')}</th>
               <th className="px-4 py-3">{t('totalAmount')}</th>
               <th className="px-4 py-3">{t('energyAmount')}</th>
-              <th className="px-4 py-3">{getDashboardLabel('status', i18n.language === 'bn')}</th>
+              <th className="px-4 py-3">{getDashboardLabel('status', banglaEnabled)}</th>
             </tr>
           </thead>
           <tbody>
@@ -201,7 +198,9 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
           </div>
         </div>
       )}
-      <RechargeDetailsModal isOpen={modalOpen} onClose={() => setModalOpen(false)} recharge={selectedRecharge} />
+
+      {/* Details Modal */}
+      <RechargeDetailsModal isOpen={modalOpen} onClose={() => setModalOpen(false)} recharge={selectedRecharge} t={t} />
     </Section>
   );
 };

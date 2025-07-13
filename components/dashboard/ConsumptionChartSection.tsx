@@ -4,13 +4,11 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
-import { useTranslation } from 'react-i18next';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
 
-const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled }) => {
-  const { t, i18n } = useTranslation();
+const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled, t }) => {
   const [chartView, setChartView] = useState<ChartView>('cost');
   // Default to 7days if not set
   React.useEffect(() => {
@@ -27,17 +25,17 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
   }, 0);
 
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
-    { value: '7days', label: getDashboardLabel('last7Days', i18n.language === 'bn') },
-    { value: 'thisMonth', label: getDashboardLabel('thisMonth', i18n.language === 'bn') },
-    { value: '30days', label: getDashboardLabel('last30Days', i18n.language === 'bn') },
-    { value: '6months', label: getDashboardLabel('last6Months', i18n.language === 'bn') },
-    { value: '1year', label: getDashboardLabel('last1Year', i18n.language === 'bn') },
-    { value: '2years', label: getDashboardLabel('last2Years', i18n.language === 'bn') },
+    { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
+    { value: 'thisMonth', label: getDashboardLabel('thisMonth', banglaEnabled) },
+    { value: '30days', label: getDashboardLabel('last30Days', banglaEnabled) },
+    { value: '6months', label: getDashboardLabel('last6Months', banglaEnabled) },
+    { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) },
+    { value: '2years', label: getDashboardLabel('last2Years', banglaEnabled) },
   ];
 
   const chartViewOptions: { value: ChartView; label: string }[] = [
-    { value: 'cost', label: getDashboardLabel('costComparison', i18n.language === 'bn') },
-    { value: 'energy', label: getDashboardLabel('energyConsumption', i18n.language === 'bn') },
+    { value: 'cost', label: getDashboardLabel('costComparison', banglaEnabled) },
+    { value: 'energy', label: getDashboardLabel('energyConsumption', banglaEnabled) },
   ];
 
   // Create summary value for header
@@ -56,7 +54,7 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
   );
 
   return (
-    <Section title={getDashboardLabel('consumptionChart', i18n.language === 'bn')} defaultOpen sectionId="consumption-chart" summaryValue={summaryValue}>
+    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen sectionId="consumption-chart" summaryValue={summaryValue}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
         {/* Chart View Toggle */}
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">

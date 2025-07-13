@@ -4,13 +4,11 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
-import { useTranslation } from 'react-i18next';
 
-const ComparisonChartSection = ({ comparisonData, comparisonMetric, setComparisonMetric, banglaEnabled }) => {
-  const { t, i18n } = useTranslation();
+const ComparisonChartSection = ({ comparisonData, comparisonMetric, setComparisonMetric, banglaEnabled, t }) => {
   if (!comparisonData || comparisonData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('comparison', i18n.language === 'bn')} defaultOpen sectionId="comparison-chart">
+    <Section title={getDashboardLabel('comparison', banglaEnabled)} defaultOpen sectionId="comparison-chart">
       <div className="flex justify-end mb-4">
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600">
           <button

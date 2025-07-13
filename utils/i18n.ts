@@ -24,4 +24,11 @@ i18n.on('languageChanged', (lng) => {
   localStorage.setItem('language', lng);
 });
 
+// Function to get translation for a specific language without changing global state
+export function getTranslationForLanguage(language: 'en' | 'bn') {
+  return (key: string, options?: any) => {
+    return i18n.t(key, { lng: language, ...options });
+  };
+}
+
 export default i18n; 

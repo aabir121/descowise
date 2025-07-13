@@ -4,13 +4,11 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Area } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
-import { useTranslation } from 'react-i18next';
 
-const CumulativeConsumptionSection = ({ cumulativeData, banglaEnabled }) => {
-  const { t, i18n } = useTranslation();
+const CumulativeConsumptionSection = ({ cumulativeData, banglaEnabled, t }) => {
   if (!cumulativeData || cumulativeData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('cumulativeConsumption', i18n.language === 'bn')} defaultOpen>
+    <Section title={getDashboardLabel('cumulativeConsumption', banglaEnabled)} defaultOpen>
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <AreaChart data={cumulativeData} margin={{ top: 5, right: 20, left: -5, bottom: 5 }}>

@@ -15,7 +15,7 @@ interface AddAccountModalProps {
 }
 
 const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAccountAdded, existingAccounts }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [step, setStep] = useState<'form' | 'details'>('form');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
@@ -33,8 +33,8 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
         setDisplayName('');
         setVerifiedData(null);
         setAiInsightsEnabled(true);
-        setBanglaEnabled(false);
-    }, []);
+        setBanglaEnabled(i18n.language === 'bn');
+    }, [i18n.language]);
 
     useEffect(() => {
         if (isOpen) {

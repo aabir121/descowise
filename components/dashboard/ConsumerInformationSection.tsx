@@ -3,12 +3,12 @@ import { Account, CustomerLocation } from '../../types';
 import Section from '../common/Section';
 import { DetailItem } from '../common/Section';
 import { UserIcon, MapPinIcon, BuildingOfficeIcon, HomeIcon, CopyIcon } from '../common/Icons';
-import { useTranslation } from 'react-i18next';
 
 interface ConsumerInformationSectionProps {
     account: Account;
     locationData?: CustomerLocation;
     banglaEnabled: boolean;
+    t: (key: string, options?: any) => string;
     showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void;
 }
 
@@ -16,14 +16,13 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
     account, 
     locationData, 
     banglaEnabled,
+    t,
     showNotification
 }) => {
-    const { t, i18n } = useTranslation();
-
     const formatDate = (dateString: string) => {
         try {
             const date = new Date(dateString);
-            return date.toLocaleDateString(i18n.language === 'bn' ? 'bn-BD' : 'en-US', {
+            return date.toLocaleDateString(banglaEnabled ? 'bn-BD' : 'en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'

@@ -4,11 +4,8 @@ import Section from '../common/Section';
 import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
-import { useTranslation } from 'react-i18next';
 
-const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled, balanceUnavailable }) => {
-  const { t, i18n } = useTranslation();
-
+const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled, balanceUnavailable, t }) => {
   // Timeout handling for long waits
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -198,8 +195,12 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
                   <h4 className="font-semibold text-cyan-400 mb-1">{t('recommendedRecharge')}</h4>
-                  <p className="text-2xl font-bold text-cyan-300 mb-2">{formatCurrency(sanitizeCurrency(aiSummary.rechargeRecommendation?.recommendedAmountBDT))}</p>
-                  <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.justification}</p>
+                  <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.details}</p>
+                  {aiSummary.rechargeRecommendation.amount !== null && (
+                    <div className="mt-2 text-lg font-bold text-cyan-200">
+                      {t('suggestedRechargeAmount')} {formatCurrency(sanitizeCurrency(aiSummary.rechargeRecommendation.amount))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

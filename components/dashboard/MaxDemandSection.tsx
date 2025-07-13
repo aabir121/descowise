@@ -4,13 +4,11 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
-import { useTranslation } from 'react-i18next';
 
-const MaxDemandSection = ({ maxDemandData, banglaEnabled }) => {
-  const { t, i18n } = useTranslation();
+const MaxDemandSection = ({ maxDemandData, banglaEnabled, t }) => {
   if (!maxDemandData || maxDemandData.length === 0) return null;
   return (
-    <Section title={getDashboardLabel('maxDemand', i18n.language === 'bn') + ' (kW)'} defaultOpen>
+    <Section title={getDashboardLabel('maxDemand', banglaEnabled) + ' (kW)'} defaultOpen>
       <div className="h-80 w-full">
         <ResponsiveContainer>
           <LineChart data={maxDemandData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
