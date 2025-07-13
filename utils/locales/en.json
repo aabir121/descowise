@@ -17,7 +17,7 @@
   "copyOpenPortal": "Copy & Open Portal",
   "cancel": "Cancel",
   "deleteAccount": "Delete Account",
-  "deleteAccountMsg": "Are you sure you want to delete account \"{{accountNo}}\"? This action cannot be undone and all account data will be permanently removed.",
+  "deleteAccountMsg": "Are you sure you want to delete account <strong>\"{{accountNo}}\"</strong>? This action cannot be undone and all account data will be permanently removed.",
   "noAccountToDelete": "No account selected for deletion.",
   "aiInsights": "AI-Powered Insights",
   "generating": "Generating your personalized summary...",

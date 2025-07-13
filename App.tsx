@@ -36,6 +36,10 @@ const App: React.FC = () => {
     // Ref to track if we're currently fetching balances to prevent double calls
     const isFetchingBalances = useRef(false);
     const lastAccountsLength = useRef(0);
+    // Track which accounts have already been checked for balance warnings
+    const checkedAccounts = useRef<Set<string>>(new Set());
+    // Track if this is the initial load
+    const isInitialLoad = useRef(true);
 
     const showNotification = useCallback((message: string, type: 'info' | 'warning' | 'error' = 'info') => {
         setNotification({ message, type });
@@ -67,6 +71,14 @@ const App: React.FC = () => {
                 lastAccountsLength.current = accounts.length;
                 setLoadingBalances(new Set(accounts.map(a => a.accountNo)));
                 const accountsWithNullValues: string[] = [];
+                const newlyAddedAccounts = new Set<string>();
+                
+                // Identify newly added accounts
+                accounts.forEach(account => {
+                    if (!checkedAccounts.current.has(account.accountNo)) {
+                        newlyAddedAccounts.add(account.accountNo);
+                    }
+                });
                 
                 await Promise.all(accounts.map(async (account) => {
                     const result = await getAccountBalance(account.accountNo);
@@ -77,8 +89,8 @@ const App: React.FC = () => {
                             currentMonthConsumption: result.data?.currentMonthConsumption
                         });
                         
-                        // Collect accounts with null values
-                        if (result.hasNullValues) {
+                        // Only collect accounts where balance is actually null/undefined
+                        if (result.data?.balance === null || result.data?.balance === undefined) {
                             accountsWithNullValues.push(account.accountNo);
                         }
                     }
@@ -89,10 +101,32 @@ const App: React.FC = () => {
                     });
                 }));
 
-                // Show consolidated warning if any accounts have null values
+                // Mark all accounts as checked
+                accounts.forEach(account => {
+                    checkedAccounts.current.add(account.accountNo);
+                });
+
+                // Show warnings based on the scenario:
+                // 1. On initial load: show warnings for all accounts with null values
+                // 2. On new account addition: only show warnings for newly added accounts with null values
                 if (accountsWithNullValues.length > 0) {
-                    const accountList = accountsWithNullValues.join(', ');
-                    showNotification(`Warning: Balance information temporarily unavailable for account(s): ${accountList}`, 'warning');
+                    let accountsToWarn: string[] = [];
+                    
+                    if (isInitialLoad.current) {
+                        // Initial load: warn about all accounts with null values
+                        accountsToWarn = accountsWithNullValues;
+                        isInitialLoad.current = false;
+                    } else {
+                        // New account addition: only warn about newly added accounts with null values
+                        accountsToWarn = accountsWithNullValues.filter(accountNo => 
+                            newlyAddedAccounts.has(accountNo)
+                        );
+                    }
+                    
+                    if (accountsToWarn.length > 0) {
+                        const accountList = accountsToWarn.join(', ');
+                        showNotification(t('balanceWarningMessage', { accountList }), 'warning');
+                    }
                 }
                 
                 isFetchingBalances.current = false;
@@ -110,6 +144,17 @@ const App: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [notification]);
+
+    // Clean up checkedAccounts when accounts are deleted
+    useEffect(() => {
+        const currentAccountNos = new Set(accounts.map(acc => acc.accountNo));
+        // Remove any account numbers from checkedAccounts that no longer exist
+        checkedAccounts.current.forEach(accountNo => {
+            if (!currentAccountNos.has(accountNo)) {
+                checkedAccounts.current.delete(accountNo);
+            }
+        });
+    }, [accounts]);
 
     const handleAccountAdded = useCallback((newAccount: Account) => {
         addAccount(newAccount);

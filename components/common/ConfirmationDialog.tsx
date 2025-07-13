@@ -31,7 +31,7 @@ const ConfirmationDialog: React.FC<{
           {icon && <span className="flex-shrink-0">{icon}</span>}
           <h2 className="text-xl font-bold text-white">{title}</h2>
         </div>
-        <p className="mb-6 text-slate-300">{message}</p>
+        <p className="mb-6 text-slate-300" dangerouslySetInnerHTML={{ __html: message }} />
         <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
