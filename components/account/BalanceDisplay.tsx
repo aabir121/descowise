@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Spinner from '../common/Spinner';
 import { BoltIcon, InformationCircleIcon } from '../common/Icons';
 import { formatCurrency } from '../common/format';
@@ -14,6 +15,7 @@ interface BalanceDisplayProps {
 }
 
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, readingTime, naClassName }) => {
+  const { t } = useTranslation();
   const { open: openBalanceWarning } = useBalanceWarning();
   const hasBalance = balance !== null && balance !== undefined;
   const balanceValue = hasBalance ? parseFloat(String(balance).replace(/[^\d.-]/g, '')) : 0;
@@ -38,17 +40,17 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
                 openBalanceWarning();
               }}
               className="p-1 rounded hover:bg-slate-700 focus:outline-none"
-              aria-label="More information about unavailable balance"
+              aria-label={t('moreInfoUnavailableBalance')}
             >
               <InformationCircleIcon className="w-5 h-5 text-yellow-400 hover:text-yellow-300" />
             </button>
           </div>
           <p className="text-xs text-yellow-400 mt-1">
-            Balance information temporarily unavailable
+            {t('balanceTemporarilyUnavailable')}
           </p>
           {readingTime && (
             <p className="text-xs text-slate-500 mt-1">
-              As of {formatHumanDate(new Date(readingTime))}
+              {t('lastUpdated', { date: formatHumanDate(new Date(readingTime)) })}
             </p>
           )}
         </div>
@@ -69,7 +71,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ isLoading, balance, rea
       </div>
       {readingTime && (
         <p className="text-xs text-slate-500 mt-1">
-          As of {formatHumanDate(new Date(readingTime))}
+          {t('lastUpdated', { date: formatHumanDate(new Date(readingTime)) })}
         </p>
       )}
     </div>

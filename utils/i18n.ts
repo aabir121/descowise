@@ -12,11 +12,16 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'en', // default language
+    lng: localStorage.getItem('language') || 'en', // get saved language or default to 'en'
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false, // react already safes from xss
     },
   });
+
+// Listen for language changes and save to localStorage
+i18n.on('languageChanged', (lng) => {
+  localStorage.setItem('language', lng);
+});
 
 export default i18n; 

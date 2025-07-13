@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PlusIcon } from './common/Icons';
 import DashedCircleIcon from './common/DashedCircleIcon';
 
@@ -7,6 +8,8 @@ interface AddAccountCardProps {
 }
 
 const AddAccountCard: React.FC<AddAccountCardProps> = ({ onClick }) => {
+    const { t } = useTranslation();
+    
     return (
         <button
             onClick={onClick}
@@ -15,8 +18,8 @@ const AddAccountCard: React.FC<AddAccountCardProps> = ({ onClick }) => {
             <DashedCircleIcon>
                 <PlusIcon className="w-8 h-8" />
             </DashedCircleIcon>
-            <h3 className="font-bold text-xl text-slate-300 group-hover:text-cyan-400 mb-1 transition-colors">Add New Account</h3>
-            <p className="text-sm">Click to add a new DESCO account</p>
+            <h3 className="font-bold text-xl text-slate-300 group-hover:text-cyan-400 mb-1 transition-colors">{t('addNewAccount')}</h3>
+            <p className="text-sm">{t('clickToAddNewAccount')}</p>
         </button>
     );
 };

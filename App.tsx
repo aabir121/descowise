@@ -13,8 +13,11 @@ import FloatingCoffeeButton from './components/FloatingCoffeeButton';
 import Footer from './components/common/Footer';
 import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal';
 import { useBalanceWarning } from './hooks/useBalanceWarning';
+import LanguageSwitcher from './components/common/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 const App: React.FC = () => {
+    const { t } = useTranslation();
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [selectedAccountNo, setSelectedAccountNo] = useState<string | null>(null);
@@ -165,11 +168,11 @@ const App: React.FC = () => {
                     {showDataNotice === true && (
                         <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
                             <span className="text-base font-medium">
-                                Data is updated daily and shows information up to the previous day. Today’s data will be available tomorrow, according to DESCO’s schedule.
+                                {t('dataUpdateNotice')}
                             </span>
                             <button
                                 className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
-                                aria-label="Dismiss notice"
+                                aria-label={t('dismissNotice')}
                                 onClick={handleDismissDataNotice}
                             >
                                 <TrashIcon className="w-5 h-5" />
@@ -180,12 +183,17 @@ const App: React.FC = () => {
                         <Notification message={notification.message} type={notification.type} />
                     )}
                     <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-                        <header className="text-center mb-8 sm:mb-12">
+                        <header className="text-center mb-8 sm:mb-12 relative">
+                            {/* Language Switcher - positioned absolutely in top-right */}
+                            <div className="absolute top-0 right-0 z-10">
+                                <LanguageSwitcher />
+                            </div>
+                            
                             <div className="inline-flex items-center gap-3">
                                  <BoltIcon className="w-8 h-8 text-cyan-400"/>
-                                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">DescoWise</h1>
+                                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">{t('appTitle')}</h1>
                             </div>
-                            <p className="text-lg sm:text-xl text-slate-400 mt-2">Be wise with your Desco account: your electricity accounts, simplified.</p>
+                            <p className="text-lg sm:text-xl text-slate-400 mt-2">{t('appSubtitle')}</p>
                         </header>
 
                         <main>
@@ -198,8 +206,8 @@ const App: React.FC = () => {
                                       <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                                     </svg>
                                   </div>
-                                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">No Accounts Yet</h2>
-                                  <p className="text-slate-400 mb-8 max-w-md mx-auto">You haven’t added any electricity accounts.<br />Click below to get started.</p>
+                                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">{t('noAccountsTitle')}</h2>
+                                  <p className="text-slate-400 mb-8 max-w-md mx-auto">{t('noAccountsSubtitle')}<br />{t('noAccountsAction')}</p>
                                   <AddAccountModal
                                     isOpen={addAccountModalOpen}
                                     onClose={() => setAddAccountModalOpen(false)}
@@ -239,10 +247,10 @@ const App: React.FC = () => {
                 isOpen={deleteConfirmation.isOpen}
                 onClose={() => setDeleteConfirmation({ isOpen: false, accountNo: null, accountName: '' })}
                 onConfirm={handleConfirmDelete}
-                title="Delete Account"
-                message={`Are you sure you want to delete account "${deleteConfirmation.accountName}"? This action cannot be undone and all account data will be permanently removed.`}
-                confirmText="Delete Account"
-                cancelText="Cancel"
+                title={t('deleteAccount')}
+                message={t('deleteAccountMsg', { accountNo: deleteConfirmation.accountName })}
+                confirmText={t('deleteAccount')}
+                cancelText={t('cancel')}
                 icon={<ExclamationTriangleIcon />}
             />
             
