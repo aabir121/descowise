@@ -226,5 +226,14 @@
   "privacyDisclaimer2": "We <bold>{{storage}}</bold>. All information is processed locally in your browser and never leaves your device.",
   "privacyDisclaimer2_storage": "do not store or persist any of your account data on our servers",
   "privacyDisclaimer3": "Your data is used solely to display your account information and is never shared with third parties.",
-  "privacyDisclaimer4": "For more information, contact the developer."
+  "privacyDisclaimer4": "For more information, contact the developer.",
+  "supportDeveloper": "Support the developer ☕",
+  "supportDeveloperAria": "Support the developer",
+  "enjoyingApp": "Enjoying the app?",
+  "supportOrConnect": "Support me or connect with me:",
+  "portfolio": "🌐 Portfolio",
+  "linkedin": "💼 LinkedIn",
+  "medium": "✍️ Medium",
+  "buyMeCoffee": "☕ Buy Me a Coffee",
+  "thankYouSupport": "Thank you for your support! — Aabir"
 } 
