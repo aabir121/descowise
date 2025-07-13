@@ -74,19 +74,31 @@ const Section: React.FC<SectionProps> = ({
 
     return (
         <div className="bg-slate-800 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-3 sm:p-4">
                 <div className="flex items-center gap-3 flex-1">
                     {!alwaysExpanded && (
-                        <span className="text-slate-400 transition-transform duration-200 ml-2">
+                        <button
+                            onClick={handleToggle}
+                            className="text-slate-400 hover:text-slate-300 transition-colors duration-200 ml-2 p-1 rounded"
+                            aria-label={isOpen ? 'Collapse section' : 'Expand section'}
+                        >
                             {isOpen ? (
                                 <ChevronDownIcon className="w-5 h-5" />
                             ) : (
                                 <ChevronRightIcon className="w-5 h-5" />
                             )}
-                        </span>
+                        </button>
                     )}
                     <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-slate-100">{title}</span>
+                        <button
+                            onClick={handleToggle}
+                            className={`text-lg font-bold text-slate-100 hover:text-slate-200 transition-colors ${
+                                alwaysExpanded ? 'cursor-default' : 'cursor-pointer'
+                            }`}
+                            disabled={alwaysExpanded}
+                        >
+                            {title}
+                        </button>
                         {showInfoIcon && onInfoClick && (
                             <button
                                 onClick={(e) => {
@@ -107,17 +119,6 @@ const Section: React.FC<SectionProps> = ({
                         {summaryValue}
                     </div>
                 )}
-                <button
-                    onClick={handleToggle}
-                    className={`p-4 sm:p-6 text-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-inset ${
-                        alwaysExpanded ? 'cursor-default' : 'cursor-pointer hover:bg-slate-700/50'
-                    }`}
-                    aria-expanded={isOpen}
-                    aria-controls={`${uniqueId}-content`}
-                    disabled={alwaysExpanded}
-                >
-                    <span className="sr-only">Toggle section</span>
-                </button>
             </div>
             <div
                 id={`${uniqueId}-content`}

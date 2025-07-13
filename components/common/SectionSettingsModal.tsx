@@ -13,6 +13,7 @@ interface SectionSettingsModalProps {
 // Define all possible sections with their IDs and labels
 // Note: ai-powered-insights is excluded as it's always expanded
 const SECTION_CONFIGS = [
+  { id: 'consumer-information', label: 'consumerInformation', defaultOpen: true },
   { id: 'account-balance-status', label: 'accountBalanceStatus', defaultOpen: true },
   { id: 'consumption-chart', label: 'consumptionChart', defaultOpen: true },
   { id: 'comparison-chart', label: 'comparisonChart', defaultOpen: true },
@@ -23,7 +24,6 @@ const SECTION_CONFIGS = [
   { id: 'box-plot', label: 'boxPlotAnalysis', defaultOpen: true },
   { id: 'monthly-cost-trend', label: 'monthlyCostTrend', defaultOpen: true },
   { id: 'recharge-history', label: 'rechargeHistory', defaultOpen: true },
-  { id: 'consumer-information', label: 'consumerInformation', defaultOpen: true },
 ];
 
 const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onClose }) => {
