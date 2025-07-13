@@ -4,33 +4,10 @@ import Section from '../common/Section';
 import Spinner from '../common/Spinner';
 import { WandSparklesIcon } from '../common/Icons';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
+import { useTranslation } from 'react-i18next';
 
 const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, banglaEnabled, balanceUnavailable }) => {
-  // Define all section labels in both English and Bangla
-  const labels = {
-    aiInsights: banglaEnabled ? 'আপনার জন্য কিছু তথ্য' : 'AI-Powered Insights',
-    generating: banglaEnabled ? 'আপনার জন্য তথ্য প্রস্তুত হচ্ছে...' : 'Generating your personalized summary...',
-    couldNotGenerate: banglaEnabled ? 'দুঃখিত, বিশ্লেষণ দেখানো যাচ্ছে না।' : 'Could not generate AI summary.',
-    balanceDepletion: banglaEnabled ? '⏳ ব্যালেন্স কখন শেষ হতে পারে' : '⏳ Balance Depletion Forecast',
-    estimatedDays: banglaEnabled ? 'সম্ভাব্য বাকি দিন:' : 'Estimated Days Remaining:',
-    expectedDepletionDate: banglaEnabled ? 'সম্ভাব্য শেষের তারিখ:' : 'Expected Depletion Date:',
-    currentMonthBill: banglaEnabled ? '📅 এই মাসের সম্ভাব্য বিল' : '📅 Estimated Bill for This Month',
-    estimatedTotalBill: banglaEnabled ? 'মোট অনুমানকৃত বিল:' : 'Estimated Total Bill:',
-    next3Months: banglaEnabled ? '🔮 পরের ৩ মাসের পূর্বাভাস' : '🔮 Next 3 Months Forecast',
-    month: banglaEnabled ? 'মাস' : 'Month',
-    estConsumption: banglaEnabled ? 'সম্ভাব্য খরচ (কিলোওয়াট-ঘণ্টা)' : 'Est. Consumption (kWh)',
-    estBill: banglaEnabled ? 'সম্ভাব্য বিল (৳)' : 'Est. Bill (৳)',
-    balanceStatus: banglaEnabled ? 'ব্যালেন্সের অবস্থা' : 'Balance Status',
-    recommendedRecharge: banglaEnabled ? '💰 রিচার্জের পরামর্শ' : '💰 Recommended Recharge',
-    optimalRechargeTiming: banglaEnabled ? '⏰ কখন রিচার্জ করবেন' : '⏰ Optimal Recharge Timing',
-    anomalyDetected: banglaEnabled ? '⚠️ কিছু অস্বাভাবিক লেগেছে' : '⚠️ Anomaly Detected',
-    seasonalPattern: banglaEnabled ? '🌡️ মৌসুমি প্রবণতা' : '🌡️ Seasonal Pattern',
-    rechargePattern: banglaEnabled ? '📊 রিচার্জের অভ্যাস' : '📊 Recharge Pattern Analysis',
-    actionableTip: banglaEnabled ? '💡 সহজ টিপস' : '💡 Actionable Tip',
-    balanceUnavailable: banglaEnabled ? '⚠️ ব্যালেন্স তথ্য অপ্রাপ্য' : '⚠️ Balance Information Unavailable',
-    checkMeter: banglaEnabled ? 'মিটার থেকে ব্যালেন্স দেখুন' : 'Check balance from your meter',
-    contactDesco: banglaEnabled ? 'ডেসকো-তে যোগাযোগ করুন' : 'Contact DESCO',
-  };
+  const { t, i18n } = useTranslation();
 
   // Timeout handling for long waits
   const [waitedLong, setWaitedLong] = useState(false);
@@ -43,18 +20,8 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
     }
   }, [isAiLoading]);
 
-  // Fun facts or tips (optional)
-  const tips = [
-    banglaEnabled
-      ? "টিপ: নিচের ড্যাশবোর্ডে আপনার মাসিক প্রবণতা দেখতে পারেন।"
-      : "Tip: You can view your monthly trends in the dashboard below.",
-    banglaEnabled
-      ? "জানেন কি? এআই আপনার বিদ্যুৎ ব্যবহার অপ্টিমাইজ করতে সাহায্য করতে পারে!"
-      : "Did you know? AI can help you optimize your electricity usage!",
-    banglaEnabled
-      ? "টিপ: ব্যালেন্স কমে যাওয়ার আগেই রিচার্জ করুন।"
-      : "Tip: Recharge before your balance runs low to avoid interruptions.",
-  ];
+  // Tips array using translation keys
+  const tips = [t('tip1'), t('tip2'), t('tip3')];
   const [tipIdx, setTipIdx] = useState(() => Math.floor(Math.random() * tips.length));
   useEffect(() => {
     if (isAiLoading) {
@@ -65,32 +32,27 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
 
   if (!isAiAvailable) return null;
   return (
-    <Section title={labels.aiInsights} defaultOpen={true} sectionId="ai-powered-insights" alwaysExpanded={true}>
+    <Section title={t('aiInsights')} defaultOpen={true} sectionId="ai-powered-insights" alwaysExpanded={true}>
       {isAiLoading ? (
         <div className="flex flex-col items-start gap-3 text-slate-400">
           <div className="flex items-center gap-3">
             <Spinner size="w-6 h-6 animate-spin" color="border-slate-400" />
             <span>
-              <strong>{banglaEnabled ? 'আপনার জন্য ব্যক্তিগত এআই বিশ্লেষণ তৈরি হচ্ছে…' : 'Generating your personalized AI analysis…'}</strong>
+              <strong>{t('aiAnalysisGenerating')}</strong>
               <br />
-              {banglaEnabled
-                ? 'বিশ্লেষণটি জটিল হওয়ায় এটি সম্পন্ন হতে কিছুটা সময় লাগতে পারে।'
-                : 'This may take a few moments due to the complexity of the analysis.'}
+              {t('aiAnalysisMayTakeTime')}
               <br />
-              <span className="text-xs">{banglaEnabled ? 'সাধারণত ১০–২০ সেকেন্ড সময় লাগে।' : 'Usually takes 10–20 seconds.'}</span>
+              <span className="text-xs">{t('aiAnalysisUsuallyTakes')}</span>
             </span>
           </div>
           <div className="mt-2 text-slate-500 italic">
             {waitedLong
-              ? <>{banglaEnabled
-                  ? <>এখনো কাজ চলছে… দেরির জন্য দুঃখিত! কখনো কখনো একটু বেশি সময় লাগতে পারে।<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={() => window.location.reload()}>{'আবার চেষ্টা করুন'}</button></>
-                  : <>Still working… Sorry for the delay! Sometimes this takes a bit longer.<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={() => window.location.reload()}>Try Again</button></>
-                }</>
+              ? <>{t('aiAnalysisStillWorking')}<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={() => window.location.reload()}>{t('tryAgain')}</button></>
               : randomTip}
           </div>
         </div>
       ) : !aiSummary ? (
-        <div className="text-slate-400">{labels.couldNotGenerate}</div>
+        <div className="text-slate-400">{t('couldNotGenerate')}</div>
       ) : (
         <div className="space-y-6">
           {/* Balance Unavailable Notice */}
@@ -99,30 +61,26 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-yellow-400 mb-2">{labels.balanceUnavailable}</h4>
+                  <h4 className="font-semibold text-yellow-400 mb-2">{t('balanceUnavailableLabel')}</h4>
                   <p className="text-sm text-yellow-300 mb-3">
-                    {banglaEnabled 
-                      ? 'বর্তমানে আপনার ব্যালেন্স তথ্য অপ্রাপ্য। নিচের বিশ্লেষণে ব্যালেন্স-সংক্রান্ত তথ্য অন্তর্ভুক্ত নয়।'
-                      : 'Your balance information is currently unavailable. Balance-related insights are not included in the analysis below.'
-                    }
+                    {t('balanceUnavailableMsg')}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="text-yellow-300">💡</span>
-                      <span className="text-yellow-200">{labels.checkMeter}</span>
+                      <span className="text-yellow-200">{t('checkMeter')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-yellow-300">📞</span>
-                      <span className="text-yellow-200">{labels.contactDesco}</span>
+                      <span className="text-yellow-200">{t('contactDesco')}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          
           {/* Header */}
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-3">
             <WandSparklesIcon className="w-8 h-8 text-cyan-400 flex-shrink-0 mt-1" />
             <div className="flex-1">
               <h3 className="text-xl font-bold text-white mb-2">{aiSummary.title}</h3>
@@ -135,16 +93,16 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-red-400 mb-1">{labels.balanceDepletion}</h4>
+                  <h4 className="font-semibold text-red-400 mb-1">{t('balanceDepletion')}</h4>
                   <p className="text-sm text-red-300">{aiSummary.balanceDepletionForecast.details}</p>
                   {aiSummary.balanceDepletionForecast.daysRemaining !== null && (
                     <div className="mt-2 text-lg font-bold text-red-200">
-                      {labels.estimatedDays} {aiSummary.balanceDepletionForecast.daysRemaining}
+                      {t('estimatedDays')} {aiSummary.balanceDepletionForecast.daysRemaining}
                     </div>
                   )}
                   {aiSummary.balanceDepletionForecast.expectedDepletionDate && (
                     <div className="text-sm text-red-200">
-                      {labels.expectedDepletionDate} {aiSummary.balanceDepletionForecast.expectedDepletionDate}
+                      {t('expectedDepletionDate')} {aiSummary.balanceDepletionForecast.expectedDepletionDate}
                     </div>
                   )}
                 </div>
@@ -157,11 +115,11 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-orange-400 mb-1">{labels.currentMonthBill}</h4>
+                  <h4 className="font-semibold text-orange-400 mb-1">{t('currentMonthBill')}</h4>
                   <p className="text-sm text-orange-300">{aiSummary.currentMonthBillForecast.details}</p>
                   {aiSummary.currentMonthBillForecast.estimatedTotal !== null && (
                     <div className="mt-2 text-lg font-bold text-orange-200">
-                      {labels.estimatedTotalBill} {formatCurrency(sanitizeCurrency(aiSummary.currentMonthBillForecast?.estimatedTotal))}
+                      {t('estimatedTotalBill')} {formatCurrency(sanitizeCurrency(aiSummary.currentMonthBillForecast?.estimatedTotal))}
                     </div>
                   )}
                 </div>
@@ -169,18 +127,18 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
             </div>
           )}
           {/* 10. Future Consumption Forecast */}
-          {aiSummary.futureConsumptionForecast && aiSummary.futureConsumptionForecast.length > 0 && (
+          {aiSummary.futureConsumptionForecast && (
             <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-cyan-400 mb-1">{labels.next3Months}</h4>
+                  <h4 className="font-semibold text-cyan-400 mb-1">{t('next3Months')}</h4>
                   <table className="min-w-full text-sm text-cyan-200 mt-2">
                     <thead>
                       <tr>
-                        <th className="pr-4 text-left">{labels.month}</th>
-                        <th className="pr-4 text-left">{labels.estConsumption}</th>
-                        <th className="pr-4 text-left">{labels.estBill}</th>
+                        <th className="pr-4 text-left">{t('month')}</th>
+                        <th className="pr-4 text-left">{t('estConsumption')}</th>
+                        <th className="pr-4 text-left">{t('estBill')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -198,7 +156,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
             </div>
           )}
           {/* 1. Balance Status and Advice */}
-          {!balanceUnavailable && (
+          {aiSummary.balanceStatusAndAdvice && (
             <div className={`rounded-lg p-4 border-l-4 ${
               aiSummary.balanceStatusAndAdvice?.status === 'low' ? 'bg-red-500/10 border-red-500/20 border-l-red-400' :
               aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'bg-yellow-500/10 border-yellow-500/20 border-l-yellow-400' :
@@ -216,9 +174,17 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
                     aiSummary.balanceStatusAndAdvice?.status === 'normal' ? 'text-yellow-400' :
                     'text-green-400'
                   }`}>
-                    {labels.balanceStatus}: {aiSummary.balanceStatusAndAdvice?.status ? (banglaEnabled
-                      ? aiSummary.balanceStatusAndAdvice.status === 'low' ? 'কম' : aiSummary.balanceStatusAndAdvice.status === 'normal' ? 'মাঝারি' : 'ভালো'
-                      : aiSummary.balanceStatusAndAdvice.status.charAt(0).toUpperCase() + aiSummary.balanceStatusAndAdvice.status.slice(1)) : (banglaEnabled ? 'অজানা' : 'Unknown')}
+                    {t('balanceStatus')}: {aiSummary.balanceStatusAndAdvice?.status ? (
+                      t(
+                        aiSummary.balanceStatusAndAdvice.status === 'low'
+                          ? 'statusLow'
+                          : aiSummary.balanceStatusAndAdvice.status === 'normal'
+                          ? 'statusNormal'
+                          : aiSummary.balanceStatusAndAdvice.status === 'good'
+                          ? 'statusGood'
+                          : 'statusUnknown'
+                      )
+                    ) : t('statusUnknown')}
                   </h4>
                   <p className="text-sm text-slate-300">{aiSummary.balanceStatusAndAdvice?.details}</p>
                 </div>
@@ -226,12 +192,12 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
             </div>
           )}
           {/* 2. Suggested Recharge Amount (now rechargeRecommendation) */}
-          {!balanceUnavailable && aiSummary.rechargeRecommendation?.recommendedAmountBDT && (
+          {aiSummary.rechargeRecommendation && (
             <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-cyan-400 mb-1">{labels.recommendedRecharge}</h4>
+                  <h4 className="font-semibold text-cyan-400 mb-1">{t('recommendedRecharge')}</h4>
                   <p className="text-2xl font-bold text-cyan-300 mb-2">{formatCurrency(sanitizeCurrency(aiSummary.rechargeRecommendation?.recommendedAmountBDT))}</p>
                   <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.justification}</p>
                 </div>
@@ -239,54 +205,58 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, ban
             </div>
           )}
           {/* 3. Recharge Timing Insight */}
-          <div className="bg-indigo-500/10 border border-indigo-500/20 border-l-4 border-l-indigo-400 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-indigo-400 rounded-full mt-2 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-indigo-400 mb-1">{labels.optimalRechargeTiming}</h4>
-                <p className="text-sm text-indigo-300">{aiSummary.rechargeTimingInsight}</p>
+          {aiSummary.rechargeTimingInsight && (
+            <div className="bg-indigo-500/10 border border-indigo-500/20 border-l-4 border-l-indigo-400 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-indigo-400 rounded-full mt-2 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-indigo-400 mb-1">{t('optimalRechargeTiming')}</h4>
+                  <p className="text-sm text-indigo-300">{aiSummary.rechargeTimingInsight}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {/* 4. Anomaly Alert */}
-          {aiSummary.anomaly.detected && (
+          {aiSummary.anomaly && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-amber-400 mb-1">{labels.anomalyDetected}</h4>
+                  <h4 className="font-semibold text-amber-400 mb-1">{t('anomalyDetected')}</h4>
                   <p className="text-sm text-amber-300">{aiSummary.anomaly.details}</p>
                 </div>
               </div>
             </div>
           )}
           {/* 5. Seasonal Trend */}
-          {aiSummary.seasonalTrend.observed && (
+          {aiSummary.seasonalTrend && aiSummary.seasonalTrend.observed && (
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-blue-400 mb-1">{labels.seasonalPattern}</h4>
+                  <h4 className="font-semibold text-blue-400 mb-1">{t('seasonalPattern')}</h4>
                   <p className="text-sm text-blue-300">{aiSummary.seasonalTrend.details}</p>
                 </div>
               </div>
             </div>
           )}
           {/* 6. Recharge Pattern Insight */}
-          <div className="bg-slate-700/30 rounded-lg p-4">
-            <h4 className="font-semibold text-slate-200 mb-2">{labels.rechargePattern}</h4>
-            <p className="text-sm text-slate-300">{aiSummary.rechargePatternInsight}</p>
-          </div>
+          {aiSummary.rechargePatternInsight && (
+            <div className="bg-slate-700/30 rounded-lg p-4">
+              <h4 className="font-semibold text-slate-200 mb-2">{t('rechargePattern')}</h4>
+              <p className="text-sm text-slate-300">{aiSummary.rechargePatternInsight}</p>
+            </div>
+          )}
           {/* 7. Actionable Tip */}
-          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-4">
+          {aiSummary.actionableTip && (
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-purple-400 mb-1">{labels.actionableTip}</h4>
+                <h4 className="font-semibold text-purple-400 mb-1">{t('actionableTip')}</h4>
                 <p className="text-sm text-purple-300">{aiSummary.actionableTip}</p>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </Section>

@@ -6,12 +6,14 @@ import { formatCurrency, sanitizeCurrency } from '../common/format';
 import { InformationCircleIcon } from '../common/Icons';
 import Modal from '../common/Modal';
 import { useBalanceWarning } from '../../hooks/useBalanceWarning';
+import { useTranslation } from 'react-i18next';
 
 const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable }) => {
   const { open: openBalanceWarning } = useBalanceWarning();
+  const { t, i18n } = useTranslation();
   return (
     <Section 
-      title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)} 
+      title={getDashboardLabel('balance', i18n.language === 'bn') + ' ' + getDashboardLabel('status', i18n.language === 'bn')} 
       defaultOpen
       sectionId="account-balance-status"
     >
@@ -25,12 +27,12 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable })
                   <button
                     onClick={() => openBalanceWarning()}
                     className="p-1 rounded hover:bg-slate-700 focus:outline-none"
-                    aria-label="More information about unavailable balance"
+                    aria-label={t('balanceTemporarilyUnavailable')}
                   >
                     <InformationCircleIcon className="w-6 h-6 text-yellow-400 hover:text-yellow-300" />
                   </button>
                 </div>
-                <div className="text-sm text-yellow-400 mt-2">Balance information temporarily unavailable</div>
+                <div className="text-sm text-yellow-400 mt-2">{t('balanceTemporarilyUnavailable')}</div>
               </div>
 
             </>
@@ -61,7 +63,7 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable })
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-lg font-bold text-white">{gaugeData.percentage.toFixed(0)}%</div>
-                    <div className="text-xs text-slate-400">{banglaEnabled ? 'মাসিক গড়ের' : 'of monthly avg'}</div>
+                    <div className="text-xs text-slate-400">{t('ofMonthlyAvg')}</div>
                   </div>
                 </div>
               </div>
@@ -69,24 +71,24 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable })
                 <div className="text-3xl font-bold text-cyan-400">
                   {formatCurrency(sanitizeCurrency(gaugeData.currentBalance))}
                 </div>
-                <div className="text-sm text-slate-400">{getDashboardLabel('balance', banglaEnabled)}</div>
+                <div className="text-sm text-slate-400">{getDashboardLabel('balance', i18n.language === 'bn')}</div>
               </div>
             </>
           )}
         </div>
         <div className="space-y-4">
           <div className="bg-slate-700/30 p-4 rounded-lg">
-            <h5 className="text-sm font-semibold text-slate-300 mb-2">{getDashboardLabel('monthlyCostTrend', banglaEnabled)}</h5>
+            <h5 className="text-sm font-semibold text-slate-300 mb-2">{getDashboardLabel('monthlyCostTrend', i18n.language === 'bn')}</h5>
             <div className="text-xl font-bold text-orange-400">
               {gaugeData ? formatCurrency(sanitizeCurrency(gaugeData.averageMonthlyCost)) : '—'}
             </div>
           </div>
           <div className="bg-slate-700/30 p-4 rounded-lg">
-            <h5 className="text-sm font-semibold text-slate-300 mb-2">{banglaEnabled ? 'আনুমানিক বাকি দিন' : 'Estimated Days Remaining'}</h5>
-            <div className="text-xl font-bold text-green-400">{gaugeData && !balanceUnavailable ? gaugeData.daysRemaining : '—'} {banglaEnabled ? 'দিন' : 'days'}</div>
+            <h5 className="text-sm font-semibold text-slate-300 mb-2">{t('estimatedDaysRemaining')}</h5>
+            <div className="text-xl font-bold text-green-400">{gaugeData && !balanceUnavailable ? gaugeData.daysRemaining : '—'} {t('days')}</div>
           </div>
           <div className="bg-slate-700/30 p-4 rounded-lg">
-            <h5 className="text-sm font-semibold text-slate-300 mb-2">{getDashboardLabel('status', banglaEnabled)}</h5>
+            <h5 className="text-sm font-semibold text-slate-300 mb-2">{getDashboardLabel('status', i18n.language === 'bn')}</h5>
             <div className={`text-sm font-semibold px-3 py-1 rounded-full inline-block ${
               gaugeData && !balanceUnavailable ? (
                 gaugeData.percentage > 50 ? 'bg-green-500/20 text-green-300' :
@@ -95,9 +97,9 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable })
               ) : 'bg-yellow-500/20 text-yellow-300'
             }`}>
               {gaugeData && !balanceUnavailable ? (
-                gaugeData.percentage > 50 ? (banglaEnabled ? 'ভালো' : 'Good') : 
-                  gaugeData.percentage > 25 ? (banglaEnabled ? 'সতর্কতা' : 'Warning') : (banglaEnabled ? 'কম' : 'Low')
-              ) : (banglaEnabled ? 'অজানা' : 'Unknown')}
+                gaugeData.percentage > 50 ? t('good') : 
+                  gaugeData.percentage > 25 ? t('warning') : t('low')
+              ) : t('unknown')}
             </div>
           </div>
         </div>

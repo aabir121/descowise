@@ -1,35 +1,36 @@
 // @ts-nocheck
 import React from 'react';
 import Section from '../common/Section';
-import { getDashboardLabel } from './dashboardLabels';
+import { useTranslation } from 'react-i18next';
 
 const BoxPlotSection = ({ boxPlotData, banglaEnabled }) => {
+  const { t } = useTranslation();
   if (!boxPlotData) return null;
   return (
-    <Section title={banglaEnabled ? 'দৈনিক ব্যবহার বণ্টন' : 'Daily Consumption Distribution'} defaultOpen>
+    <Section title={t('dailyConsumptionDistribution')} defaultOpen>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-slate-100">{banglaEnabled ? 'পরিসংখ্যানিক সারাংশ' : 'Statistical Summary'}</h4>
+          <h4 className="text-lg font-semibold text-slate-100">{t('statisticalSummary')}</h4>
           <div className="space-y-3">
             <div className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg">
-              <span className="text-slate-300">{banglaEnabled ? 'সর্বনিম্ন' : 'Minimum'}</span>
-              <span className="text-white font-semibold">{boxPlotData.min} kWh</span>
+              <span className="text-slate-300">{t('minimum')}</span>
+              <span className="text-white font-semibold">{boxPlotData.min} {t('kWh')}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg">
-              <span className="text-slate-300">{banglaEnabled ? '২৫তম পার্সেন্টাইল' : '25th Percentile'}</span>
-              <span className="text-white font-semibold">{boxPlotData.q1} kWh</span>
+              <span className="text-slate-300">{t('percentile25')}</span>
+              <span className="text-white font-semibold">{boxPlotData.q1} {t('kWh')}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg">
-              <span className="text-slate-300">{banglaEnabled ? 'মধ্যমা' : 'Median'}</span>
-              <span className="text-white font-semibold">{boxPlotData.median} kWh</span>
+              <span className="text-slate-300">{t('median')}</span>
+              <span className="text-white font-semibold">{boxPlotData.median} {t('kWh')}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg">
-              <span className="text-slate-300">{banglaEnabled ? '৭৫তম পার্সেন্টাইল' : '75th Percentile'}</span>
-              <span className="text-white font-semibold">{boxPlotData.q3} kWh</span>
+              <span className="text-slate-300">{t('percentile75')}</span>
+              <span className="text-white font-semibold">{boxPlotData.q3} {t('kWh')}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg">
-              <span className="text-slate-300">{banglaEnabled ? 'সর্বাধিক' : 'Maximum'}</span>
-              <span className="text-white font-semibold">{boxPlotData.max} kWh</span>
+              <span className="text-slate-300">{t('maximum')}</span>
+              <span className="text-white font-semibold">{boxPlotData.max} {t('kWh')}</span>
             </div>
           </div>
         </div>
@@ -47,11 +48,11 @@ const BoxPlotSection = ({ boxPlotData, banglaEnabled }) => {
                 </div>
               </div>
               <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-slate-400 px-4">
-                <span>{banglaEnabled ? 'নিম্ন' : 'Min'}</span>
-                <span>{banglaEnabled ? 'Q1' : 'Q1'}</span>
-                <span>{banglaEnabled ? 'মধ্যমা' : 'Median'}</span>
-                <span>{banglaEnabled ? 'Q3' : 'Q3'}</span>
-                <span>{banglaEnabled ? 'উচ্চ' : 'Max'}</span>
+                <span>{t('min')}</span>
+                <span>{t('q1')}</span>
+                <span>{t('median')}</span>
+                <span>{t('q3')}</span>
+                <span>{t('max')}</span>
               </div>
             </div>
           </div>

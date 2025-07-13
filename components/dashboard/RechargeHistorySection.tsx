@@ -7,9 +7,11 @@ import { useState } from 'react';
 import { useRef } from 'react';
 import { getDashboardLabel } from './dashboardLabels';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
+import { useTranslation } from 'react-i18next';
 
 const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
   const printRef = useRef();
+  const { t } = useTranslation();
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -31,41 +33,41 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
         >
           {/* Header */}
           <div className="text-center mb-2">
-            <div className="font-bold text-lg print:text-base">Dhaka Electric Supply Company Ltd</div>
-            <div className="text-xs font-semibold text-slate-500 print:text-black">DESCO</div>
+            <div className="font-bold text-lg print:text-base">{t('descoCompany')}</div>
+            <div className="text-xs font-semibold text-slate-500 print:text-black">{t('desco')}</div>
             <div className="mt-1 mb-2 border-b border-dashed border-slate-300 print:border-black" />
           </div>
 
           {/* General Info */}
           <div className="mb-2">
-            <div><span className="inline-block w-28">Date</span>: {new Date(recharge.rechargeDate).toLocaleString()}</div>
-            <div><span className="inline-block w-28">Order No</span>: {recharge.orderID}</div>
-            <div><span className="inline-block w-28">Name</span>: {recharge.name || '-'}</div>
-            <div><span className="inline-block w-28">Meter No</span>: {recharge.meterNo}</div>
-            <div><span className="inline-block w-28">Account No</span>: {recharge.accountNo}</div>
-            <div><span className="inline-block w-28">Status</span>: {recharge.orderStatus}</div>
-            <div><span className="inline-block w-28">Operator</span>: {recharge.rechargeOperator}</div>
-            <div><span className="inline-block w-28">Sequence</span>: {recharge.sequence}</div>
+            <div><span className="inline-block w-28">{t('date')}</span>: {new Date(recharge.rechargeDate).toLocaleString()}</div>
+            <div><span className="inline-block w-28">{t('orderNo')}</span>: {recharge.orderID}</div>
+            <div><span className="inline-block w-28">{t('name')}</span>: {recharge.name || '-'}</div>
+            <div><span className="inline-block w-28">{t('meterNo')}</span>: {recharge.meterNo}</div>
+            <div><span className="inline-block w-28">{t('accountNo')}</span>: {recharge.accountNo}</div>
+            <div><span className="inline-block w-28">{t('status')}</span>: {recharge.orderStatus}</div>
+            <div><span className="inline-block w-28">{t('operator')}</span>: {recharge.rechargeOperator}</div>
+            <div><span className="inline-block w-28">{t('sequence')}</span>: {recharge.sequence}</div>
           </div>
 
           <div className="my-2 border-b border-dashed border-slate-300 print:border-black" />
 
           {/* Charges */}
           <div className="mb-2">
-            <div className="font-semibold mb-1 text-xs print:text-xs">Charges</div>
-            <div><span className="inline-block w-28">Energy Cost</span>: {formatCurrency(sanitizeCurrency(recharge.energyAmount))}</div>
-            <div><span className="inline-block w-28">Demand Charge</span>: {formatCurrency(sanitizeCurrency(recharge.chargeItems?.find(i => i.chargeItemName === 'Demand Charge')?.chargeAmount))}</div>
-            <div><span className="inline-block w-28">Meter Rent 1P</span>: {formatCurrency(sanitizeCurrency(recharge.chargeItems?.find(i => i.chargeItemName === 'Meter Rent 1P')?.chargeAmount))}</div>
-            <div><span className="inline-block w-28">VAT (5%)</span>: {formatCurrency(sanitizeCurrency(recharge.VAT))}</div>
-            <div><span className="inline-block w-28">Rebate</span>: {formatCurrency(sanitizeCurrency(recharge.rebate))}</div>
-            <div className="font-bold mt-1"><span className="inline-block w-28">Gross Amount</span>: {formatCurrency(sanitizeCurrency(recharge.totalAmount))}</div>
+            <div className="font-semibold mb-1 text-xs print:text-xs">{t('charges')}</div>
+            <div><span className="inline-block w-28">{t('energyCost')}</span>: {formatCurrency(sanitizeCurrency(recharge.energyAmount))}</div>
+            <div><span className="inline-block w-28">{t('demandCharge')}</span>: {formatCurrency(sanitizeCurrency(recharge.chargeItems?.find(i => i.chargeItemName === 'Demand Charge')?.chargeAmount))}</div>
+            <div><span className="inline-block w-28">{t('meterRent1P')}</span>: {formatCurrency(sanitizeCurrency(recharge.chargeItems?.find(i => i.chargeItemName === 'Meter Rent 1P')?.chargeAmount))}</div>
+            <div><span className="inline-block w-28">{t('vat5')}</span>: {formatCurrency(sanitizeCurrency(recharge.VAT))}</div>
+            <div><span className="inline-block w-28">{t('rebate')}</span>: {formatCurrency(sanitizeCurrency(recharge.rebate))}</div>
+            <div className="font-bold mt-1"><span className="inline-block w-28">{t('grossAmount')}</span>: {formatCurrency(sanitizeCurrency(recharge.totalAmount))}</div>
           </div>
 
           <div className="my-2 border-b border-dashed border-slate-300 print:border-black" />
 
           {/* Token */}
           <div className="mb-2">
-            <div className="font-semibold text-xs mb-1 print:text-xs">Token</div>
+            <div className="font-semibold text-xs mb-1 print:text-xs">{t('token')}</div>
             <div className="border border-slate-300 print:border-black rounded px-2 py-2 text-center font-mono tracking-widest text-lg print:text-base bg-white text-black select-all">
               {recharge.token.match(/.{1,4}/g)?.join('-')}
             </div>
@@ -75,13 +77,13 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge }) => {
 
           {/* Footer */}
           <div className="text-center mt-4 text-xs print:text-xs">
-            <div>Thank you for using DESCO!</div>
-            <div className="mt-1">For queries, call 16262</div>
+            <div>{t('thankYouDesco')}</div>
+            <div className="mt-1">{t('forQueries')}</div>
           </div>
         </div>
         <div className="flex justify-end gap-2 p-3 pt-2 border-t border-slate-700 bg-slate-800 sticky bottom-0 print:hidden z-10">
-          <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm">Print</button>
-          <button onClick={onClose} className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-sm">Close</button>
+          <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('print')}</button>
+          <button onClick={onClose} className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('close')}</button>
         </div>
       </div>
     </Modal>
@@ -92,6 +94,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const { t, i18n } = useTranslation();
   const itemsPerPage = 5;
 
   const handleDetails = (item) => {
@@ -115,7 +118,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   };
 
   return (
-    <Section title={getDashboardLabel('rechargeHistory', banglaEnabled) + (banglaEnabled ? ' (গত ১ বছর)' : ' (Last 1 year)')} defaultOpen>
+    <Section title={getDashboardLabel('rechargeHistory', i18n.language === 'bn') + ' ' + t('last1Year')} defaultOpen>
       <div className="flex flex-wrap justify-end items-center gap-4 mb-4">
         <select
           value={rechargeYear}
@@ -130,12 +133,12 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
         <table className="w-full text-sm text-left text-slate-300">
           <thead className="text-xs text-slate-400 uppercase bg-slate-700/50">
             <tr>
-              <th className="px-4 py-3">{banglaEnabled ? 'বিস্তারিত' : 'Action'}</th>
-              <th className="px-4 py-3">{banglaEnabled ? 'তারিখ ও সময়' : 'Date & Time'}</th>
-              <th className="px-4 py-3">{banglaEnabled ? 'মিটার নম্বর' : 'Meter No'}</th>
-              <th className="px-4 py-3">{banglaEnabled ? 'মোট পরিমাণ' : 'Total Amount'}</th>
-              <th className="px-4 py-3">{banglaEnabled ? 'এনার্জি পরিমাণ' : 'Energy Amount'}</th>
-              <th className="px-4 py-3">{getDashboardLabel('status', banglaEnabled)}</th>
+              <th className="px-4 py-3">{t('action')}</th>
+              <th className="px-4 py-3">{t('dateTime')}</th>
+              <th className="px-4 py-3">{t('meterNo')}</th>
+              <th className="px-4 py-3">{t('totalAmount')}</th>
+              <th className="px-4 py-3">{t('energyAmount')}</th>
+              <th className="px-4 py-3">{getDashboardLabel('status', i18n.language === 'bn')}</th>
             </tr>
           </thead>
           <tbody>
@@ -143,7 +146,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
               <tr><td colSpan={6} className="text-center py-8"><Spinner/></td></tr>
             ) : currentItems && currentItems.length > 0 ? currentItems.map((item) => (
               <tr key={item.orderID} className="border-b border-slate-700 hover:bg-slate-700/50">
-                <td className="px-4 py-3"><button onClick={() => handleDetails(item)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">{banglaEnabled ? 'বিস্তারিত' : 'Details'}</button></td>
+                <td className="px-4 py-3"><button onClick={() => handleDetails(item)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">{t('details')}</button></td>
                 <td className="px-4 py-3 whitespace-nowrap">{new Date(item.rechargeDate).toLocaleString()}</td>
                 <td className="px-4 py-3">{item.meterNo}</td>
                 <td className="px-4 py-3 font-medium text-white">{formatCurrency(sanitizeCurrency(item.totalAmount))}</td>
@@ -155,7 +158,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-400">{banglaEnabled ? `${rechargeYear} সালের জন্য কোনো রিচার্জ ইতিহাস পাওয়া যায়নি।` : `No recharge history found for ${rechargeYear}.`}</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-slate-400">{t('noRechargeHistory', { year: rechargeYear })}</td></tr>
             )}
           </tbody>
         </table>
@@ -165,10 +168,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
       {!isHistoryLoading && rechargeHistory && rechargeHistory.length > 0 && totalPages > 1 && (
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 px-2 py-2 bg-slate-700/30 rounded-lg w-full gap-2">
           <div className="text-xs sm:text-sm text-slate-300 mb-2 sm:mb-0">
-            {banglaEnabled ? 
-              `পৃষ্ঠা ${currentPage} এর ${totalPages} (মোট ${rechargeHistory.length} আইটেম)` :
-              `Page ${currentPage} of ${totalPages} (${rechargeHistory.length} total items)`
-            }
+            {t('pageOf', { currentPage, totalPages, totalItems: rechargeHistory.length })}
           </div>
           <div className="flex gap-1 sm:gap-2 overflow-x-auto w-full sm:w-auto pb-1">
             <button
@@ -176,7 +176,7 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
               disabled={currentPage === 1}
               className="px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-600 hover:bg-slate-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-200 rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
             >
-              {banglaEnabled ? 'পূর্ববর্তী' : 'Previous'}
+              {t('previous')}
             </button>
             {[...Array(totalPages)].map((_, i) => (
               <button
@@ -196,12 +196,11 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
               disabled={currentPage === totalPages}
               className="px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-600 hover:bg-slate-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-200 rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
             >
-              {banglaEnabled ? 'পরবর্তী' : 'Next'}
+              {t('next')}
             </button>
           </div>
         </div>
       )}
-
       <RechargeDetailsModal isOpen={modalOpen} onClose={() => setModalOpen(false)} recharge={selectedRecharge} />
     </Section>
   );

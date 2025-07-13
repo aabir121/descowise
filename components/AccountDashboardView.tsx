@@ -12,9 +12,10 @@ import { askGeminiAboutAccount } from '../services/descoService';
 import FloatingCoffeeButton from './FloatingCoffeeButton';
 
 import { useBalanceWarning } from '../hooks/useBalanceWarning';
+import { useTranslation } from 'react-i18next';
 
 // Helper function to calculate data staleness
-function getDataStalenessInfo(readingTime?: string, language: 'bn' | 'en' = 'en'): { isStale: boolean; message: string } {
+function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: string): { isStale: boolean; message: string } {
     if (!readingTime) return { isStale: false, message: '' };
     
     const latestDate = new Date(readingTime).toISOString().split('T')[0];
@@ -22,19 +23,29 @@ function getDataStalenessInfo(readingTime?: string, language: 'bn' | 'en' = 'en'
     const daysBehind = Math.floor((new Date(today).getTime() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24));
     
     if (daysBehind > 0) {
-        const message = language === 'bn' 
-            ? `সর্বশেষ তথ্য ${latestDate} পর্যন্ত, ${daysBehind} দিন আগের`
-            : `Last updated ${latestDate} (${daysBehind} day${daysBehind > 1 ? 's' : ''} ago)`;
+        const plural = daysBehind > 1 ? 's' : '';
+        const message = t
+            ? t('lastUpdatedAgo', { date: latestDate, days: daysBehind, plural })
+            : `Last updated ${latestDate} (${daysBehind} day${plural} ago)`;
         return { isStale: true, message };
     } else {
-        const message = language === 'bn'
-            ? `সর্বশেষ আপডেট: ${latestDate}`
+        const message = t
+            ? t('lastUpdated', { date: latestDate })
             : `Last updated: ${latestDate}`;
         return { isStale: false, message };
     }
 }
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; }> = ({ account, onClose, onDelete, showNotification }) => {
+    const { t, i18n } = useTranslation();
+    React.useEffect(() => {
+        if (account.banglaEnabled && i18n.language !== 'bn') {
+            i18n.changeLanguage('bn');
+        } else if (!account.banglaEnabled && i18n.language !== 'en') {
+            i18n.changeLanguage('en');
+        }
+        // Only run when account.banglaEnabled or i18n changes
+    }, [account.banglaEnabled, i18n]);
     const {
         processedData,
         isLoading,
@@ -66,7 +77,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     // Removed showBalanceWarning state
 
     // Calculate data staleness
-    const stalenessInfo = getDataStalenessInfo(data?.balance?.readingTime, account.banglaEnabled ? 'bn' : 'en');
+    const stalenessInfo = getDataStalenessInfo(data?.balance?.readingTime, t);
 
     // Placeholder for Gemini Q&A function
     async function handleSendMessage() {
@@ -84,7 +95,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             );
             setChatHistory(prev => [...prev, { role: 'bot', content: botReply }]);
         } catch (e: any) {
-            setChatHistory(prev => [...prev, { role: 'bot', content: 'Sorry, something went wrong: ' + (e?.message || 'Unknown error') }]);
+            setChatHistory(prev => [...prev, { role: 'bot', content: t('chatError', { error: e?.message || t('unknownError') }) }]);
         } finally {
             setChatLoading(false);
         }
@@ -111,11 +122,11 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
             {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
                 <div className="flex items-center justify-between max-w-md mx-auto bg-yellow-50 text-yellow-800 border border-yellow-200 px-3 py-2 rounded-md text-sm mb-3">
                     <div className="flex items-center gap-2">
-                        <span className="font-medium">DESCO balance data unavailable</span>
+                        <span className="font-medium">{t('balanceUnavailable')}</span>
                         <button
                             onClick={() => openBalanceWarning()}
                             className="p-1 rounded hover:bg-yellow-100 focus:outline-none"
-                            aria-label="More information about unavailable balance"
+                            aria-label={t('moreInfoUnavailableBalance')}
                         >
                             <InformationCircleIcon className="w-4 h-4 text-yellow-600 hover:text-yellow-700" />
                         </button>
@@ -126,7 +137,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 {isLoading ? (
                     <div className="flex justify-center items-center h-full"><Spinner size="w-12 h-12" /></div>
                 ) : error ? (
-                    <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>
+                    <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg">{t('aiError', { error })}</div>
                 ) : (
                     <DashboardSections
                         processedData={processedData}
@@ -140,7 +151,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         rechargeYear={rechargeYear}
                         isHistoryLoading={isHistoryLoading}
                         handleYearChange={handleYearChange}
-                        banglaEnabled={account.banglaEnabled}
+                        banglaEnabled={i18n.language === 'bn'}
                         balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null))}
                         account={account}
                         showNotification={showNotification}
@@ -154,7 +165,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     <button
                         className="desco-chat-btn bg-cyan-600 hover:bg-cyan-700 text-white rounded-full shadow-lg p-4 focus:outline-none"
                         onClick={() => setChatOpen(true)}
-                        aria-label="Open Chatbot"
+                        aria-label={t('openChatbot')}
                         style={{ display: chatOpen ? 'none' : 'block' }}
                     >
                         💬
@@ -163,11 +174,11 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     {chatOpen && (
                         <div className="w-80 max-w-full bg-slate-800 rounded-lg shadow-2xl flex flex-col h-96">
                             <div className="flex items-center justify-between p-3 border-b border-slate-700">
-                                <span className="font-semibold">Ask DESCO AI</span>
-                                <button className="text-slate-400 hover:text-slate-200" onClick={() => setChatOpen(false)} aria-label="Close Chatbot">✕</button>
+                                <span className="font-semibold">{t('askDescoAI')}</span>
+                                <button className="text-slate-400 hover:text-slate-200" onClick={() => setChatOpen(false)} aria-label={t('closeChatbot')}>✕</button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                                {chatHistory.length === 0 && <div className="text-slate-400 text-sm">Ask anything about your account, usage, or bills!</div>}
+                                {chatHistory.length === 0 && <div className="text-slate-400 text-sm">{t('askAnything')}</div>}
                                 {chatHistory.map((msg, i) => (
                                     <div key={i} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
                                         <div className={msg.role === 'user' ? 'inline-block bg-cyan-600 text-white rounded-lg px-3 py-1 mb-1' : 'inline-block bg-slate-700 text-slate-100 rounded-lg px-3 py-1 mb-1'}>
@@ -175,13 +186,13 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                         </div>
                                     </div>
                                 ))}
-                                {chatLoading && <div className="text-slate-400 text-xs">DESCO AI is typing...</div>}
+                                {chatLoading && <div className="text-slate-400 text-xs">{t('aiTyping')}</div>}
                             </div>
                             <form className="p-3 border-t border-slate-700 flex gap-2" onSubmit={e => { e.preventDefault(); handleSendMessage(); }}>
                                 <input
                                     className="flex-1 rounded bg-slate-700 text-slate-100 px-3 py-2 focus:outline-none"
                                     type="text"
-                                    placeholder="Type your question..."
+                                    placeholder={t('typeQuestion')}
                                     value={chatInput}
                                     onChange={e => setChatInput(e.target.value)}
                                     disabled={chatLoading}
@@ -191,7 +202,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                     className="bg-cyan-600 hover:bg-cyan-700 text-white rounded px-4 py-2 disabled:opacity-50"
                                     disabled={chatLoading || !chatInput.trim()}
                                 >
-                                    Send
+                                    {t('send')}
                                 </button>
                             </form>
                         </div>
@@ -202,10 +213,10 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 isOpen={portalConfirmation.isOpen}
                 onClose={() => setPortalConfirmation({ isOpen: false })}
                 onConfirm={handleOpenPortal}
-                title="Open Official DESCO Portal"
-                message={`This will copy your account ID "${account.accountNo}" to the clipboard and open the official DESCO customer portal in a new tab. You can then paste your account ID to log in.`}
-                confirmText="Copy & Open Portal"
-                cancelText="Cancel"
+                title={t('openDescoPortal')}
+                message={t('openDescoPortalMsg', { accountNo: account.accountNo })}
+                confirmText={t('copyOpenPortal')}
+                cancelText={t('cancel')}
                 confirmButtonClass="bg-cyan-600 hover:bg-cyan-700"
                 icon={<BuildingOfficeIcon className="w-6 h-6" />}
             />
@@ -220,14 +231,13 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         }
                         setDeleteConfirmation({ isOpen: false });
                     }}
-                    title="Delete Account"
-                    message={
-                        deleteConfirmation.accountNo
-                            ? `Are you sure you want to delete account "${deleteConfirmation.accountNo}"? This action cannot be undone and all account data will be permanently removed.`
-                            : "No account selected for deletion."
+                    title={t('deleteAccount')}
+                    message={deleteConfirmation.accountNo
+                        ? t('deleteAccountMsg', { accountNo: deleteConfirmation.accountNo })
+                        : t('noAccountToDelete')
                     }
-                    confirmText="Delete Account"
-                    cancelText="Cancel"
+                    confirmText={t('deleteAccount')}
+                    cancelText={t('cancel')}
                     confirmButtonClass="bg-red-600 hover:bg-red-700"
                     icon={<TrashIcon className="w-6 h-6" />}
                 />

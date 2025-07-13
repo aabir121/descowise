@@ -4,11 +4,13 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
+import { useTranslation } from 'react-i18next';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
 
 const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled }) => {
+  const { t, i18n } = useTranslation();
   const [chartView, setChartView] = useState<ChartView>('cost');
   // Default to 7days if not set
   React.useEffect(() => {
@@ -25,36 +27,36 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
   }, 0);
 
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
-    { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
-    { value: 'thisMonth', label: getDashboardLabel('thisMonth', banglaEnabled) },
-    { value: '30days', label: getDashboardLabel('last30Days', banglaEnabled) },
-    { value: '6months', label: getDashboardLabel('last6Months', banglaEnabled) },
-    { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) },
-    { value: '2years', label: getDashboardLabel('last2Years', banglaEnabled) },
+    { value: '7days', label: getDashboardLabel('last7Days', i18n.language === 'bn') },
+    { value: 'thisMonth', label: getDashboardLabel('thisMonth', i18n.language === 'bn') },
+    { value: '30days', label: getDashboardLabel('last30Days', i18n.language === 'bn') },
+    { value: '6months', label: getDashboardLabel('last6Months', i18n.language === 'bn') },
+    { value: '1year', label: getDashboardLabel('last1Year', i18n.language === 'bn') },
+    { value: '2years', label: getDashboardLabel('last2Years', i18n.language === 'bn') },
   ];
 
   const chartViewOptions: { value: ChartView; label: string }[] = [
-    { value: 'cost', label: getDashboardLabel('costComparison', banglaEnabled) },
-    { value: 'energy', label: getDashboardLabel('energyConsumption', banglaEnabled) },
+    { value: 'cost', label: getDashboardLabel('costComparison', i18n.language === 'bn') },
+    { value: 'energy', label: getDashboardLabel('energyConsumption', i18n.language === 'bn') },
   ];
 
   // Create summary value for header
   const summaryValue = (
     <div className="text-right">
-      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}>
+      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}> 
         {totalValue.toLocaleString('en-US', { 
           minimumFractionDigits: 0, 
           maximumFractionDigits: chartView === 'energy' ? 1 : 0 
         })}
         <span className="text-slate-400 text-xs sm:text-sm font-medium ml-1">
-          {chartView === 'energy' ? 'kWh' : 'BDT'}
+          {chartView === 'energy' ? t('kWh') : t('BDT')}
         </span>
       </div>
     </div>
   );
 
   return (
-    <Section title={getDashboardLabel('consumptionChart', banglaEnabled)} defaultOpen sectionId="consumption-chart" summaryValue={summaryValue}>
+    <Section title={getDashboardLabel('consumptionChart', i18n.language === 'bn')} defaultOpen sectionId="consumption-chart" summaryValue={summaryValue}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
         {/* Chart View Toggle */}
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">
@@ -107,17 +109,17 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
             <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} stroke="#4b5563" fontSize={12} />
             {chartView === 'energy' ? (
               <>
-                <YAxis tick={{ fill: '#fb923c', fontSize: 12 }} stroke="#f97316" label={{ value: 'kWh', angle: -90, position: 'insideLeft', fill: '#fb923c', dx: -10, fontSize: 12 }} />
+                <YAxis tick={{ fill: '#fb923c', fontSize: 12 }} stroke="#f97316" label={{ value: t('kWh'), angle: -90, position: 'insideLeft', fill: '#fb923c', dx: -10, fontSize: 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px', fontSize: 12 }} />
-                <Line type="monotone" dataKey="kWh" stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 2, r: 4 }} name="kWh" />
+                <Line type="monotone" dataKey="kWh" stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 2, r: 4 }} name={t('kWh')} />
               </>
             ) : (
               <>
-                <YAxis tick={{ fill: '#22d3ee', fontSize: 12 }} stroke="#06b6d4" label={{ value: 'BDT', angle: -90, position: 'insideLeft', fill: '#22d3ee', dx: -10, fontSize: 12 }} />
+                <YAxis tick={{ fill: '#22d3ee', fontSize: 12 }} stroke="#06b6d4" label={{ value: t('BDT'), angle: -90, position: 'insideLeft', fill: '#22d3ee', dx: -10, fontSize: 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px', fontSize: 12 }} />
-                <Line type="monotone" dataKey="BDT" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 2, r: 4 }} name="BDT" />
+                <Line type="monotone" dataKey="BDT" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 2, r: 4 }} name={t('BDT')} />
               </>
             )}
           </LineChart>
