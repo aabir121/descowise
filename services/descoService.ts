@@ -1,5 +1,5 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { AccountInfo, BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary } from '../types';
+import { AccountInfo, BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiError, AiSummaryResponse } from '../types';
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
 import { fetchJsonWithHandling } from '../utils/api';
 import { generateAiDashboardPrompt } from '../ai/promptGenerators';
@@ -76,53 +76,187 @@ export const getAiDashboardSummary = async (
     currentMonth: string,
     recentDailyConsumption: DailyConsumption[],
     banglaEnabled: boolean = false
-): Promise<AiSummary> => {
-    const sanitizedMonthlyConsumption = monthlyConsumption.map(item => ({
-        ...item,
-        consumedTaka: sanitizeCurrency(item.consumedTaka)
-    }));
-    const sanitizedRechargeHistory = rechargeHistory.map(item => ({
-        ...item,
-        totalAmount: sanitizeCurrency(item.totalAmount)
-    }));
-    const sanitizedRecentDailyConsumption = recentDailyConsumption.map(item => ({
-        ...item,
-        consumedTaka: sanitizeCurrency(item.consumedTaka)
-    }));
-    const sanitizedCurrentBalance = balanceData?.balance !== null && balanceData?.balance !== undefined ? sanitizeCurrency(balanceData.balance) : 0;
-    const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
-    }
-    const ai = new GoogleGenAI({ apiKey });
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
-    let temperature = 0.3;
-    if (process.env.GEMINI_TEMPERATURE) {
-        const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
-        if (!isNaN(parsed)) temperature = parsed;
-    }
-    const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
-    const prompt = generateAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, balanceData?.readingTime, currentMonthConsumption, banglaEnabled ? 'bn' : 'en');
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            temperature
-        }
-    });
-    let jsonStr = response.text?.trim() || '';
-    const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-    const match = jsonStr.match(fenceRegex);
-    if (match && match[2]) {
-      jsonStr = match[2].trim();
-    }
+): Promise<AiSummaryResponse> => {
     try {
-        return JSON.parse(jsonStr) as AiSummary;
-    } catch (e) {
-        console.error("Failed to parse AI response:", jsonStr, e);
-        throw new Error("Failed to get a valid analysis from the AI.");
+        const sanitizedMonthlyConsumption = monthlyConsumption.map(item => ({
+            ...item,
+            consumedTaka: sanitizeCurrency(item.consumedTaka)
+        }));
+        const sanitizedRechargeHistory = rechargeHistory.map(item => ({
+            ...item,
+            totalAmount: sanitizeCurrency(item.totalAmount)
+        }));
+        const sanitizedRecentDailyConsumption = recentDailyConsumption.map(item => ({
+            ...item,
+            consumedTaka: sanitizeCurrency(item.consumedTaka)
+        }));
+        const sanitizedCurrentBalance = balanceData?.balance !== null && balanceData?.balance !== undefined ? sanitizeCurrency(balanceData.balance) : 0;
+        const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
+        
+        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+            return {
+                success: false,
+                error: {
+                    type: 'api_key',
+                    message: 'Gemini API key not configured',
+                    details: 'Please set GEMINI_API_KEY in your Vercel environment variables.',
+                    retryable: false
+                }
+            };
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
+        let temperature = 0.3;
+        if (process.env.GEMINI_TEMPERATURE) {
+            const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
+            if (!isNaN(parsed)) temperature = parsed;
+        }
+
+        const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
+        const prompt = generateAiDashboardPrompt(sanitizedMonthlyConsumption, monthlyRechargeData, sanitizedRecentDailyConsumption, sanitizedCurrentBalance, currentMonth, balanceData?.readingTime, currentMonthConsumption, banglaEnabled ? 'bn' : 'en');
+
+        // Check prompt length for token limit
+        const estimatedTokens = Math.ceil(prompt.length / 4); // Rough estimation
+        if (estimatedTokens > 30000) { // Conservative limit
+            return {
+                success: false,
+                error: {
+                    type: 'token_limit',
+                    message: 'Input data too large for AI analysis',
+                    details: `Estimated tokens: ${estimatedTokens.toLocaleString()}. Please try with less historical data.`,
+                    retryable: true
+                }
+            };
+        }
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                temperature
+            }
+        });
+
+        // Check for safety blocks in the response
+        if (response.promptFeedback && response.promptFeedback.blockReason) {
+            return {
+                success: false,
+                error: {
+                    type: 'safety_block',
+                    message: 'AI analysis blocked due to safety concerns',
+                    details: `Prompt blocked: ${response.promptFeedback.blockReason}`,
+                    retryable: true
+                }
+            };
+        }
+
+        if (response.candidates && response.candidates.length > 0) {
+            const firstCandidate = response.candidates[0];
+            if (firstCandidate.finishReason === 'SAFETY') {
+                return {
+                    success: false,
+                    error: {
+                        type: 'safety_block',
+                        message: 'AI response blocked due to safety concerns',
+                        details: 'The generated content was blocked due to safety filters.',
+                        retryable: true
+                    }
+                };
+            }
+        }
+
+        let jsonStr = response.text?.trim() || '';
+        const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
+        const match = jsonStr.match(fenceRegex);
+        if (match && match[2]) {
+            jsonStr = match[2].trim();
+        }
+
+        try {
+            const aiSummary = JSON.parse(jsonStr) as AiSummary;
+            return {
+                success: true,
+                data: aiSummary
+            };
+        } catch (e) {
+            console.error("Failed to parse AI response:", jsonStr, e);
+            return {
+                success: false,
+                error: {
+                    type: 'parsing',
+                    message: 'Failed to parse AI response',
+                    details: 'The AI generated invalid JSON format. Please try again.',
+                    retryable: true
+                }
+            };
+        }
+    } catch (error: any) {
+        console.error("AI Service Error:", error);
+        
+        // Handle specific error types
+        if (error.message?.includes('API key')) {
+            return {
+                success: false,
+                error: {
+                    type: 'api_key',
+                    message: 'Invalid API key',
+                    details: 'Please check your Gemini API key configuration.',
+                    retryable: false
+                }
+            };
+        }
+        
+        if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+            return {
+                success: false,
+                error: {
+                    type: 'rate_limit',
+                    message: 'Rate limit exceeded',
+                    details: 'Too many requests. Please wait a moment and try again.',
+                    retryable: true,
+                    statusCode: 429
+                }
+            };
+        }
+        
+        if (error.message?.includes('timeout') || error.message?.includes('504')) {
+            return {
+                success: false,
+                error: {
+                    type: 'timeout',
+                    message: 'Request timed out',
+                    details: 'The AI analysis took too long. Please try again.',
+                    retryable: true,
+                    statusCode: 504
+                }
+            };
+        }
+        
+        if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            return {
+                success: false,
+                error: {
+                    type: 'network',
+                    message: 'Network error',
+                    details: 'Please check your internet connection and try again.',
+                    retryable: true
+                }
+            };
+        }
+        
+        // Default error
+        return {
+            success: false,
+            error: {
+                type: 'unknown',
+                message: 'AI analysis failed',
+                details: error.message || 'An unexpected error occurred.',
+                retryable: true
+            }
+        };
     }
 };
 

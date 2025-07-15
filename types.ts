@@ -114,3 +114,19 @@ export interface MonthlyConsumption {
     month: string; // "YYYY-MM"
     maximumDemand: number;
 }
+
+// --- AI Error Handling Types ---
+
+export interface AiError {
+    type: 'api_key' | 'rate_limit' | 'token_limit' | 'safety_block' | 'network' | 'parsing' | 'timeout' | 'unknown';
+    message: string;
+    details?: string;
+    retryable?: boolean;
+    statusCode?: number;
+}
+
+export interface AiSummaryResponse {
+    success: boolean;
+    data?: AiSummary;
+    error?: AiError;
+}

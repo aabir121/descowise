@@ -110,6 +110,7 @@ const DashboardSections: React.FC<any> = ({
         aiSummary={data?.aiSummary}
         isAiLoading={isAiLoading}
         isAiAvailable={isAiAvailable}
+        aiError={data?.aiError}
         banglaEnabled={banglaEnabled}
         t={t}
         balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}

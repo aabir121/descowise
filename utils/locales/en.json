@@ -422,5 +422,11 @@
   "whatToDoAction3": "Wait for the next data update (usually within 24 hours)",
   "whatToDoAction4": "Use DESCO's official portal as an alternative reference",
   "dataAccuracyNote": "We show warnings when data might be unreliable, but always verify critical information with your meter or DESCO directly.",
-  "getStarted": "Get Started"
+  "getStarted": "Get Started",
+  "aiUnavailable": "AI insights are temporarily unavailable. Please try again later.",
+  "aiRateLimit": "AI insights are temporarily unavailable due to high demand. Please try again in a few minutes.",
+  "aiTooMuchData": "There is too much data to analyze at once. Please try with fewer accounts or a shorter time range.",
+  "aiNetworkIssue": "AI insights could not be loaded due to a network issue. Please check your connection and try again.",
+  "aiSafetyBlock": "AI insights could not be generated due to content restrictions.",
+  "aiGenericError": "Sorry, something went wrong while generating AI insights. Please try again later."
 } 

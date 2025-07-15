@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import * as api from '../../services/descoService';
-import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, BalanceData } from '../../types';
+import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, BalanceData, AiError } from '../../types';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '3months' | '6months' | '1year' | '2years';
 
@@ -11,6 +11,7 @@ type UseDashboardDataReturn = {
   error: string | null;
   isAiLoading: boolean;
   isAiAvailable: boolean;
+  aiError: AiError | null;
   rechargeYear: number;
   setRechargeYear: (year: number) => void;
   isHistoryLoading: boolean;
@@ -35,6 +36,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [isAiAvailable, setIsAiAvailable] = useState<boolean>(true);
+  const [aiError, setAiError] = useState<AiError | null>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -91,22 +93,54 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         if (!isMounted) return;
         setIsAiLoading(true);
         setIsAiAvailable(true);
+        setAiError(null);
         const currentMonth = new Date().toISOString().substring(0, 7);
         // Get the last 14 days of dailyConsumption
         const recentDailyConsumption = dailyConsumption
           ? [...dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
           : [];
         const readingTime = balanceData?.readingTime;
-        const aiSummary = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
+        const aiResponse = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
         
         if (!isMounted) return;
-        setData(prevData => prevData ? { 
-          ...prevData, 
-          aiSummary,
-          balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined
-        } : null);
+        
+        if (aiResponse.success && aiResponse.data) {
+          setData(prevData => prevData ? { 
+            ...prevData, 
+            aiSummary: aiResponse.data,
+            balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined,
+            aiError: null
+          } : null);
+        } else {
+          // Handle AI error
+          setAiError(aiResponse.error || {
+            type: 'unknown',
+            message: 'AI analysis failed',
+            details: 'An unexpected error occurred during AI analysis.',
+            retryable: true
+          });
+          setData(prevData => prevData ? { ...prevData, aiError: aiResponse.error } : { aiError: aiResponse.error });
+          setIsAiAvailable(false);
+        }
       } catch (err) {
         if (!isMounted) return;
+        setAiError({
+          type: 'unknown',
+          message: 'AI analysis failed',
+          details: err.message || 'An unexpected error occurred.',
+          retryable: true
+        });
+        setData(prevData => prevData ? { ...prevData, aiError: {
+          type: 'unknown',
+          message: 'AI analysis failed',
+          details: err.message || 'An unexpected error occurred.',
+          retryable: true
+        }} : { aiError: {
+          type: 'unknown',
+          message: 'AI analysis failed',
+          details: err.message || 'An unexpected error occurred.',
+          retryable: true
+        }});
         setIsAiAvailable(false);
       } finally {
         if (!isMounted) return;
@@ -339,6 +373,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     error,
     isAiLoading,
     isAiAvailable,
+    aiError,
     rechargeYear,
     setRechargeYear,
     isHistoryLoading,
