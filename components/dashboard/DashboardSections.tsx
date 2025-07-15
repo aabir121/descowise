@@ -84,10 +84,9 @@ const DashboardSections: React.FC<any> = ({
   // Section info data
   const getSectionInfo = useCallback((sectionId: string) => {
     const infoKey = `${sectionId}Info`;
-    // Get the translation data directly from the i18n instance
     const translationData = i18n.getDataByLanguage(language)?.translation;
-    const info = translationData?.[infoKey];
-    return typeof info === 'object' ? info : {
+    const translationInfo = translationData?.[infoKey];
+    return typeof translationInfo === 'object' ? translationInfo : {
       title: sectionId,
       description: 'Information about this section',
       benefits: ['Provides useful insights', 'Helps with analysis', 'Improves understanding']

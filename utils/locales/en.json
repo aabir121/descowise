@@ -205,134 +205,112 @@
   "sectionInfoDescription": "Learn how this section can help you understand and manage your electricity usage.",
   "aiInsightsInfo": {
     "title": "AI-Powered Insights",
-    "description": "Get personalized analysis and recommendations about your electricity usage patterns, balance forecasts, and cost optimization tips.",
+    "description": "Get personalized, actionable suggestions based on your usage patterns. Use these insights to identify opportunities for savings, efficiency, and smarter electricity habits.",
     "benefits": [
-      "Predicts when your balance will run out",
-      "Estimates your monthly electricity bill",
-      "Identifies unusual usage patterns",
-      "Provides actionable tips to save money",
-      "Forecasts costs for the next 3 months"
+      "Discover unusual consumption trends and get tips to optimize usage.",
+      "Receive AI-driven recommendations for reducing your bill.",
+      "Spot inefficiencies or potential issues early."
     ]
   },
   "consumerInfoInfo": {
     "title": "Consumer Information",
-    "description": "View your account details, contact information, and service location data in one place.",
+    "description": "Review your account and location details. Ensuring this information is accurate helps you receive relevant insights and support.",
     "benefits": [
-      "Quick access to account and meter numbers",
-      "View your service address and zone details",
-      "Copy contact information with one click",
-      "Access official DESCO portal directly",
-      "Manage your account display name"
+      "Verify your account details for accurate billing and service.",
+      "Update information to receive tailored advice.",
+      "Understand your tariff and eligibility for special programs."
     ]
   },
   "accountBalanceInfo": {
-    "title": "Account Balance & Status",
-    "description": "Monitor your current balance, recharge status, and get warnings when your balance is running low.",
+    "title": "Account Balance",
+    "description": "Monitor your current balance to avoid unexpected power interruptions. Stay proactive by recharging before your balance runs low.",
     "benefits": [
-      "Real-time balance monitoring",
-      "Visual balance status indicators",
-      "Low balance warnings",
-      "Quick recharge recommendations",
-      "Balance depletion forecasts"
+      "Prevent service disruption by tracking your balance.",
+      "Plan recharges to avoid last-minute rushes.",
+      "Spot unusual deductions or errors early."
     ]
   },
   "consumptionChartInfo": {
     "title": "Consumption Chart",
-    "description": "Track your daily electricity consumption patterns and identify trends in your usage over time.",
+    "description": "Visualize your electricity usage over time. Identify high-usage periods and adjust habits to save energy and money.",
     "benefits": [
-      "Daily consumption visualization",
-      "Usage pattern identification",
-      "Seasonal trend analysis",
-      "Peak usage time detection",
-      "Historical consumption comparison"
+      "Spot spikes in usage and investigate causes.",
+      "Compare usage across days, weeks, or months.",
+      "Set goals to reduce consumption during peak times."
     ]
   },
   "rechargeHistoryInfo": {
     "title": "Recharge History",
-    "description": "View detailed records of all your electricity recharges, including amounts, dates, and transaction details.",
+    "description": "Track your recharge patterns and spending. Use this history to budget better, spot any missed or duplicate payments, and verify the success of your last recharge.",
     "benefits": [
-      "Complete recharge transaction history",
-      "Filter by year and date range",
-      "Download and print receipts",
-      "Track spending patterns",
-      "Verify transaction details"
+      "Identify your average monthly recharge amount.",
+      "Plan recharges to align with your budget.",
+      "Detect any irregularities in payment history.",
+      "Check if your last recharge was successful.",
+      "Use the details button to see how much energy cost you actually received and view a full breakdown of charges."
     ]
   },
   "comparisonChartInfo": {
     "title": "Comparison Chart",
-    "description": "Compare your electricity usage across different time periods to understand your consumption patterns.",
+    "description": "Compare your usage or spending with previous periods or similar users. Use this to benchmark your efficiency and set improvement targets.",
     "benefits": [
-      "Period-over-period comparisons",
-      "Usage trend analysis",
-      "Performance benchmarking",
-      "Seasonal pattern recognition",
-      "Cost impact assessment"
+      "See if your usage is above or below average.",
+      "Motivate yourself to improve by tracking progress.",
+      "Identify months where you performed best."
     ]
   },
   "rechargeVsConsumptionInfo": {
-    "title": "Recharge vs. Consumption",
-    "description": "Analyze the relationship between your recharge amounts and actual electricity consumption.",
+    "title": "Recharge vs Consumption",
+    "description": "Understand how your recharges align with your actual consumption. Ensure your payments are keeping up with your usage to avoid running out of balance.",
     "benefits": [
-      "Balance management insights",
-      "Recharge timing optimization",
-      "Usage vs. payment correlation",
-      "Budget planning assistance",
-      "Over/under recharge detection"
+      "Balance recharges with actual usage for smoother service.",
+      "Spot months where you may be over- or under-recharging.",
+      "Adjust recharge habits to match consumption trends."
     ]
   },
   "rechargeDistributionInfo": {
     "title": "Recharge Distribution",
-    "description": "Visualize how your recharge amounts are distributed and identify your typical recharge patterns.",
+    "description": "See how your recharges are distributed over time. Use this to identify patterns and optimize your recharge schedule.",
     "benefits": [
-      "Recharge amount distribution",
-      "Payment pattern analysis",
-      "Budget allocation insights",
-      "Optimal recharge amount identification",
-      "Financial planning assistance"
+      "Find the most common times you recharge.",
+      "Optimize recharge timing for convenience or discounts.",
+      "Avoid frequent small recharges by planning ahead."
     ]
   },
   "maxDemandInfo": {
     "title": "Max Demand",
-    "description": "Monitor your peak electricity demand to understand your maximum power requirements.",
+    "description": "Track your peak electricity demand. Reducing peak demand can lower your bill and reduce strain on the grid.",
     "benefits": [
-      "Peak demand monitoring",
-      "Load management insights",
-      "Infrastructure planning",
-      "Cost optimization opportunities",
-      "Demand charge analysis"
+      "Identify when your demand is highest and why.",
+      "Shift heavy usage to off-peak times if possible.",
+      "Avoid exceeding demand thresholds that may incur extra charges."
     ]
   },
   "cumulativeConsumptionInfo": {
     "title": "Cumulative Consumption",
-    "description": "Track your total electricity consumption over time to understand long-term usage trends.",
+    "description": "Monitor your total electricity usage over time. Use this to set long-term goals and track your progress toward efficiency.",
     "benefits": [
-      "Long-term usage tracking",
-      "Trend analysis and forecasting",
-      "Annual consumption patterns",
-      "Growth rate monitoring",
-      "Planning for future needs"
+      "See your overall consumption trend.",
+      "Set annual or seasonal reduction targets.",
+      "Celebrate milestones in reduced usage."
     ]
   },
   "boxPlotInfo": {
-    "title": "Box Plot Analysis",
-    "description": "Statistical analysis of your consumption data showing distribution, outliers, and key percentiles.",
+    "title": "Box Plot",
+    "description": "Analyze the distribution and variability of your electricity usage. Spot outliers and understand your typical consumption range.",
     "benefits": [
-      "Statistical consumption overview",
-      "Outlier detection",
-      "Data distribution analysis",
-      "Usage variability assessment",
-      "Anomaly identification"
+      "Identify days with unusually high or low usage.",
+      "Understand your typical usage range to set realistic goals.",
+      "Spot patterns that may indicate faulty appliances."
     ]
   },
   "monthlyCostTrendInfo": {
     "title": "Monthly Cost Trend",
-    "description": "Track your monthly electricity costs to understand spending patterns and budget accordingly.",
+    "description": "Track how your electricity costs change month to month. Use this to budget and find ways to reduce your bill.",
     "benefits": [
-      "Monthly cost tracking",
-      "Budget planning assistance",
-      "Cost trend analysis",
-      "Seasonal cost patterns",
-      "Financial forecasting"
+      "Spot months with higher costs and investigate causes.",
+      "Track the impact of efficiency improvements on your bill.",
+      "Forecast future costs for better financial planning."
     ]
   },
   "addNewAccount": "Add New Account",
