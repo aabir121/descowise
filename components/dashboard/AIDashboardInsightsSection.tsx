@@ -231,10 +231,10 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, aiE
                 <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
                 <div>
                   <h4 className="font-semibold text-cyan-400 mb-1">{t('recommendedRecharge')}</h4>
-                  <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.details}</p>
-                  {aiSummary.rechargeRecommendation.amount !== null && (
+                  <p className="text-sm text-cyan-300">{aiSummary.rechargeRecommendation.justification}</p>
+                  {aiSummary.rechargeRecommendation.recommendedAmountBDT !== null && (
                     <div className="mt-2 text-lg font-bold text-cyan-200">
-                      {t('suggestedRechargeAmount')} {formatCurrency(sanitizeCurrency(aiSummary.rechargeRecommendation.amount))}
+                      {t('suggestedRechargeAmount')} {formatCurrency(sanitizeCurrency(aiSummary.rechargeRecommendation.recommendedAmountBDT))}
                     </div>
                   )}
                 </div>
