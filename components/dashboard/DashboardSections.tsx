@@ -48,6 +48,7 @@ const DashboardSections: React.FC<any> = ({
   balanceUnavailable,
   account,
   showNotification,
+  retryAiSummary, // <-- add this
 }) => {
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
@@ -116,6 +117,7 @@ const DashboardSections: React.FC<any> = ({
         balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
         showInfoIcon={true}
         onInfoClick={() => handleInfoClick('aiInsights')}
+        onRetry={retryAiSummary}
       />
       {/* 2. Consumer Information - Essential account context (collapsible) */}
       <ConsumerInformationSection

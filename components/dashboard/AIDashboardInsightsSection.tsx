@@ -25,7 +25,7 @@ function getUserFriendlyAiErrorMessage(aiError, t) {
   }
 }
 
-const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, aiError, banglaEnabled, balanceUnavailable, t, showInfoIcon, onInfoClick }) => {
+const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, aiError, banglaEnabled, balanceUnavailable, t, showInfoIcon, onInfoClick, onRetry }) => {
   // Timeout handling for long waits
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -71,7 +71,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, aiE
           </div>
           <div className="mt-2 text-slate-500 italic">
             {waitedLong
-              ? <>{t('aiAnalysisStillWorking')}<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={() => window.location.reload()}>{t('tryAgain')}</button></>
+              ? <>{t('aiAnalysisStillWorking')}<br /><button className="underline text-cyan-400 hover:text-cyan-300" onClick={onRetry}>{t('tryAgain')}</button></>
               : randomTip}
           </div>
         </div>
@@ -80,7 +80,7 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, aiE
           <div className="font-bold text-red-300 mb-2 flex items-center gap-4">
             {getUserFriendlyAiErrorMessage(aiError, t)}
             {aiError.retryable && (
-              <button className="underline text-cyan-400 hover:text-cyan-300 ml-2" onClick={() => window.location.reload()}>{t('tryAgain')}</button>
+              <button className="underline text-cyan-400 hover:text-cyan-300 ml-2" onClick={onRetry}>{t('tryAgain')}</button>
             )}
           </div>
         </div>

@@ -29,6 +29,7 @@ type UseDashboardDataReturn = {
   handleDeleteAccount: (accountNo: string) => void;
   handleYearChange: (year: number) => void;
   data: any | null;
+  retryAiSummary: () => void;
 };
 
 const useDashboardData = (account: Account): UseDashboardDataReturn => {
@@ -367,6 +368,19 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     };
   }, [data, consumptionTimeRange, comparisonMetric]);
 
+  // Add retry handler for AI summary
+  const retryAiSummary = useCallback(() => {
+    setAiError(null);
+    if (data) {
+      fetchAiSummary(
+        data.monthlyConsumption || [],
+        data.rechargeHistory || [],
+        data.balance,
+        data.dailyConsumption || []
+      );
+    }
+  }, [data]);
+
   return {
     processedData,
     isLoading,
@@ -391,6 +405,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     handleDeleteAccount,
     handleYearChange,
     data,
+    retryAiSummary,
   };
 };
 
