@@ -105,6 +105,24 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   const endIndex = startIndex + itemsPerPage;
   const currentItems = rechargeHistory ? rechargeHistory.slice(startIndex, endIndex) : [];
 
+  // Calculate summary stats
+  let monthlyTotals = {};
+  let totalRechargeAmount = 0;
+  let totalRechargeCount = 0;
+  if (rechargeHistory && rechargeHistory.length > 0) {
+    rechargeHistory.forEach(item => {
+      const month = new Date(item.rechargeDate).toLocaleString('default', { year: 'numeric', month: 'short' });
+      if (!monthlyTotals[month]) monthlyTotals[month] = { amount: 0, count: 0 };
+      monthlyTotals[month].amount += Number(item.totalAmount) || 0;
+      monthlyTotals[month].count += 1;
+      totalRechargeAmount += Number(item.totalAmount) || 0;
+      totalRechargeCount += 1;
+    });
+  }
+  const monthsWithRecharges = Object.keys(monthlyTotals).length || 1;
+  const avgMonthlyRecharge = totalRechargeAmount / monthsWithRecharges;
+  const avgMonthlyRechargeCount = totalRechargeCount / monthsWithRecharges;
+
   // Reset to first page when year changes
   React.useEffect(() => {
     setCurrentPage(1);
@@ -122,7 +140,18 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
     >
-      <div className="flex flex-wrap justify-end items-center gap-4 mb-4">
+      <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-4 mb-4">
+        {/* Summary Section */}
+        {!isHistoryLoading && rechargeHistory && rechargeHistory.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-slate-700/40 rounded-lg text-slate-200 w-full sm:w-auto">
+            <div>
+              <span className="font-semibold">{t('averageTotalRechargePerMonth')}</span>: {formatCurrency(avgMonthlyRecharge)}
+            </div>
+            <div>
+              <span className="font-semibold">{t('averageRechargeCountPerMonth')}</span>: {avgMonthlyRechargeCount.toFixed(2)}
+            </div>
+          </div>
+        )}
         <select
           value={rechargeYear}
           onChange={e => setRechargeYear(parseInt(e.target.value))}

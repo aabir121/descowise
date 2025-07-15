@@ -406,5 +406,7 @@
   "aiTooMuchData": "There is too much data to analyze at once. Please try with fewer accounts or a shorter time range.",
   "aiNetworkIssue": "AI insights could not be loaded due to a network issue. Please check your connection and try again.",
   "aiSafetyBlock": "AI insights could not be generated due to content restrictions.",
-  "aiGenericError": "Sorry, something went wrong while generating AI insights. Please try again later."
+  "aiGenericError": "Sorry, something went wrong while generating AI insights. Please try again later.",
+  "averageTotalRechargePerMonth": "Avg recharge/month",
+  "averageRechargeCountPerMonth": "Avg times/month"
 } 
