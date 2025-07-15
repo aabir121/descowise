@@ -52,10 +52,73 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                 {/* Main Account & Service Info */}
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
-                        <DetailItem label={t('accountNumber')} value={account.accountNo} />
+                        <DetailItem label={t('accountNumber')} value={<span className="flex items-center gap-1">{account.accountNo}
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await navigator.clipboard.writeText(account.accountNo);
+                                        showNotification(
+                                            t('accountNumberCopied', { accountNo: account.accountNo }),
+                                            'info'
+                                        );
+                                    } catch (err) {
+                                        showNotification(
+                                            t('failedToCopyAccountNumber'),
+                                            'error'
+                                        );
+                                    }
+                                }}
+                                className="ml-1 p-0.5 hover:bg-cyan-700 rounded transition-colors"
+                                title={t('copyAccountNumber')}
+                            >
+                                <CopyIcon className="w-4 h-4 text-cyan-400" />
+                            </button>
+                        </span>} />
                         <DetailItem label={t('customerName')} value={account.customerName} />
-                        <DetailItem label={t('contactNumber')} value={account.contactNo} />
-                        <DetailItem label={t('meterNumber')} value={account.meterNo} />
+                        <DetailItem label={t('contactNumber')} value={<span className="flex items-center gap-1">{account.contactNo}
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await navigator.clipboard.writeText(account.contactNo);
+                                        showNotification(
+                                            t('contactNumberCopied', { contactNo: account.contactNo }),
+                                            'info'
+                                        );
+                                    } catch (err) {
+                                        showNotification(
+                                            t('failedToCopyContactNumber'),
+                                            'error'
+                                        );
+                                    }
+                                }}
+                                className="ml-1 p-0.5 hover:bg-cyan-700 rounded transition-colors"
+                                title={t('copyContactNumber')}
+                            >
+                                <CopyIcon className="w-4 h-4 text-cyan-400" />
+                            </button>
+                        </span>} />
+                        <DetailItem label={t('meterNumber')} value={<span className="flex items-center gap-1">{account.meterNo}
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await navigator.clipboard.writeText(account.meterNo);
+                                        showNotification(
+                                            t('meterNumberCopied', { meterNo: account.meterNo }),
+                                            'info'
+                                        );
+                                    } catch (err) {
+                                        showNotification(
+                                            t('failedToCopyMeterNumber'),
+                                            'error'
+                                        );
+                                    }
+                                }}
+                                className="ml-1 p-0.5 hover:bg-cyan-700 rounded transition-colors"
+                                title={t('copyMeterNumber')}
+                            >
+                                <CopyIcon className="w-4 h-4 text-cyan-400" />
+                            </button>
+                        </span>} />
                         <DetailItem label={t('feederName')} value={account.feederName} />
                         <DetailItem label={t('tariffSolution')} value={account.tariffSolution} />
                         {account.displayName && (
@@ -95,76 +158,7 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                 )}
 
                 {/* Quick Actions */}
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                        <BuildingOfficeIcon className="w-4 h-4 text-cyan-400" />
-                        <h3 className="font-semibold text-slate-100 text-sm">
-                            {t('quickActions')}
-                        </h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await navigator.clipboard.writeText(account.accountNo);
-                                    showNotification(
-                                        t('accountNumberCopied', { accountNo: account.accountNo }),
-                                        'info'
-                                    );
-                                } catch (err) {
-                                    showNotification(
-                                        t('failedToCopyAccountNumber'),
-                                        'error'
-                                    );
-                                }
-                            }}
-                            className="px-2 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-xs rounded transition-colors flex items-center gap-1.5"
-                        >
-                            <CopyIcon className="w-3 h-3" />
-                            {t('accountNo')}
-                        </button>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await navigator.clipboard.writeText(account.contactNo);
-                                    showNotification(
-                                        t('contactNumberCopied', { contactNo: account.contactNo }),
-                                        'info'
-                                    );
-                                } catch (err) {
-                                    showNotification(
-                                        t('failedToCopyContactNumber'),
-                                        'error'
-                                    );
-                                }
-                            }}
-                            className="px-2 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs rounded transition-colors flex items-center gap-1.5"
-                        >
-                            <CopyIcon className="w-3 h-3" />
-                            {t('contactNo')}
-                        </button>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await navigator.clipboard.writeText(account.meterNo);
-                                    showNotification(
-                                        t('meterNumberCopied', { meterNo: account.meterNo }),
-                                        'info'
-                                    );
-                                } catch (err) {
-                                    showNotification(
-                                        t('failedToCopyMeterNumber'),
-                                        'error'
-                                    );
-                                }
-                            }}
-                            className="px-2 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs rounded transition-colors flex items-center gap-1.5"
-                        >
-                            <CopyIcon className="w-3 h-3" />
-                            {t('meterNo')}
-                        </button>
-                    </div>
-                </div>
+                {/* removed Quick Actions section */}
             </div>
         </Section>
     );

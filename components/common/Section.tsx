@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import { ChevronDownIcon, ChevronRightIcon, InformationCircleIcon } from './Icons';
+import type { ReactNode } from 'react';
 
 interface SectionProps {
     title: string;
@@ -135,7 +136,7 @@ const Section: React.FC<SectionProps> = ({
 };
 
 // Reusable DetailItem for label-value pairs
-export const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
+export const DetailItem: React.FC<{ label: string; value?: ReactNode }> = ({ label, value }) => (
     <div className="py-2">
         <span className="text-sm font-medium text-slate-400">{label}</span>
         <p className="text-base font-semibold text-slate-100">{value || 'N/A'}</p>
