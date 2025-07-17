@@ -82,6 +82,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
             banglaEnabled, // Persist Bangla language preference
         } as Account & { aiInsightsEnabled: boolean; banglaEnabled: boolean };
         onAccountAdded(newAccount);
+        onClose(); // Close the modal after adding the account
     };
 
     const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
