@@ -404,5 +404,7 @@
   "aiSafetyBlock": "AI insights could not be generated due to content restrictions.",
   "aiGenericError": "Sorry, something went wrong while generating AI insights. Please try again later.",
   "averageTotalRechargePerMonth": "Avg recharge/month",
-  "averageRechargeCountPerMonth": "Avg times/month"
+  "averageRechargeCountPerMonth": "Avg times/month",
+  "share": "Share",
+  "shareDashboard": "Share Dashboard"
 } 

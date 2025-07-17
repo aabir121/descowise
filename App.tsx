@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
-import { getAccountBalance } from './services/descoService';
+import { getAccountBalance, verifyAccount } from './services/descoService';
 import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
@@ -179,6 +179,12 @@ const App: React.FC = () => {
         setNotification({ message, type });
     }, []);
 
+    const location = useLocation();
+    const [sharedPrompt, setSharedPrompt] = useState<{ isOpen: boolean; accountNo: string | null }>({ isOpen: false, accountNo: null });
+    const [sharedLoading, setSharedLoading] = useState(false);
+    const [sharedError, setSharedError] = useState<string | null>(null);
+    const [sharedViewerMode, setSharedViewerMode] = useState(false);
+
     useEffect(() => {
         // Check if onboarding has been completed
         const onboardingCompleted = localStorage.getItem('onboardingCompleted');
@@ -289,6 +295,58 @@ const App: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [notification]);
+
+    useEffect(() => {
+        // Detect shared link
+        const match = location.pathname.match(/^\/dashboard\/(\d+)/);
+        const params = new URLSearchParams(location.search);
+        const shared = params.get('shared');
+        if (match && shared === '1') {
+            const accountNo = match[1];
+            // Only prompt if not already in list and not already prompted
+            if (!accounts.some(acc => acc.accountNo === accountNo) && !sharedPrompt.isOpen && !sharedViewerMode) {
+                setSharedPrompt({ isOpen: true, accountNo });
+                setSharedError(null);
+            }
+        } else {
+            // Reset shared prompt if navigating away
+            if (sharedPrompt.isOpen) setSharedPrompt({ isOpen: false, accountNo: null });
+            if (sharedViewerMode) setSharedViewerMode(false);
+        }
+    }, [location, accounts, sharedPrompt.isOpen, sharedViewerMode]);
+
+    const handleConfirmSharedAdd = useCallback(async () => {
+        if (!sharedPrompt.accountNo) return;
+        setSharedLoading(true);
+        setSharedError(null);
+        try {
+            const result = await verifyAccount(sharedPrompt.accountNo);
+            if (result.success && result.data) {
+                // Construct Account object with defaults
+                const newAccount = {
+                    ...result.data,
+                    dateAdded: new Date().toISOString(),
+                    aiInsightsEnabled: true,
+                    banglaEnabled: false,
+                    displayName: result.data.customerName || null,
+                };
+                addAccount(newAccount);
+                setNotification({ message: t('accountAdded') || 'Account added!', type: 'info' });
+            } else {
+                setSharedError(result.message || 'Could not fetch account details.');
+            }
+        } catch (e) {
+            setSharedError('Network error. Please try again.');
+        } finally {
+            setSharedLoading(false);
+            setSharedPrompt({ isOpen: false, accountNo: null });
+        }
+    }, [sharedPrompt.accountNo, addAccount, t]);
+
+    const handleDeclineSharedAdd = useCallback(() => {
+        setSharedPrompt({ isOpen: false, accountNo: null });
+        setSharedViewerMode(true);
+    }, []);
 
     // Clean up checkedAccounts when accounts are deleted
     useEffect(() => {
@@ -404,6 +462,17 @@ const App: React.FC = () => {
                 isOpen={showOnboarding}
                 onClose={handleCloseOnboarding}
                 onLanguageSelect={handleLanguageSelect}
+            />
+            <ConfirmationDialog
+                isOpen={sharedPrompt.isOpen}
+                onClose={handleDeclineSharedAdd}
+                onConfirm={handleConfirmSharedAdd}
+                title={t('addSharedAccount') || 'Add Shared Account?'}
+                message={sharedError ? (sharedError) : (t('sharedAccountPrompt') || 'Do you want to add this shared account to your list?')}
+                confirmText={sharedLoading ? (t('adding') || 'Adding...') : (t('yes') || 'Yes')}
+                cancelText={t('no') || 'No'}
+                confirmButtonClass={sharedLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700'}
+                icon={<BoltIcon />}
             />
         </>
     );

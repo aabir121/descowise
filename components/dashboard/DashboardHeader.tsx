@@ -2,15 +2,29 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
-import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon } from '../common/Icons';
+import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
 import SectionSettingsModal from '../common/SectionSettingsModal';
+import Notification from '../common/Notification';
 
 const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; setPortalConfirmation: (state: { isOpen: boolean }) => void }> = ({ account, onClose, onDelete, setPortalConfirmation }) => {
   const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = React.useRef(null);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/dashboard/${account.accountNo}?shared=1`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotification('Link copied!');
+      setTimeout(() => setNotification(null), 2000);
+    } catch {
+      setNotification('Failed to copy link');
+      setTimeout(() => setNotification(null), 2000);
+    }
+  };
 
   return (
     <>
@@ -51,6 +65,14 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
             <span className="hidden sm:inline">{t('officialPortal')}</span>
           </IconButton>
           <IconButton
+            onClick={handleShare}
+            className="bg-slate-500/80 hover:bg-slate-400 text-white py-2 px-4"
+            title={t('shareDashboard') || 'Share'}
+          >
+            <ShareIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">{t('share') || 'Share'}</span>
+          </IconButton>
+          <IconButton
             onClick={() => onDelete(account.accountNo)}
             className="bg-red-500/80 hover:bg-red-600 text-white py-2 px-4"
             title={t('deleteAccount')}
@@ -89,6 +111,13 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
                 <span>{t('officialPortal')}</span>
               </button>
               <button
+                onClick={() => { handleShare(); setIsMenuOpen(false); }}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
+              >
+                <ShareIcon className="w-5 h-5" />
+                <span>{t('share') || 'Share'}</span>
+              </button>
+              <button
                 onClick={() => { onDelete(account.accountNo); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 text-left text-red-400 w-full"
               >
@@ -104,6 +133,7 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
       />
+      {notification && <Notification message={notification} />}
     </>
   );
 };

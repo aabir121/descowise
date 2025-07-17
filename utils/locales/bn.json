@@ -405,5 +405,7 @@
   "averageTotalRechargePerMonth": "গড় রিচার্জ/মাস",
   "averageRechargeCountPerMonth": "গড় বার/মাস",
   "footerLine1": "তথ্য এসেছে ডেসকোর ওপেন API থেকে।",
-  "footerLine2": "অ্যাপটি ডেসকোর নিজস্ব না, আলাদা ক্লায়েন্ট।"
+  "footerLine2": "অ্যাপটি ডেসকোর নিজস্ব না, আলাদা ক্লায়েন্ট।",
+  "share": "শেয়ার করুন",
+  "shareDashboard": "ড্যাশবোর্ড শেয়ার করুন"
 } 
