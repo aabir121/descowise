@@ -141,7 +141,7 @@ export const getAiDashboardSummary = async (
         });
 
         // Check for safety blocks in the response
-        if (response.promptFeedback && response.promptFeedback.blockReason) {
+        if (response?.promptFeedback?.blockReason) {
             return {
                 success: false,
                 error: {
@@ -259,40 +259,6 @@ export const getAiDashboardSummary = async (
         };
     }
 };
-
-export async function askGeminiAboutAccount(
-    question: string,
-    data: any,
-    processedData: any,
-    banglaEnabled: boolean = false
-): Promise<string> {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-        throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
-    }
-    const ai = new GoogleGenAI({ apiKey });
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-    let temperature = 0.3;
-    if (process.env.GEMINI_TEMPERATURE) {
-        const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
-        if (!isNaN(parsed)) temperature = parsed;
-    }
-    let prompt = '';
-    if (banglaEnabled) {
-        prompt = `আপনি একজন বিদ্যুৎ বিল ও রিচার্জ বিশ্লেষক, যিনি সাধারণ মানুষের জন্য সহজ ভাষায়, বন্ধুর মতো বোঝান।\n\nনিচে গ্রাহকের বিদ্যুৎ সংক্রান্ত তথ্য ও ব্যবহারকারীর প্রশ্ন দেয়া হলো।\n\n*গ্রাহকের তথ্য (JSON):*\n${JSON.stringify(data, null, 2)}\n\n*প্রসেসড ড্যাশবোর্ড ডেটা (JSON):*\n${JSON.stringify(processedData, null, 2)}\n\n*প্রশ্ন:*\n${question}\n\nসহজ, গল্পের মতো, বন্ধুর মতো উত্তর দিন। কঠিন শব্দ বা জটিলতা এড়িয়ে চলুন।`; 
-    } else {
-        prompt = `You are an expert electricity bill and recharge analyst for residential customers.\n\nBelow is the user's account data and their question.\n\n*Account Data (JSON):*\n${JSON.stringify(data, null, 2)}\n\n*Processed Dashboard Data (JSON):*\n${JSON.stringify(processedData, null, 2)}\n\n*User's Question:*\n${question}\n\nAnswer in a friendly, conversational, and encouraging tone. Use simple language and examples if helpful.`;
-    }
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-            responseMimeType: "text/plain",
-            temperature
-        }
-    });
-    return response.text?.trim() || 'Sorry, I could not get an answer.';
-}
 
 export const getCustomerLocation = async (accountNo: string): Promise<CustomerLocation> => {
     const url = `https://prepaid.desco.org.bd/api/common/getCustomerLocation?accountNo=${accountNo}`;

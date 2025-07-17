@@ -7,8 +7,6 @@ import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
 import Footer from './common/Footer';
-import { askGeminiAboutAccount } from '../services/descoService';
-import FloatingCoffeeButton from './FloatingCoffeeButton';
 import { useBalanceWarning } from '../hooks/useBalanceWarning';
 import { useTranslation } from 'react-i18next';
 import Notification from './common/Notification';
@@ -59,12 +57,6 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         data,
     } = useDashboardData(account);
 
-    // Chatbot state
-    const [chatOpen, setChatOpen] = useState(false);
-    const [chatInput, setChatInput] = useState('');
-    const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'bot', content: string}>>([]);
-    const [chatLoading, setChatLoading] = useState(false);
-    const { open: openBalanceWarning } = useBalanceWarning();
     // Add notification state for dashboard view
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
 
@@ -88,32 +80,8 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         }
     }, [notification]);
 
-    // Placeholder for Gemini Q&A function
-    async function handleSendMessage() {
-        if (!chatInput.trim()) return;
-        const userMessage = chatInput.trim();
-        setChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
-        setChatInput('');
-        setChatLoading(true);
-        try {
-            const botReply = await askGeminiAboutAccount(
-                userMessage,
-                data,
-                processedData,
-                account.banglaEnabled || false
-            );
-            setChatHistory(prev => [...prev, { role: 'bot', content: botReply }]);
-        } catch (e: any) {
-            setChatHistory(prev => [...prev, { role: 'bot', content: t('chatError', { error: e?.message || t('unknownError') }) }]);
-        } finally {
-            setChatLoading(false);
-        }
-    }
-
     return (
         <div className="fixed inset-0 z-40 bg-slate-900 text-slate-100 flex flex-col animate-fade-in">
-            {/* Top-of-dashboard Coffee Button, hidden when chat is open */}
-            {!chatOpen && <div className="mb-4"><FloatingCoffeeButton /></div>}
             {/* Show notification in dashboard view */}
             {notification && (
                 <Notification message={notification.message} type={notification.type} />
@@ -136,7 +104,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     <div className="flex items-center gap-2">
                         <span className="font-medium">{t('balanceUnavailable')}</span>
                         <button
-                            onClick={() => openBalanceWarning()}
+                            onClick={() => useBalanceWarning().open}
                             className="p-1 rounded hover:bg-yellow-100 focus:outline-none"
                             aria-label={t('moreInfoUnavailableBalance')}
                         >
@@ -170,57 +138,6 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     />
                 )}
             </main>
-            {/* Chatbot Floating Button and Panel (only if AI Insights enabled) */}
-            {account.aiInsightsEnabled && (
-                <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-3">
-                    {/*
-                    <button
-                        className="desco-chat-btn bg-cyan-600 hover:bg-cyan-700 text-white rounded-full shadow-lg p-4 focus:outline-none"
-                        onClick={() => setChatOpen(true)}
-                        aria-label={t('openChatbot')}
-                        style={{ display: chatOpen ? 'none' : 'block' }}
-                    >
-                        💬
-                    </button>
-                    */}
-                    {chatOpen && (
-                        <div className="w-80 max-w-full bg-slate-800 rounded-lg shadow-2xl flex flex-col h-96">
-                            <div className="flex items-center justify-between p-3 border-b border-slate-700">
-                                <span className="font-semibold">{t('askDescoAI')}</span>
-                                <button className="text-slate-400 hover:text-slate-200" onClick={() => setChatOpen(false)} aria-label={t('closeChatbot')}>✕</button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                                {chatHistory.length === 0 && <div className="text-slate-400 text-sm">{t('askAnything')}</div>}
-                                {chatHistory.map((msg, i) => (
-                                    <div key={i} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
-                                        <div className={msg.role === 'user' ? 'inline-block bg-cyan-600 text-white rounded-lg px-3 py-1 mb-1' : 'inline-block bg-slate-700 text-slate-100 rounded-lg px-3 py-1 mb-1'}>
-                                            {msg.content}
-                                        </div>
-                                    </div>
-                                ))}
-                                {chatLoading && <div className="text-slate-400 text-xs">{t('aiTyping')}</div>}
-                            </div>
-                            <form className="p-3 border-t border-slate-700 flex gap-2" onSubmit={e => { e.preventDefault(); handleSendMessage(); }}>
-                                <input
-                                    className="flex-1 rounded bg-slate-700 text-slate-100 px-3 py-2 focus:outline-none"
-                                    type="text"
-                                    placeholder={t('typeQuestion')}
-                                    value={chatInput}
-                                    onChange={e => setChatInput(e.target.value)}
-                                    disabled={chatLoading}
-                                />
-                                <button
-                                    type="submit"
-                                    className="bg-cyan-600 hover:bg-cyan-700 text-white rounded px-4 py-2 disabled:opacity-50"
-                                    disabled={chatLoading || !chatInput.trim()}
-                                >
-                                    {t('send')}
-                                </button>
-                            </form>
-                        </div>
-                    )}
-                </div>
-            )}
             <ConfirmationDialog
                 isOpen={portalConfirmation.isOpen}
                 onClose={() => setPortalConfirmation({ isOpen: false })}
