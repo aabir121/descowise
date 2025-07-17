@@ -107,11 +107,11 @@ export const getAiDashboardSummary = async (
         }
 
         const ai = new GoogleGenAI({ apiKey });
-        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
+        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         let temperature = 0.3;
         if (process.env.GEMINI_TEMPERATURE) {
             const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
-            if (!isNaN(parsed)) temperature = parsed;
+        if (!isNaN(parsed)) temperature = parsed;
         }
 
         const monthlyRechargeData = processRechargeHistoryToMonthly(sanitizedRechargeHistory);
@@ -271,7 +271,7 @@ export async function askGeminiAboutAccount(
         throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY in your Vercel environment variables.");
     }
     const ai = new GoogleGenAI({ apiKey });
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17';
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     let temperature = 0.3;
     if (process.env.GEMINI_TEMPERATURE) {
         const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
