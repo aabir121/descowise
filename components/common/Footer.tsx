@@ -8,9 +8,10 @@ const Footer: React.FC = () => {
   return (
     <>
       <footer className="w-full bg-slate-900/95 border-t border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 px-3 py-2 backdrop-blur-md">
-        <span className="truncate text-center">
-          {t('footerDataNotice')}
-        </span>
+        <div className="flex flex-col items-center justify-center text-center flex-1">
+          <span>{t('footerLine1')}</span>
+          <span>{t('footerLine2')}</span>
+        </div>
         <span className="hidden sm:inline mx-2">|</span>
         <button
           className="underline hover:text-cyan-400 focus:outline-none"

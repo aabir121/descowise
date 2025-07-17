@@ -326,8 +326,7 @@
   "addAccount": "অ্যাকাউন্ট যোগ করুন",
   "dataUpdateNotice": "তথ্য প্রতিদিন আপডেট হয় আর আগের দিন পর্যন্ত তথ্য দেখায়। আজকের তথ্য আগামীকাল ডেসকোর সময়সূচী অনুযায়ী পাওয়া যাবে।",
   "dismissNotice": "নোটিশ বন্ধ করুন",
-  "footerDataNotice": "তথ্য ডেসকো ওপেন এপিআই দিয়ে আসে। এটা একটা অনানুষ্ঠানিক ক্লায়েন্ট।",
-  "privacy": "গোপনীয়তা",
+  "privacy": "ব্যক্তিগত তথ্য সুরক্ষা",
   "privacyAndDisclaimer": "গোপনীয়তা ও অস্বীকৃতি",
   "privacyDisclaimer1": "এই অ্যাপটা <bold>{{affiliation}}</bold>। এটা শুধু আপনার সুবিধার জন্য দেওয়া।",
   "privacyDisclaimer1_affiliation": "ডেসকোর সাথে জড়িত নয় বা অনুমোদিত নয়",
@@ -404,5 +403,7 @@
   "aiSafetyBlock": "কিছু কনটেন্ট রেস্ট্রিকশনের কারণে AI ইনসাইটস তৈরি করা যায়নি।",
   "aiGenericError": "দুঃখিত, AI ইনসাইটস তৈরি করতে গিয়ে কিছু সমস্যা হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।",
   "averageTotalRechargePerMonth": "গড় রিচার্জ/মাস",
-  "averageRechargeCountPerMonth": "গড় বার/মাস"
+  "averageRechargeCountPerMonth": "গড় বার/মাস",
+  "footerLine1": "তথ্য এসেছে ডেসকোর ওপেন API থেকে।",
+  "footerLine2": "অ্যাপটি ডেসকোর নিজস্ব না, আলাদা ক্লায়েন্ট।"
 } 
