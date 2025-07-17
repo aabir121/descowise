@@ -45,7 +45,6 @@ const AIDashboardInsightsSection = ({ aiSummary, isAiLoading, isAiAvailable, aiE
       title={t('aiInsights')} 
       defaultOpen={true} 
       sectionId="ai-powered-insights" 
-      alwaysExpanded={true}
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
     >
