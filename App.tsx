@@ -16,12 +16,144 @@ import { useBalanceWarning } from './hooks/useBalanceWarning';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
 import OnboardingModal from './components/OnboardingModal';
 import { useTranslation } from 'react-i18next';
+import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+
+const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; }> = ({ accounts, showNotification, onDelete }) => {
+    const { accountNo } = useParams<{ accountNo: string }>();
+    const navigate = useNavigate();
+    const selectedAccount = accounts.find(acc => acc.accountNo === accountNo);
+    if (!selectedAccount) {
+        // If account not found, redirect to home
+        return <Navigate to="/" replace />;
+    }
+    return (
+        <AccountDashboardView
+            account={selectedAccount}
+            onClose={() => navigate("/", { replace: true })}
+            onDelete={onDelete}
+            showNotification={showNotification}
+        />
+    );
+};
+
+const AccountListPage: React.FC<{
+  accounts: Account[];
+  loadingBalances: Set<string>;
+  updateAccount: (accountNo: string, data: Partial<Account>) => void;
+  handleDeleteAccount: (accountNo: string) => void;
+  setAddAccountModalOpen: (open: boolean) => void;
+  addAccountModalOpen: boolean;
+  handleAccountAdded: (newAccount: Account) => void;
+  notification: { message: string; type: 'info' | 'warning' | 'error' } | null;
+  showDataNotice: boolean | null;
+  handleDismissDataNotice: () => void;
+  t: any;
+  TrashIcon: any;
+  PlusIcon: any;
+  LanguageSwitcher: any;
+  BoltIcon: any;
+  Footer: any;
+}> = ({
+  accounts,
+  loadingBalances,
+  updateAccount,
+  handleDeleteAccount,
+  setAddAccountModalOpen,
+  addAccountModalOpen,
+  handleAccountAdded,
+  notification,
+  showDataNotice,
+  handleDismissDataNotice,
+  t,
+  TrashIcon,
+  PlusIcon,
+  LanguageSwitcher,
+  BoltIcon,
+  Footer,
+}) => {
+  const navigate = useNavigate();
+  const handleSelectAccount = useCallback((accountNo: string) => {
+    navigate(`/dashboard/${accountNo}`);
+  }, [navigate]);
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+      {showDataNotice === true && (
+        <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
+          <span className="text-base font-medium">
+            {t('dataUpdateNotice')}
+          </span>
+          <button
+            className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
+            aria-label={t('dismissNotice')}
+            onClick={handleDismissDataNotice}
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+      {notification && (
+        <Notification message={notification.message} type={notification.type} />
+      )}
+      <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <header className="text-center mb-8 sm:mb-12 relative">
+          {/* Language Switcher - positioned absolutely in top-right */}
+          <div className="absolute top-0 right-0 z-10">
+            <LanguageSwitcher />
+          </div>
+          <div className="inline-flex items-center gap-3">
+            <BoltIcon className="w-8 h-8 text-cyan-400"/>
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">{t('appTitle')}</h1>
+          </div>
+          <p className="text-lg sm:text-xl text-slate-400 mt-2">{t('appSubtitle')}</p>
+        </header>
+        <main>
+          {accounts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center bg-slate-800/50 border border-slate-700 rounded-2xl p-10 sm:p-16">
+              {/* Friendly icon/illustration */}
+              <div className="mb-6">
+                <svg className="w-16 h-16 mx-auto text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">{t('noAccountsTitle')}</h2>
+              <p className="text-slate-400 mb-8 max-w-md mx-auto">{t('noAccountsSubtitle')}<br />{t('noAccountsAction')}</p>
+              <button
+                onClick={() => setAddAccountModalOpen(true)}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+              >
+                <PlusIcon className="w-5 h-5" />
+                {t('addNewAccount')}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+              {accounts.map(account => (
+                <AccountCard 
+                  key={account.accountNo} 
+                  account={account} 
+                  onSelect={handleSelectAccount}
+                  onDelete={handleDeleteAccount}
+                  isBalanceLoading={loadingBalances.has(account.accountNo)}
+                  onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
+                  onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
+                  onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
+                />
+              ))}
+              <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
+            </div>
+          )}
+        </main>
+      </div>
+      <Footer />
+    </div>
+  );
+};
 
 const App: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
-    const [selectedAccountNo, setSelectedAccountNo] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo: string | null; accountName: string }>({
         isOpen: false,
@@ -181,14 +313,6 @@ const App: React.FC = () => {
         });
     }, []);
 
-    const handleSelectAccount = useCallback((accountNo: string) => {
-        setSelectedAccountNo(accountNo);
-    }, []);
-
-    const handleCloseDashboard = useCallback(() => {
-        setSelectedAccountNo(null);
-    }, []);
-
     const handleDeleteFromDashboard = useCallback((accountNo: string) => {
         setDeleteConfirmation({
             isOpen: true,
@@ -200,7 +324,6 @@ const App: React.FC = () => {
     const handleConfirmDelete = useCallback(() => {
         if (deleteConfirmation.accountNo) {
             deleteAccount(deleteConfirmation.accountNo);
-            setSelectedAccountNo(null);
             setDeleteConfirmation({ isOpen: false, accountNo: null, accountName: '' });
         }
     }, [deleteConfirmation.accountNo, deleteAccount]);
@@ -218,92 +341,38 @@ const App: React.FC = () => {
         setShowOnboarding(false);
     }, []);
 
-    const selectedAccount = accounts.find(acc => acc.accountNo === selectedAccountNo);
-
     return (
         <>
-            {selectedAccount ? (
-                <AccountDashboardView
-                    account={selectedAccount}
-                    onClose={handleCloseDashboard}
-                    onDelete={handleDeleteFromDashboard}
-                    showNotification={showNotification}
-                />
-            ) : (
-                <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
-                    {showDataNotice === true && (
-                        <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
-                            <span className="text-base font-medium">
-                                {t('dataUpdateNotice')}
-                            </span>
-                            <button
-                                className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
-                                aria-label={t('dismissNotice')}
-                                onClick={handleDismissDataNotice}
-                            >
-                                <TrashIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-                    )}
-                    {notification && (
-                        <Notification message={notification.message} type={notification.type} />
-                    )}
-                    <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-                        <header className="text-center mb-8 sm:mb-12 relative">
-                            {/* Language Switcher - positioned absolutely in top-right */}
-                            <div className="absolute top-0 right-0 z-10">
-                                <LanguageSwitcher />
-                            </div>
-                            
-                            <div className="inline-flex items-center gap-3">
-                                 <BoltIcon className="w-8 h-8 text-cyan-400"/>
-                                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">{t('appTitle')}</h1>
-                            </div>
-                            <p className="text-lg sm:text-xl text-slate-400 mt-2">{t('appSubtitle')}</p>
-                        </header>
-
-                        <main>
-                            {accounts.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center bg-slate-800/50 border border-slate-700 rounded-2xl p-10 sm:p-16">
-                                  {/* Friendly icon/illustration */}
-                                  <div className="mb-6">
-                                    <svg className="w-16 h-16 mx-auto text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                                      <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    </svg>
-                                  </div>
-                                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100">{t('noAccountsTitle')}</h2>
-                                  <p className="text-slate-400 mb-8 max-w-md mx-auto">{t('noAccountsSubtitle')}<br />{t('noAccountsAction')}</p>
-                                  <button
-                                    onClick={() => setAddAccountModalOpen(true)}
-                                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
-                                  >
-                                    <PlusIcon className="w-5 h-5" />
-                                    {t('addNewAccount')}
-                                  </button>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-                                    {accounts.map(account => (
-                                        <AccountCard 
-                                            key={account.accountNo} 
-                                            account={account} 
-                                            onSelect={handleSelectAccount}
-                                            onDelete={handleDeleteAccount}
-                                            isBalanceLoading={loadingBalances.has(account.accountNo)}
-                                            onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
-                                            onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
-                                            onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
-                                        />
-                                    ))}
-                                    <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
-                                </div>
-                            )}
-                        </main>
-                    </div>
-                    <Footer />
-                </div>
-            )}
+            <Routes>
+                <Route path="/dashboard/:accountNo" element={
+                    <DashboardWrapper
+                        accounts={accounts}
+                        showNotification={showNotification}
+                        onDelete={handleDeleteFromDashboard}
+                    />
+                } />
+                <Route path="/" element={
+                    <AccountListPage
+                      accounts={accounts}
+                      loadingBalances={loadingBalances}
+                      updateAccount={updateAccount}
+                      handleDeleteAccount={handleDeleteAccount}
+                      setAddAccountModalOpen={setAddAccountModalOpen}
+                      addAccountModalOpen={addAccountModalOpen}
+                      handleAccountAdded={handleAccountAdded}
+                      notification={notification}
+                      showDataNotice={showDataNotice}
+                      handleDismissDataNotice={handleDismissDataNotice}
+                      t={t}
+                      TrashIcon={TrashIcon}
+                      PlusIcon={PlusIcon}
+                      LanguageSwitcher={LanguageSwitcher}
+                      BoltIcon={BoltIcon}
+                      Footer={Footer}
+                    />
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
             <AddAccountModal
                 isOpen={addAccountModalOpen}
                 onClose={() => setAddAccountModalOpen(false)}
