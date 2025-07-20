@@ -18,7 +18,6 @@ import SectionInfoModal from '../common/SectionInfoModal';
 import { getTranslationForLanguage } from '../../utils/i18n';
 import i18n from '../../utils/i18n';
 import BalanceDisplay from '../account/BalanceDisplay';
-import { getAiBalanceEstimate } from '../../services/descoService';
 
 const SECTION_CONFIGS = [
   { id: 'account-balance-status', defaultOpen: true },
@@ -56,43 +55,12 @@ const DashboardSections: React.FC<any> = ({
   const [preferencesVersion, setPreferencesVersion] = useState(0);
   const [infoModalOpen, setInfoModalOpen] = useState<string | null>(null);
 
-  // AI-powered balance estimation state
-  const [aiEstimate, setAiEstimate] = useState<number | null>(null);
-  const [aiInsight, setAiInsight] = useState<string>('');
-  const [isAiBalanceLoading, setIsAiBalanceLoading] = useState(false);
-  const [aiBalanceError, setAiBalanceError] = useState<string | undefined>();
-  const [estimatedDaysRemaining, setEstimatedDaysRemaining] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Only run if all required data is available
-    if (
-      data?.monthlyConsumption &&
-      data?.rechargeHistory &&
-      data?.balance &&
-      data?.dailyConsumption &&
-      account?.aiInsightsEnabled
-    ) {
-      setIsAiBalanceLoading(true);
-      const currentMonth = new Date().toISOString().substring(0, 7);
-      // Get the last 14 days of dailyConsumption
-      const recentDailyConsumption = data.dailyConsumption
-        ? [...data.dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
-        : [];
-      getAiBalanceEstimate(
-        data.monthlyConsumption,
-        data.rechargeHistory,
-        data.balance,
-        currentMonth,
-        recentDailyConsumption,
-        account.banglaEnabled
-      ).then(res => {
-        setAiEstimate(res.estimate);
-        setAiInsight(res.insight);
-        setAiBalanceError(res.error);
-        setEstimatedDaysRemaining(res.estimatedDaysRemaining ?? null);
-      }).finally(() => setIsAiBalanceLoading(false));
-    }
-  }, [data?.monthlyConsumption, data?.rechargeHistory, data?.balance, data?.dailyConsumption, account?.aiInsightsEnabled, account?.banglaEnabled]);
+  // Extract AI-powered balance fields from aiSummary
+  const aiSummary = data?.aiSummary;
+  const aiInsight = aiSummary?.balanceInsight || '';
+  const aiBalanceError = data?.aiError?.message || undefined;
+  const isAiBalanceLoading = isAiLoading;
+  const estimatedDaysRemaining = typeof aiSummary?.estimatedDaysRemaining === 'number' ? aiSummary.estimatedDaysRemaining : null;
 
   // Compute language and translation function
   const language = banglaEnabled ? 'bn' : 'en';
@@ -147,7 +115,7 @@ const DashboardSections: React.FC<any> = ({
     <div className="space-y-6" key={preferencesVersion}>
       {/* 1. AI Insights - Most valuable, actionable insights */}
       <AIDashboardInsightsSection
-        aiSummary={data?.aiSummary}
+        aiSummary={aiSummary}
         isAiLoading={isAiLoading}
         isAiAvailable={isAiAvailable}
         aiError={data?.aiError}
@@ -180,7 +148,6 @@ const DashboardSections: React.FC<any> = ({
         sectionId="account-balance-status"
         showInfoIcon={true}
         onInfoClick={() => handleInfoClick('accountBalance')}
-        // AI-powered note props
         aiInsight={aiInsight}
         aiError={aiBalanceError}
         isAiBalanceLoading={isAiBalanceLoading}

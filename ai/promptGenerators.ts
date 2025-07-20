@@ -62,7 +62,56 @@ function getJsonStructureSection(
     currentBalance: number | null | undefined,
     language: 'bn' | 'en' = 'en'
 ) {
-    return `Generate a JSON object using this structure. Respond in ${language === 'bn' ? 'Bengali' : 'English'} with a conversational tone:\n\n{\n  "title": "A friendly, personalized title (like 'Your July Power Check-in' or 'Smart Recharge Tips for Hot Weather')",\n\n  "overallSummary": "Give a quick overview of their average monthly usage and recharge amounts. Talk about their patterns like you're catching up with a friend. Add a personal touch - maybe compare to recent months or use a relatable example. ${asOfNotice ? 'Start this section by naturally mentioning the data freshness in a conversational way, then transition into the analysis.' : ''}",\n\n  "anomaly": {\n    "detected": true or false,\n    "details": "If you spot anything unusual (like usage that's way higher or lower than normal), mention it casually. Use everyday examples to explain why it might have happened."\n  },\n\n  "seasonalTrend": {\n    "observed": true or false,\n    "details": "If you see seasonal patterns (like higher usage in summer), explain it simply. Use real-life examples people can relate to."\n  },\n\n  "rechargePatternInsight": "Describe how they usually recharge - like 'you typically top up 2-3 times a month' or 'you seem to recharge when you're running low'. Make it sound like friendly observation."${currentBalance !== null && currentBalance !== undefined ? `,\n  "balanceStatusAndAdvice": {\n    "status": "low", "normal", or "good",\n    "details": "Tell them if their current balance is enough for the rest of the month. If it's low, explain why and give encouraging advice."\n  }` : ''}${currentBalance !== null && currentBalance !== undefined ? `,\n  "rechargeRecommendation": {\n    "recommendedAmountBDT": number or null,\n    "justification": "Suggest how much to recharge based on their typical usage for this month. Explain it like you're helping a friend plan their budget."\n  }` : ''},\n  "rechargeTimingInsight": "Advise on the best time to recharge. Think about their patterns and seasonal needs. Make it practical and easy to follow.",\n  "actionableTip": "Give one simple, practical tip they can act on right away. Make it sound like friendly advice from someone who cares."${currentBalance !== null && currentBalance !== undefined ? `,\n  "balanceDepletionForecast": {\n    "daysRemaining": number,\n    "expectedDepletionDate": "YYYY-MM-DD",\n    "details": "Estimate how long their current balance will last based on recent usage. Explain it simply, like 'at your current rate, this should last about X days'."\n  }` : ''},\n  "currentMonthBillForecast": {\n    "estimatedTotal": number,\n    "details": "Give them an idea of what their total bill might be this month. Compare it to previous months if helpful."\n  },\n  "futureConsumptionForecast": [\n    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },\n    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },\n    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number }\n  ]\n}\n\nKeep the tone conversational and friendly throughout. Use everyday language, avoid technical terms, and make it feel like you're having a helpful chat with a friend. Respond in ${language === 'bn' ? 'Bengali' : 'English'}.
+    return `Generate a JSON object using this structure. Respond in ${language === 'bn' ? 'Bengali' : 'English'} with a conversational tone:
+
+{
+  "title": "A friendly, personalized title (like 'Your July Power Check-in' or 'Smart Recharge Tips for Hot Weather')",
+
+  "overallSummary": "Give a quick overview of their average monthly usage and recharge amounts. Talk about their patterns like you're catching up with a friend. Add a personal touch - maybe compare to recent months or use a relatable example. ${asOfNotice ? 'Start this section by naturally mentioning the data freshness in a conversational way, then transition into the analysis.' : ''}",
+
+  "anomaly": {
+    "detected": true or false,
+    "details": "If you spot anything unusual (like usage that's way higher or lower than normal), mention it casually. Use everyday examples to explain why it might have happened."
+  },
+
+  "seasonalTrend": {
+    "observed": true or false,
+    "details": "If you see seasonal patterns (like higher usage in summer), explain it simply. Use real-life examples people can relate to."
+  },
+
+  "rechargePatternInsight": "Describe how they usually recharge - like 'you typically top up 2-3 times a month' or 'you seem to recharge when you're running low'. Make it sound like friendly observation."
+  ${currentBalance !== null && currentBalance !== undefined ? `,
+  "balanceStatusAndAdvice": {
+    "status": "low", "normal", or "good",
+    "details": "Tell them if their current balance is enough for the rest of the month. If it's low, explain why and give encouraging advice."
+  }` : ''}${currentBalance !== null && currentBalance !== undefined ? `,
+  "rechargeRecommendation": {
+    "recommendedAmountBDT": number or null,
+    "justification": "Suggest how much to recharge based on their typical usage for this month. Explain it like you're helping a friend plan their budget."
+  }` : ''},
+  "rechargeTimingInsight": "Advise on the best time to recharge. Think about their patterns and seasonal needs. Make it practical and easy to follow.",
+  "actionableTip": "Give one simple, practical tip they can act on right away. Make it sound like friendly advice from someone who cares."
+  ${currentBalance !== null && currentBalance !== undefined ? `,
+  "balanceDepletionForecast": {
+    "daysRemaining": number,
+    "expectedDepletionDate": "YYYY-MM-DD",
+    "details": "Estimate how long their current balance will last based on recent usage. Explain it simply, like 'at your current rate, this should last about X days'."
+  }` : ''},
+  "currentMonthBillForecast": {
+    "estimatedTotal": number,
+    "details": "Give them an idea of what their total bill might be this month. Compare it to previous months if helpful."
+  },
+  "futureConsumptionForecast": [
+    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },
+    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },
+    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number }
+  ],
+  "predictedTrueBalance": number, // Your best estimate of the user's current true balance, considering possible delays or missing data
+  "estimatedDaysRemaining": number, // Your best estimate of how many days the current balance will last, based on recent trends
+  "balanceInsight": string // A short, friendly insight about the user's balance trend, based on recent and historical data
+}
+
+Keep the tone conversational and friendly throughout. Use everyday language, avoid technical terms, and make it feel like you're having a helpful chat with a friend. Respond in ${language === 'bn' ? 'Bengali' : 'English'}.
 `;
 }
 
@@ -86,6 +135,8 @@ export function generateAiDashboardPrompt(
         getDataSections(monthlyConsumption, monthlyRechargeData, recentDailyConsumption),
         getCurrentCustomerInfoSection(currentBalance, currentMonthConsumption, readingTime, currentMonth),
         getBalanceUnavailableNoticeSection(currentBalance),
+        // Explicitly request trend analysis and extra fields
+        `IMPORTANT: In your analysis, pay special attention to recent daily consumption trends and historical data. Use these to estimate the user's true current balance (predictedTrueBalance), how many days their balance will last (estimatedDaysRemaining), and provide a short, friendly insight (balanceInsight). Include these fields in your JSON response as shown below.`,
         getJsonStructureSection(asOfNotice, currentBalance, language)
     ].filter(Boolean).join('\n\n');
 } 
