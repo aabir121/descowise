@@ -22,13 +22,12 @@ const FloatingCoffeeButton: React.FC = () => {
   }, [open]);
 
   return (
-    <>
+    <div className="floating-coffee-btn group">
       <button
-        className="floating-coffee-btn group"
         title={t('supportDeveloper')}
         onClick={() => setOpen((v) => !v)}
         aria-label={t('supportDeveloperAria')}
-        style={{ fontSize: 28 }}
+        style={{ fontSize: 28, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
       >
         <span role="img" aria-label="coffee">☕</span>
       </button>
@@ -45,7 +44,7 @@ const FloatingCoffeeButton: React.FC = () => {
           <div
             className="coffee-popover z-50"
             ref={popoverRef}
-            style={{ maxWidth: 320, minWidth: 220, position: 'absolute' }}
+            style={{ maxWidth: 320, minWidth: 220, position: 'absolute', bottom: 'calc(100% + 8px)', right: 0 }}
             onClick={e => e.stopPropagation()}
           >
             <button
@@ -69,8 +68,8 @@ const FloatingCoffeeButton: React.FC = () => {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 };
 
-export default FloatingCoffeeButton; 
+export default FloatingCoffeeButton;
