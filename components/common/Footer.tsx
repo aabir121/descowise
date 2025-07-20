@@ -8,18 +8,19 @@ const Footer: React.FC = () => {
   return (
     <>
       <footer className="w-full bg-slate-900/95 border-t border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 px-3 py-2 backdrop-blur-md">
-        <div className="flex flex-col items-center justify-center text-center flex-1">
+        <div className="flex flex-col sm:flex-row items-center justify-center text-center flex-1 gap-1 sm:gap-2">
           <span>{t('footerLine1')}</span>
+          <span className="hidden sm:inline">&middot;</span>
           <span>{t('footerLine2')}</span>
+          <span className="hidden sm:inline">&middot;</span>
+          <button
+            className="underline hover:text-cyan-400 focus:outline-none ml-0 sm:ml-1"
+            onClick={() => setShowModal(true)}
+            aria-label={t('privacyAndDisclaimer')}
+          >
+            {t('privacy')}
+          </button>
         </div>
-        <span className="hidden sm:inline mx-2">|</span>
-        <button
-          className="underline hover:text-cyan-400 focus:outline-none"
-          onClick={() => setShowModal(true)}
-          aria-label={t('privacyAndDisclaimer')}
-        >
-          {t('privacy')}
-        </button>
       </footer>
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowModal(false)}>
