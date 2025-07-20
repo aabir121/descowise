@@ -260,6 +260,94 @@ export const getAiDashboardSummary = async (
     }
 };
 
+// Gemini-powered AI balance estimation for BalanceDisplay
+export const getAiBalanceEstimate = async (
+    monthlyConsumption: MonthlyConsumption[],
+    rechargeHistory: RechargeHistoryItem[],
+    balanceData: BalanceData | null,
+    currentMonth: string,
+    recentDailyConsumption: DailyConsumption[],
+    banglaEnabled: boolean = false
+): Promise<{ estimate: number | null, insight: string, estimatedDaysRemaining?: number | null, error?: string }> => {
+    try {
+        const sanitizedMonthlyConsumption = monthlyConsumption.map(item => ({
+            ...item,
+            consumedTaka: sanitizeCurrency(item.consumedTaka)
+        }));
+        const sanitizedRechargeHistory = rechargeHistory.map(item => ({
+            ...item,
+            totalAmount: sanitizeCurrency(item.totalAmount)
+        }));
+        const sanitizedRecentDailyConsumption = recentDailyConsumption.map(item => ({
+            ...item,
+            consumedTaka: sanitizeCurrency(item.consumedTaka)
+        }));
+        const sanitizedCurrentBalance = balanceData?.balance !== null && balanceData?.balance !== undefined ? sanitizeCurrency(balanceData.balance) : 0;
+        const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
+        const readingTime = balanceData?.readingTime;
+
+        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+            return {
+                estimate: null,
+                insight: '',
+                estimatedDaysRemaining: null,
+                error: 'Gemini API key not configured'
+            };
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        let temperature = 0.3;
+        if (process.env.GEMINI_TEMPERATURE) {
+            const parsed = parseFloat(process.env.GEMINI_TEMPERATURE);
+            if (!isNaN(parsed)) temperature = parsed;
+        }
+
+        // Focused prompt for balance estimation with days remaining
+        const prompt = `You are an electricity usage analyst. Given the following data, estimate the user's current true balance (in BDT), provide a short, friendly insight about their balance trend, and estimate the number of days remaining before the balance runs out. Respond in JSON: { "estimate": number, "insight": string, "estimatedDaysRemaining": number }\n\nCurrent Balance: ${sanitizedCurrentBalance}\nCurrent Month Consumption: ${currentMonthConsumption}\nReading Time: ${readingTime}\nCurrent Month: ${currentMonth}\n\nRecent Daily Consumption (last 14 days): ${JSON.stringify(sanitizedRecentDailyConsumption)}\n\nMonthly Consumption (24 months): ${JSON.stringify(sanitizedMonthlyConsumption)}\n\nRecharge History (24 months): ${JSON.stringify(sanitizedRechargeHistory)}\n\nRespond in ${banglaEnabled ? 'Bengali' : 'English'} with a conversational tone.`;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                temperature
+            }
+        });
+
+        let jsonStr = response.text?.trim() || '';
+        const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
+        const match = jsonStr.match(fenceRegex);
+        if (match && match[2]) {
+            jsonStr = match[2].trim();
+        }
+
+        try {
+            const aiResult = JSON.parse(jsonStr);
+            return {
+                estimate: typeof aiResult.estimate === 'number' ? aiResult.estimate : null,
+                insight: typeof aiResult.insight === 'string' ? aiResult.insight : '',
+                estimatedDaysRemaining: typeof aiResult.estimatedDaysRemaining === 'number' ? aiResult.estimatedDaysRemaining : null,
+            };
+        } catch (e) {
+            return {
+                estimate: null,
+                insight: '',
+                estimatedDaysRemaining: null,
+                error: 'Failed to parse AI response'
+            };
+        }
+    } catch (error: any) {
+        return {
+            estimate: null,
+            insight: '',
+            estimatedDaysRemaining: null,
+            error: error.message || 'AI analysis failed'
+        };
+    }
+};
+
 export const getCustomerLocation = async (accountNo: string): Promise<CustomerLocation> => {
     const url = `https://prepaid.desco.org.bd/api/common/getCustomerLocation?accountNo=${accountNo}`;
     const result = await fetchJsonWithHandling(url);

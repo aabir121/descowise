@@ -7,7 +7,7 @@ import { InformationCircleIcon } from '../common/Icons';
 import Modal from '../common/Modal';
 import { useBalanceWarning } from '../../hooks/useBalanceWarning';
 
-const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
+const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable, t, defaultOpen, sectionId, showInfoIcon, onInfoClick, aiInsight, aiError, isAiBalanceLoading, estimatedDaysRemaining }) => {
   const { open: openBalanceWarning } = useBalanceWarning();
   return (
     <Section 
@@ -85,7 +85,19 @@ const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable, t
           </div>
           <div className="bg-slate-700/30 p-4 rounded-lg">
             <h5 className="text-sm font-semibold text-slate-300 mb-2">{t('estimatedDaysRemaining')}</h5>
-            <div className="text-xl font-bold text-green-400">{gaugeData && !balanceUnavailable ? gaugeData.daysRemaining : '—'} {t('days')}</div>
+            <div className="text-xl font-bold text-green-400">{(typeof estimatedDaysRemaining === 'number' && !isNaN(estimatedDaysRemaining)) ? estimatedDaysRemaining : (gaugeData && !balanceUnavailable ? gaugeData.daysRemaining : '—')} {t('days')}</div>
+            {/* AI-powered note below days remaining */}
+            <div className="mt-3 min-h-[20px]">
+              {isAiBalanceLoading && (
+                <span className="flex items-center gap-1 text-xs text-purple-400"><span className="animate-spin inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full"></span> AI analyzing...</span>
+              )}
+              {aiError && !isAiBalanceLoading && (
+                <span className="text-xs text-red-400">AI: {aiError}</span>
+              )}
+              {aiInsight && !isAiBalanceLoading && !aiError && (
+                <span className="text-xs text-purple-400 flex items-center gap-1"><span className="font-semibold bg-purple-100 text-purple-600 px-1 rounded">AI</span> {aiInsight}</span>
+              )}
+            </div>
           </div>
           <div className="bg-slate-700/30 p-4 rounded-lg">
             <h5 className="text-sm font-semibold text-slate-300 mb-2">{getDashboardLabel('status', banglaEnabled)}</h5>
