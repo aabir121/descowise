@@ -35,6 +35,7 @@ function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: 
 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const { t, i18n } = useTranslation();
+    const { open: openBalanceWarning } = useBalanceWarning();
     const {
         processedData,
         isLoading,
@@ -99,12 +100,12 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 </div>
             )}
             {/* Show notification if balance data is null */}
-            {data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null) && (
+            {data?.balance && (data.balance.balance === null || data.balance.balance === undefined) && (
                 <div className="flex items-center justify-between max-w-md mx-auto bg-yellow-50 text-yellow-800 border border-yellow-200 px-3 py-2 rounded-md text-sm mb-3">
                     <div className="flex items-center gap-2">
                         <span className="font-medium">{t('balanceUnavailable')}</span>
                         <button
-                            onClick={() => useBalanceWarning().open}
+                            onClick={openBalanceWarning}
                             className="p-1 rounded hover:bg-yellow-100 focus:outline-none"
                             aria-label={t('moreInfoUnavailableBalance')}
                         >
@@ -132,7 +133,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         isHistoryLoading={isHistoryLoading}
                         handleYearChange={handleYearChange}
                         banglaEnabled={account.banglaEnabled}
-                        balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.currentMonthConsumption === null))}
+                        balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.balance === undefined))}
                         account={account}
                         showNotification={handleShowNotification}
                     />

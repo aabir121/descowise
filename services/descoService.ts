@@ -45,8 +45,8 @@ export const getAccountBalance = async (accountNo: string): Promise<BalanceRespo
         const result = await fetchJsonWithHandling(url);
         if (result.code === 200 && result.data) {
             const sanitizedData = { ...result.data };
-            const hasNullValues = sanitizedData.balance === null || sanitizedData.balance === undefined || 
-                                sanitizedData.currentMonthConsumption === null || sanitizedData.currentMonthConsumption === undefined;
+            // Only balance being null/undefined is considered a problem
+            const hasNullValues = sanitizedData.balance === null || sanitizedData.balance === undefined;
             
             // Only sanitize if values are not null/undefined
             if ('balance' in sanitizedData && sanitizedData.balance !== null && sanitizedData.balance !== undefined) {
