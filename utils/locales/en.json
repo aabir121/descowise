@@ -406,5 +406,13 @@
   "averageTotalRechargePerMonth": "Avg recharge/month",
   "averageRechargeCountPerMonth": "Avg times/month",
   "share": "Share",
-  "shareDashboard": "Share Dashboard"
+  "shareDashboard": "Share Dashboard",
+  "descoContactTitle": "Contact DESCO",
+  "descoCompanyFull": "Dhaka Electric Supply Company Limited (DESCO)",
+  "descoAddress": "22/B, Faruk Sarani, Nikunja-2, Dhaka-1229, Bangladesh.",
+  "descoPhone": "Phone: +88 02 8900110-11, 8900820-23",
+  "descoFax": "Fax: +88 02 8900100",
+  "descoEmail": "Email: info@desco.gov.bd",
+  "descoHotline": "DESCO Hotline: 16120",
+  "descoContactPageLink": "Official DESCO Contact Page"
 } 

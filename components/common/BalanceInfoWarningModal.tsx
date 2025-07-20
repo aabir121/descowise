@@ -23,7 +23,9 @@ const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpe
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2 sm:px-0" onClick={handleModalClick}>
-      <div className="flex flex-col w-full max-w-xs sm:max-w-md md:max-w-lg bg-slate-800 rounded-2xl shadow-2xl my-4 mx-auto">
+      <div className="flex flex-col w-full max-w-xs sm:max-w-md md:max-w-lg bg-slate-800 rounded-2xl shadow-2xl my-4 mx-auto"
+        style={{ maxHeight: '90vh', overflowY: 'auto' }}
+      >
         {/* Fixed Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -55,10 +57,30 @@ const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpe
               <p className="font-semibold text-slate-200 mb-2">{t('balanceInfoWhatToDoTitle')}</p>
               <ul className="list-disc list-inside space-y-1 ml-3 text-slate-300">
                 <li>{t('balanceInfoActionCheckMeter')}</li>
-                <li>{t('balanceInfoActionCallDesco', { phone1: '16260', phone2: '02-955-9555' })}</li>
+                <li>{t('balanceInfoActionCallDesco', { phone1: '16120', phone2: '+88 02 8900110-11, 8900820-23' })}</li>
                 <li>{t('balanceInfoActionVisitPortal')}</li>
                 <li>{t('balanceInfoActionWait')}</li>
               </ul>
+            </div>
+            <div className="bg-slate-700/40 p-3 rounded-lg mt-2 flex flex-col gap-2">
+              <p className="font-semibold text-slate-200 mb-2">{t('descoContactTitle')}</p>
+              <div className="flex items-center gap-2 text-slate-300 text-sm">
+                <span role="img" aria-label="Hotline">☎️</span>
+                <span>{t('descoHotline')}</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-300 text-sm">
+                <span role="img" aria-label="Email">✉️</span>
+                <span>{t('descoEmail')}</span>
+              </div>
+              <a
+                href="https://ocsms.desco.org.bd/publicinfo/contactus"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 underline hover:text-blue-300 text-sm flex items-center gap-1 mt-1"
+              >
+                <span role="img" aria-label="Link">🔗</span>
+                {t('descoContactPageLink')}
+              </a>
             </div>
             <p className="text-slate-400 text-xs sm:text-[13px] mt-2">
               {t('balanceInfoAutoUpdate')}
