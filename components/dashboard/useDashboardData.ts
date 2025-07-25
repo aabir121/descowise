@@ -205,6 +205,14 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       return new Date(date.getFullYear(), date.getMonth(), date.getDate());
     };
 
+    // Helper to get YYYY-MM-DD string in local time
+    const getLocalIsoDateString = (date: Date) => {
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     // Helper function to fill missing dates with zeros and mark missing
     const fillMissingDates = (data: any[], startDate: Date, endDate: Date) => {
       const dateMap = new Map();
@@ -212,13 +220,13 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         // Clamp all data dates to local midnight for comparison
         const d = new Date(item.date);
         const localMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        dateMap.set(localMidnight.toISOString().split('T')[0], { ...item, date: localMidnight.toISOString().split('T')[0] });
+        dateMap.set(getLocalIsoDateString(localMidnight), { ...item, date: getLocalIsoDateString(localMidnight) });
       });
       const result = [];
       let currentDate = toLocalMidnight(new Date(startDate));
       const end = toLocalMidnight(new Date(endDate));
       while (currentDate <= end) {
-        const dateStr = currentDate.toISOString().split('T')[0];
+        const dateStr = getLocalIsoDateString(currentDate);
         const existingData = dateMap.get(dateStr);
         if (existingData) {
           result.push({ ...existingData, missing: false });
