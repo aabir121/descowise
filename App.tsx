@@ -10,7 +10,7 @@ import AddAccountModal from './components/AddAccountModal';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
 import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
-import FloatingCoffeeButton from './components/FloatingCoffeeButton';
+import FloatingInfoButton from './components/FloatingInfoButton';
 import Footer from './components/common/Footer';
 import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal';
 import { useBalanceWarning } from './hooks/useBalanceWarning';
@@ -576,8 +576,8 @@ const App: React.FC = () => {
                 onClose={closeBalanceWarning}
             />
             
-            {/* Global Floating Buy Me a Coffee Button */}
-            <FloatingCoffeeButton />
+            {/* Global Floating Info Button */}
+            <FloatingInfoButton />
             
             {/* Onboarding Modal */}
             <OnboardingModal

@@ -31,15 +31,15 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Coffee button styles */
-.floating-coffee-btn {
+/* Info button styles */
+.floating-info-btn {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
   z-index: 100;
 }
 
-.coffee-popover {
+.info-popover {
   position: absolute;
   bottom: 100%;
   right: 0;
@@ -54,7 +54,7 @@
   z-index: 1000;
 }
 
-.coffee-popover::after {
+.info-popover::after {
   content: '';
   position: absolute;
   top: 100%;
@@ -63,7 +63,7 @@
   border-top-color: #4a5568;
 }
 
-.coffee-popover a {
+.info-popover a {
   display: inline-block;
   margin: 0.25rem 0.5rem 0.25rem 0;
   text-decoration: none;
@@ -72,11 +72,11 @@
   transition: color 0.2s;
 }
 
-.coffee-popover a:hover {
+.info-popover a:hover {
   color: #fbbf24;
 }
 
-/* Stacking chat button above coffee button in dashboard */
+/* Stacking chat button above info button in dashboard */
 .desco-chat-btn {
   position: fixed;
   bottom: 5.5rem;
@@ -85,10 +85,10 @@
 }
 
 @media (max-width: 600px) {
-  .floating-coffee-btn, .desco-chat-btn {
+  .floating-info-btn, .desco-chat-btn {
     right: 1rem;
   }
-  .floating-coffee-btn {
+  .floating-info-btn {
     bottom: 1rem;
   }
   .desco-chat-btn {

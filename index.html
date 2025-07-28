@@ -37,7 +37,7 @@
 .animate-fade-in-down {
   animation: fadeInDown 0.1s ease-out forwards;
 }
-  .floating-coffee-btn {
+  .floating-info-btn {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
@@ -54,11 +54,11 @@
     cursor: pointer;
     transition: box-shadow 0.2s, transform 0.2s;
   }
-  .floating-coffee-btn:hover {
+  .floating-info-btn:hover {
     box-shadow: 0 8px 24px rgba(0,0,0,0.28);
     transform: scale(1.08);
   }
-  .coffee-popover {
+  .info-popover {
     position: fixed;
     bottom: 5.5rem;
     right: 2rem;
@@ -72,7 +72,7 @@
     z-index: 101;
     animation: fade-in 0.3s cubic-bezier(0.4,0,0.2,1);
   }
-  .coffee-popover a {
+  .info-popover a {
     display: inline-block;
     margin: 0.25rem 0.5rem 0.25rem 0;
     text-decoration: none;
@@ -80,10 +80,10 @@
     font-weight: 500;
     transition: color 0.2s;
   }
-  .coffee-popover a:hover {
+  .info-popover a:hover {
     color: #fbbf24;
   }
-  /* Stacking chat button above coffee button in dashboard */
+  /* Stacking chat button above info button in dashboard */
   .desco-chat-btn {
     position: fixed;
     bottom: 5.5rem;
@@ -91,10 +91,10 @@
     z-index: 101;
   }
   @media (max-width: 600px) {
-    .floating-coffee-btn, .desco-chat-btn {
+    .floating-info-btn, .desco-chat-btn {
       right: 1rem;
     }
-    .floating-coffee-btn {
+    .floating-info-btn {
       bottom: 1rem;
     }
     .desco-chat-btn {

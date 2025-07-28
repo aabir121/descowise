@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon } from './common/Icons';
 
-const FloatingCoffeeButton: React.FC = () => {
+const FloatingInfoButton: React.FC = () => {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
@@ -22,14 +22,14 @@ const FloatingCoffeeButton: React.FC = () => {
   }, [open]);
 
   return (
-    <div className="floating-coffee-btn group">
+    <div className="floating-info-btn group">
       <button
-        title={t('supportDeveloper')}
+        title={t('aboutDeveloper')}
         onClick={() => setOpen((v) => !v)}
-        aria-label={t('supportDeveloperAria')}
-        style={{ fontSize: 28, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+        aria-label={t('aboutDeveloperAria')}
+        style={{ fontSize: 20, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
       >
-        <span role="img" aria-label="coffee">☕</span>
+        <span role="img" aria-label="info" style={{ fontSize: 24 }}>ℹ️</span>
       </button>
       {open && (
         <>
@@ -42,7 +42,7 @@ const FloatingCoffeeButton: React.FC = () => {
             }}
           />
           <div
-            className="coffee-popover z-50"
+            className="info-popover z-50"
             ref={popoverRef}
             style={{ maxWidth: 320, minWidth: 220, position: 'absolute', bottom: 'calc(100% + 8px)', right: 0 }}
             onClick={e => e.stopPropagation()}
@@ -57,14 +57,14 @@ const FloatingCoffeeButton: React.FC = () => {
               <CloseIcon className="w-6 h-6" />
             </button>
             <div className="font-semibold text-lg mb-2" style={{ paddingRight: 24 }}>{t('enjoyingApp')}</div>
-            <div className="mb-3 text-slate-300 text-sm">{t('supportOrConnect')}</div>
+            <div className="mb-3 text-slate-300 text-sm">{t('connectWithDeveloper')}</div>
             <div className="flex flex-col gap-2 mb-2">
               <a href="https://aabir121.github.io" target="_blank" rel="noopener noreferrer">{t('portfolio')}</a>
               <a href="https://www.linkedin.com/in/aabir-hassan/" target="_blank" rel="noopener noreferrer">{t('linkedin')}</a>
               <a href="https://aabir-hassan.medium.com/" target="_blank" rel="noopener noreferrer">{t('medium')}</a>
-              <a href="https://coff.ee/aabir.hassan" target="_blank" rel="noopener noreferrer">{t('buyMeCoffee')}</a>
+              {/* Temporarily hidden: <a href="https://coff.ee/aabir.hassan" target="_blank" rel="noopener noreferrer">{t('buyMeCoffee')}</a> */}
             </div>
-            <div className="text-xs text-slate-500 mt-1 break-words">{t('thankYouSupport')}</div>
+            <div className="text-sm text-slate-300 mt-2 break-words">{t('thankYouSupport')}</div>
           </div>
         </>
       )}
@@ -72,4 +72,4 @@ const FloatingCoffeeButton: React.FC = () => {
   );
 };
 
-export default FloatingCoffeeButton;
+export default FloatingInfoButton;
