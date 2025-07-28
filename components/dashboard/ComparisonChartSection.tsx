@@ -1,11 +1,12 @@
 // @ts-nocheck
-import React from 'react';
+import React, { memo } from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
-import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
+import OptimizedChart from '../common/OptimizedChart';
+import { BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 
-const ComparisonChartSection = ({ comparisonData, comparisonMetric, setComparisonMetric, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
+const ComparisonChartSection = memo(({ comparisonData, comparisonMetric, setComparisonMetric, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   if (!comparisonData || comparisonData.length === 0) return null;
   return (
     <Section 
@@ -31,9 +32,17 @@ const ComparisonChartSection = ({ comparisonData, comparisonMetric, setCompariso
           </button>
         </div>
       </div>
-      <div className="h-80 w-full">
-        <ResponsiveContainer>
-          <BarChart data={comparisonData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+      <OptimizedChart
+        data={comparisonData || []}
+        chartType="bar"
+        height="320px"
+        maxDataPoints={24}
+        enableDataSampling={true}
+        enableLazyLoading={true}
+        className="w-full"
+      >
+        {(optimizedData) => (
+          <BarChart data={optimizedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey="month" tick={{ fill: '#9ca3af' }} stroke="#4b5563" fontSize={12} />
             <YAxis tick={{ fill: '#9ca3af' }} stroke="#4b5563" />
@@ -42,10 +51,12 @@ const ComparisonChartSection = ({ comparisonData, comparisonMetric, setCompariso
             <Bar dataKey="Current Year" fill="#06b6d4" name={t('currentYear')} />
             <Bar dataKey="Previous Year" fill="#f59e42" name={t('previousYear')} />
           </BarChart>
-        </ResponsiveContainer>
-      </div>
+        )}
+      </OptimizedChart>
     </Section>
   );
-};
+});
 
-export default ComparisonChartSection; 
+ComparisonChartSection.displayName = 'ComparisonChartSection';
+
+export default ComparisonChartSection;

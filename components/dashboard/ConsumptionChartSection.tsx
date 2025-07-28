@@ -4,6 +4,7 @@ import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
+import { optimizeChartData, debounceChartUpdate } from '../../utils/chartOptimization';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
@@ -18,7 +19,7 @@ const ConsumptionChartSection = memo(({ consumptionChartData, consumptionTimeRan
     }
   }, [consumptionTimeRange, setConsumptionTimeRange]);
 
-  // Memoize expensive calculations
+  // Memoize expensive calculations with chart optimization
   const { totalValue, chartData } = useMemo(() => {
     if (!consumptionChartData || consumptionChartData.length === 0) {
       return { totalValue: 0, chartData: [] };
@@ -28,9 +29,16 @@ const ConsumptionChartSection = memo(({ consumptionChartData, consumptionTimeRan
       return sum + (chartView === 'energy' ? (item.kWh || 0) : (item.BDT || 0));
     }, 0);
 
+    // Optimize chart data to reduce DOM complexity
+    const optimizedData = optimizeChartData(consumptionChartData, 'line', {
+      maxPoints: 50,
+      keyField: 'name',
+      preserveExtremes: true
+    });
+
     return {
       totalValue: total,
-      chartData: consumptionChartData
+      chartData: optimizedData
     };
   }, [consumptionChartData, chartView]);
 
@@ -118,7 +126,7 @@ const ConsumptionChartSection = memo(({ consumptionChartData, consumptionTimeRan
           </div>
         </div>
       </div>
-      
+
       <div className="w-full h-60 sm:h-80 px-1 sm:px-0">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

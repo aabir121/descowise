@@ -3,6 +3,8 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const isProduction = mode === 'production';
+
     return {
       define: {
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -14,7 +16,7 @@ export default defineConfig(({ mode }) => {
         }
       },
       build: {
-        // Optimize chunk splitting for better caching
+        // Optimize chunk splitting for better caching and loading
         rollupOptions: {
           output: {
             manualChunks: {
@@ -41,29 +43,49 @@ export default defineConfig(({ mode }) => {
             entryFileNames: 'assets/js/[name]-[hash].js'
           }
         },
-        // Increase chunk size warning limit
-        chunkSizeWarningLimit: 1000,
+        // Reduce chunk size warning limit to encourage smaller chunks
+        chunkSizeWarningLimit: 500,
         // Enable minification with terser for better compression
-        minify: 'terser',
-        terserOptions: {
+        minify: isProduction ? 'terser' : false,
+        terserOptions: isProduction ? {
           compress: {
             drop_console: true, // Remove console.log in production
             drop_debugger: true,
             pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
+          },
+          mangle: true,
+          format: {
+            comments: false
           }
-        },
-        // Generate source maps for debugging (disabled for production)
-        sourcemap: false,
+        } : {},
+        // Generate source maps only in development
+        sourcemap: !isProduction,
         // Optimize CSS
-        cssMinify: true,
+        cssMinify: isProduction,
         // Enable asset inlining for small files
         assetsInlineLimit: 4096,
         // Target modern browsers for better optimization
-        target: 'es2020'
+        target: 'es2020',
+        // Enable CSS code splitting
+        cssCodeSplit: true,
+        // Optimize module preload
+        modulePreload: {
+          polyfill: false
+        }
       },
       // Optimize dependencies
       optimizeDeps: {
-        include: ['react', 'react-dom', 'recharts', 'react-router-dom', 'react-i18next']
-      }
+        include: [
+          'react',
+          'react-dom',
+          'react-router-dom',
+          'react-i18next',
+          'i18next'
+        ]
+      },
+      // Enable experimental features for better performance
+      esbuild: isProduction ? {
+        drop: ['console', 'debugger']
+      } : undefined
     };
 });

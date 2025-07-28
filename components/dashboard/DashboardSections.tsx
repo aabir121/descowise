@@ -1,7 +1,8 @@
 // @ts-nocheck
-import React, { useEffect, useState, useCallback, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useCallback, Suspense, lazy, useMemo } from 'react';
 import { Account, AiSummary, RechargeHistoryItem } from '../../types';
 import { useSectionPreferences } from '../common/Section';
+import { useDebounce, useDeepMemo } from '../../hooks/usePerformanceOptimization';
 import AIDashboardInsightsSection from './AIDashboardInsightsSection';
 import AccountBalanceSection from './AccountBalanceSection';
 import RechargeHistorySection from './RechargeHistorySection';

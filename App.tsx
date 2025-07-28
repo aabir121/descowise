@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance, verifyAccount } from './services/descoService';
+import { useIntelligentPreloader, preloadCriticalResources, addResourceHints } from './utils/preloadStrategies';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
@@ -36,8 +38,12 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
             const tempAccount: Account = {
                 accountNo: accountNo,
                 customerName: 'Shared Account',
-                customerAddress: '',
+                contactNo: '',
+                feederName: '',
+                installationAddress: '',
                 meterNo: '',
+                tariffSolution: '',
+                sanctionLoad: '',
                 dateAdded: new Date().toISOString(),
                 aiInsightsEnabled: false,
                 banglaEnabled: false,
@@ -217,6 +223,13 @@ const App: React.FC = () => {
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
+    const { trackAction, preloadForRoute } = useIntelligentPreloader();
+
+    // Initialize performance optimizations
+    useEffect(() => {
+        preloadCriticalResources();
+        addResourceHints();
+    }, []);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo: string | null; accountName: string }>({
         isOpen: false,
         accountNo: null,
@@ -245,6 +258,12 @@ const App: React.FC = () => {
     const [sharedPrompt, setSharedPrompt] = useState<{ isOpen: boolean; accountNo: string | null }>({ isOpen: false, accountNo: null });
     const [sharedLoading, setSharedLoading] = useState(false);
     const [sharedError, setSharedError] = useState<string | null>(null);
+
+    // Track route changes for intelligent preloading
+    useEffect(() => {
+        preloadForRoute(location.pathname);
+        trackAction(`navigate_${location.pathname}`);
+    }, [location.pathname, preloadForRoute, trackAction]);
     const [sharedViewerMode, setSharedViewerMode] = useState(false);
     const [pendingSharedLink, setPendingSharedLink] = useState<string | null>(null);
     const [preVerifiedAccount, setPreVerifiedAccount] = useState<{ accountNo: string; data: any } | null>(null);
@@ -497,37 +516,39 @@ const App: React.FC = () => {
 
     return (
         <>
-            <Routes>
-                <Route path="/dashboard/:accountNo" element={
-                    <DashboardWrapper
-                        accounts={accounts}
-                        showNotification={showNotification}
-                        onDelete={handleDeleteFromDashboard}
-                        sharedViewerMode={sharedViewerMode}
-                    />
-                } />
-                <Route path="/" element={
-                    <AccountListPage
-                      accounts={accounts}
-                      loadingBalances={loadingBalances}
-                      updateAccount={updateAccount}
-                      handleDeleteAccount={handleDeleteAccount}
-                      setAddAccountModalOpen={setAddAccountModalOpen}
-                      addAccountModalOpen={addAccountModalOpen}
-                      handleAccountAdded={handleAccountAdded}
-                      notification={notification}
-                      showDataNotice={showDataNotice}
-                      handleDismissDataNotice={handleDismissDataNotice}
-                      t={t}
-                      TrashIcon={TrashIcon}
-                      PlusIcon={PlusIcon}
-                      LanguageSwitcher={LanguageSwitcher}
-                      BoltIcon={BoltIcon}
-                      Footer={Footer}
-                    />
-                } />
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <ErrorBoundary>
+                <Routes>
+                    <Route path="/dashboard/:accountNo" element={
+                        <DashboardWrapper
+                            accounts={accounts}
+                            showNotification={showNotification}
+                            onDelete={handleDeleteFromDashboard}
+                            sharedViewerMode={sharedViewerMode}
+                        />
+                    } />
+                    <Route path="/" element={
+                        <AccountListPage
+                          accounts={accounts}
+                          loadingBalances={loadingBalances}
+                          updateAccount={updateAccount}
+                          handleDeleteAccount={handleDeleteAccount}
+                          setAddAccountModalOpen={setAddAccountModalOpen}
+                          addAccountModalOpen={addAccountModalOpen}
+                          handleAccountAdded={handleAccountAdded}
+                          notification={notification}
+                          showDataNotice={showDataNotice}
+                          handleDismissDataNotice={handleDismissDataNotice}
+                          t={t}
+                          TrashIcon={TrashIcon}
+                          PlusIcon={PlusIcon}
+                          LanguageSwitcher={LanguageSwitcher}
+                          BoltIcon={BoltIcon}
+                          Footer={Footer}
+                        />
+                    } />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </ErrorBoundary>
             <AddAccountModal
                 isOpen={addAccountModalOpen}
                 onClose={() => {
