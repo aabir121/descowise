@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance, verifyAccount } from './services/descoService';
 import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
-import AccountDashboardView from './components/AccountDashboardView';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
 import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
@@ -17,6 +16,9 @@ import LanguageSwitcher from './components/common/LanguageSwitcher';
 import OnboardingModal from './components/OnboardingModal';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+
+// Lazy load the heavy dashboard component
+const AccountDashboardView = lazy(() => import('./components/AccountDashboardView'));
 
 const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete, sharedViewerMode }) => {
     const { accountNo } = useParams<{ accountNo: string }>();
@@ -43,12 +45,21 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
             };
 
             return (
-                <AccountDashboardView
-                    account={tempAccount}
-                    onClose={() => navigate("/", { replace: true })}
-                    onDelete={() => {}} // Disable delete for view-only mode
-                    showNotification={showNotification}
-                />
+                <Suspense fallback={
+                    <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                            <p className="text-slate-300">Loading dashboard...</p>
+                        </div>
+                    </div>
+                }>
+                    <AccountDashboardView
+                        account={tempAccount}
+                        onClose={() => navigate("/", { replace: true })}
+                        onDelete={() => {}} // Disable delete for view-only mode
+                        showNotification={showNotification}
+                    />
+                </Suspense>
             );
         }
 
@@ -68,12 +79,21 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
         return <Navigate to="/" replace />;
     }
     return (
-        <AccountDashboardView
-            account={selectedAccount}
-            onClose={() => navigate("/", { replace: true })}
-            onDelete={onDelete}
-            showNotification={showNotification}
-        />
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                    <p className="text-slate-300">Loading dashboard...</p>
+                </div>
+            </div>
+        }>
+            <AccountDashboardView
+                account={selectedAccount}
+                onClose={() => navigate("/", { replace: true })}
+                onDelete={onDelete}
+                showNotification={showNotification}
+            />
+        </Suspense>
     );
 };
 

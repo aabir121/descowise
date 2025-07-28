@@ -1,23 +1,25 @@
 // @ts-nocheck
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { Account, AiSummary, RechargeHistoryItem } from '../../types';
 import { useSectionPreferences } from '../common/Section';
 import AIDashboardInsightsSection from './AIDashboardInsightsSection';
 import AccountBalanceSection from './AccountBalanceSection';
-import ConsumptionChartSection from './ConsumptionChartSection';
-import ComparisonChartSection from './ComparisonChartSection';
-import RechargeVsConsumptionSection from './RechargeVsConsumptionSection';
-import RechargeDistributionSection from './RechargeDistributionSection';
-import MaxDemandSection from './MaxDemandSection';
-import CumulativeConsumptionSection from './CumulativeConsumptionSection';
-import BoxPlotSection from './BoxPlotSection';
-import MonthlyCostTrendSection from './MonthlyCostTrendSection';
 import RechargeHistorySection from './RechargeHistorySection';
 import ConsumerInformationSection from './ConsumerInformationSection';
 import SectionInfoModal from '../common/SectionInfoModal';
 import { getTranslationForLanguage } from '../../utils/i18n';
 import i18n from '../../utils/i18n';
 import BalanceDisplay from '../account/BalanceDisplay';
+
+// Lazy load heavy chart components
+const ConsumptionChartSection = lazy(() => import('./ConsumptionChartSection'));
+const ComparisonChartSection = lazy(() => import('./ComparisonChartSection'));
+const RechargeVsConsumptionSection = lazy(() => import('./RechargeVsConsumptionSection'));
+const RechargeDistributionSection = lazy(() => import('./RechargeDistributionSection'));
+const MaxDemandSection = lazy(() => import('./MaxDemandSection'));
+const CumulativeConsumptionSection = lazy(() => import('./CumulativeConsumptionSection'));
+const BoxPlotSection = lazy(() => import('./BoxPlotSection'));
+const MonthlyCostTrendSection = lazy(() => import('./MonthlyCostTrendSection'));
 
 const SECTION_CONFIGS = [
   { id: 'account-balance-status', defaultOpen: true },
@@ -32,6 +34,16 @@ const SECTION_CONFIGS = [
   { id: 'recharge-history', defaultOpen: true },
   { id: 'consumer-information', defaultOpen: true },
 ];
+
+// Loading component for chart sections
+const ChartSectionLoader = () => (
+  <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
+    <div className="animate-pulse">
+      <div className="h-4 bg-slate-700 rounded w-1/4 mb-4"></div>
+      <div className="h-64 bg-slate-700 rounded"></div>
+    </div>
+  </div>
+);
 
 const DashboardSections: React.FC<any> = ({
   processedData,
@@ -154,17 +166,19 @@ const DashboardSections: React.FC<any> = ({
         estimatedDaysRemaining={estimatedDaysRemaining}
       />
       {/* 4. Consumption Chart - Primary usage visualization */}
-      <ConsumptionChartSection
-        consumptionChartData={processedData?.consumptionChartData}
-        consumptionTimeRange={consumptionTimeRange}
-        setConsumptionTimeRange={setConsumptionTimeRange}
-        banglaEnabled={banglaEnabled}
-        t={t}
-        defaultOpen={getDefaultOpen('consumption-chart')}
-        sectionId="consumption-chart"
-        showInfoIcon={true}
-        onInfoClick={() => handleInfoClick('consumptionChart')}
-      />
+      <Suspense fallback={<ChartSectionLoader />}>
+        <ConsumptionChartSection
+          consumptionChartData={processedData?.consumptionChartData}
+          consumptionTimeRange={consumptionTimeRange}
+          setConsumptionTimeRange={setConsumptionTimeRange}
+          banglaEnabled={banglaEnabled}
+          t={t}
+          defaultOpen={getDefaultOpen('consumption-chart')}
+          sectionId="consumption-chart"
+          showInfoIcon={true}
+          onInfoClick={() => handleInfoClick('consumptionChart')}
+        />
+      </Suspense>
       {/* 5. Recharge History - Important transaction history */}
       <RechargeHistorySection
         rechargeHistory={data?.rechargeHistory}
@@ -179,17 +193,19 @@ const DashboardSections: React.FC<any> = ({
         onInfoClick={() => handleInfoClick('rechargeHistory')}
       />
       {/* 6. Comparison Chart - Performance analysis */}
-      <ComparisonChartSection
-        comparisonData={processedData?.comparisonData}
-        comparisonMetric={comparisonMetric}
-        setComparisonMetric={setComparisonMetric}
-        banglaEnabled={banglaEnabled}
-        t={t}
-        defaultOpen={getDefaultOpen('comparison-chart')}
-        sectionId="comparison-chart"
-        showInfoIcon={true}
-        onInfoClick={() => handleInfoClick('comparisonChart')}
-      />
+      <Suspense fallback={<ChartSectionLoader />}>
+        <ComparisonChartSection
+          comparisonData={processedData?.comparisonData}
+          comparisonMetric={comparisonMetric}
+          setComparisonMetric={setComparisonMetric}
+          banglaEnabled={banglaEnabled}
+          t={t}
+          defaultOpen={getDefaultOpen('comparison-chart')}
+          sectionId="comparison-chart"
+          showInfoIcon={true}
+          onInfoClick={() => handleInfoClick('comparisonChart')}
+        />
+      </Suspense>
       {/* 7. Recharge vs Consumption - Usage patterns */}
       <RechargeVsConsumptionSection
         rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData}

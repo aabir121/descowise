@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-A" />
+    <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DescoWise</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.1.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.1.0/client",
-    "recharts": "https://esm.sh/recharts@2.12.7?deps=react@19.1.0",
-    "d3-shape": "https://esm.sh/d3-shape@3.2.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.8.0",
-    "recharts/": "https://esm.sh/recharts@^3.0.2/"
-  }
-}
-</script>
+
+    <!-- Resource hints for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/index.tsx" />
+    <link rel="preload" href="/index.css" as="style" />
+
+    <!-- Meta tags for SEO and performance -->
+    <meta name="description" content="DescoWise - Manage your DESCO electricity accounts with AI-powered insights" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="robots" content="index, follow" />
+
+
 <style>
 @keyframes fadeInDown {
   from {
@@ -99,7 +99,6 @@
     }
   }
 </style>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>

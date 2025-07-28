@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../types';
 import { TrashIcon, PencilIcon } from './common/Icons';
@@ -17,48 +17,60 @@ interface AccountCardProps {
     onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void; // Added prop
 }
 
-const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled, onUpdateBanglaEnabled }) => {
+const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled, onUpdateBanglaEnabled }) => {
     const { t } = useTranslation();
-    const displayName = account.displayName || `${t('account')} ${account.accountNo}`;
+
+    // Memoize computed values
+    const displayName = useMemo(() =>
+        account.displayName || `${t('account')} ${account.accountNo}`,
+        [account.displayName, account.accountNo, t]
+    );
 
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [editDisplayName, setEditDisplayName] = useState(displayName);
 
-    const handleDeleteClick = (e: React.MouseEvent) => {
+    // Memoize event handlers
+    const handleDeleteClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         onDelete(account.accountNo);
-    };
+    }, [onDelete, account.accountNo]);
 
-    const handleEditClick = (e: React.MouseEvent) => {
+    const handleEditClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         setEditModalOpen(true);
-    };
+    }, []);
 
-    const handleEditSave = (e: React.FormEvent) => {
+    const handleEditSave = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (onUpdateDisplayName) {
             onUpdateDisplayName(account.accountNo, editDisplayName);
         }
         setEditModalOpen(false);
-    };
+    }, [onUpdateDisplayName, account.accountNo, editDisplayName]);
 
-    const handleEditCancel = () => {
+    const handleEditCancel = useCallback(() => {
         setEditDisplayName(displayName);
         setEditModalOpen(false);
-    };
+    }, [displayName]);
+
+    const handleCardClick = useCallback(() => {
+        onSelect(account.accountNo);
+    }, [onSelect, account.accountNo]);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect(account.accountNo);
+        }
+    }, [onSelect, account.accountNo]);
 
     return (
         <>
         <div
             role="button"
             tabIndex={0}
-            onClick={() => onSelect(account.accountNo)}
-            onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelect(account.accountNo);
-                }
-            }}
+            onClick={handleCardClick}
+            onKeyDown={handleKeyDown}
             className="relative bg-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer border border-slate-700 hover:border-cyan-500/50"
             aria-label={`${t('selectAccount')} ${displayName}`}
         >
@@ -170,6 +182,6 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, onSelect, onDelete, 
         )}
         </>
     );
-};
+});
 
 export default AccountCard;

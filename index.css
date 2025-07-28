@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations and styles */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.5s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Coffee button styles */
+.floating-coffee-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+}
+
+.coffee-popover {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.5rem;
+  background: #4a5568;
+  color: #f2e9e4;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  font-size: 0.875rem;
+  z-index: 1000;
+}
+
+.coffee-popover::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 1rem;
+  border: 0.5rem solid transparent;
+  border-top-color: #4a5568;
+}
+
+.coffee-popover a {
+  display: inline-block;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  text-decoration: none;
+  color: #f2e9e4;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.coffee-popover a:hover {
+  color: #fbbf24;
+}
+
+/* Stacking chat button above coffee button in dashboard */
+.desco-chat-btn {
+  position: fixed;
+  bottom: 5.5rem;
+  right: 2rem;
+  z-index: 101;
+}
+
+@media (max-width: 600px) {
+  .floating-coffee-btn, .desco-chat-btn {
+    right: 1rem;
+  }
+  .floating-coffee-btn {
+    bottom: 1rem;
+  }
+  .desco-chat-btn {
+    bottom: 4.5rem;
+  }
+}

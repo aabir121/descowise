@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
@@ -8,21 +8,31 @@ import { getDashboardLabel } from './dashboardLabels';
 type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
 
-const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
+const ConsumptionChartSection = memo(({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
   const [chartView, setChartView] = useState<ChartView>('cost');
+
   // Default to 7days if not set
   React.useEffect(() => {
     if (!consumptionTimeRange) {
       setConsumptionTimeRange('7days');
     }
   }, [consumptionTimeRange, setConsumptionTimeRange]);
-  
-  if (!consumptionChartData || consumptionChartData.length === 0) return null;
 
-  // Calculate total based on chart view and data
-  const totalValue = consumptionChartData.reduce((sum, item) => {
-    return sum + (chartView === 'energy' ? (item.kWh || 0) : (item.BDT || 0));
-  }, 0);
+  // Memoize expensive calculations
+  const { totalValue, chartData } = useMemo(() => {
+    if (!consumptionChartData || consumptionChartData.length === 0) {
+      return { totalValue: 0, chartData: [] };
+    }
+
+    const total = consumptionChartData.reduce((sum, item) => {
+      return sum + (chartView === 'energy' ? (item.kWh || 0) : (item.BDT || 0));
+    }, 0);
+
+    return {
+      totalValue: total,
+      chartData: consumptionChartData
+    };
+  }, [consumptionChartData, chartView]);
 
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
     { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
@@ -38,20 +48,22 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
     { value: 'energy', label: getDashboardLabel('energyConsumption', banglaEnabled) },
   ];
 
-  // Create summary value for header
-  const summaryValue = (
+  // Create summary value for header (memoized)
+  const summaryValueComponent = useMemo(() => (
     <div className="text-right">
-      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}> 
-        {totalValue.toLocaleString('en-US', { 
-          minimumFractionDigits: 0, 
-          maximumFractionDigits: chartView === 'energy' ? 1 : 0 
+      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}>
+        {totalValue.toLocaleString('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: chartView === 'energy' ? 1 : 0
         })}
         <span className="text-slate-400 text-xs sm:text-sm font-medium ml-1">
           {chartView === 'energy' ? t('kWh') : t('BDT')}
         </span>
       </div>
     </div>
-  );
+  ), [totalValue, chartView, t]);
+
+  if (!chartData || chartData.length === 0) return null;
 
   return (
     <Section 
@@ -60,7 +72,7 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
       sectionId={sectionId}
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
-      summaryValue={summaryValue}
+      summaryValue={summaryValueComponent}
     >
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
         {/* Chart View Toggle */}
@@ -109,7 +121,7 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
       
       <div className="w-full h-60 sm:h-80 px-1 sm:px-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={consumptionChartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} stroke="#4b5563" fontSize={12} />
             {chartView === 'energy' ? (
@@ -132,6 +144,6 @@ const ConsumptionChartSection = ({ consumptionChartData, consumptionTimeRange, s
       </div>
     </Section>
   );
-};
+});
 
-export default ConsumptionChartSection; 
+export default ConsumptionChartSection;
