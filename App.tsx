@@ -18,12 +18,53 @@ import OnboardingModal from './components/OnboardingModal';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 
-const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; }> = ({ accounts, showNotification, onDelete }) => {
+const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete, sharedViewerMode }) => {
     const { accountNo } = useParams<{ accountNo: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const selectedAccount = accounts.find(acc => acc.accountNo === accountNo);
+
+    // Check if this is a shared link
+    const params = new URLSearchParams(location.search);
+    const isSharedLink = params.get('shared') === '1';
+
     if (!selectedAccount) {
-        // If account not found, redirect to home
+        // If account not found and it's a shared link in viewer mode, create a temporary account
+        if (isSharedLink && sharedViewerMode && accountNo) {
+            const tempAccount: Account = {
+                accountNo: accountNo,
+                customerName: 'Shared Account',
+                customerAddress: '',
+                meterNo: '',
+                dateAdded: new Date().toISOString(),
+                aiInsightsEnabled: false,
+                banglaEnabled: false,
+                displayName: null
+            };
+
+            return (
+                <AccountDashboardView
+                    account={tempAccount}
+                    onClose={() => navigate("/", { replace: true })}
+                    onDelete={() => {}} // Disable delete for view-only mode
+                    showNotification={showNotification}
+                />
+            );
+        }
+
+        // If account not found and it's a shared link but not in viewer mode, show loading
+        if (isSharedLink) {
+            // Return a placeholder or loading state while shared link logic processes
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                        <p className="text-slate-300">Processing shared link...</p>
+                    </div>
+                </div>
+            );
+        }
+        // If account not found and not a shared link, redirect to home
         return <Navigate to="/" replace />;
     }
     return (
@@ -152,6 +193,7 @@ const AccountListPage: React.FC<{
 
 const App: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
@@ -184,6 +226,8 @@ const App: React.FC = () => {
     const [sharedLoading, setSharedLoading] = useState(false);
     const [sharedError, setSharedError] = useState<string | null>(null);
     const [sharedViewerMode, setSharedViewerMode] = useState(false);
+    const [pendingSharedLink, setPendingSharedLink] = useState<string | null>(null);
+    const [preVerifiedAccount, setPreVerifiedAccount] = useState<{ accountNo: string; data: any } | null>(null);
 
     useEffect(() => {
         // Check if onboarding has been completed
@@ -303,8 +347,27 @@ const App: React.FC = () => {
         const shared = params.get('shared');
         if (match && shared === '1') {
             const accountNo = match[1];
-            // Only prompt if not already in list and not already prompted
-            if (!accounts.some(acc => acc.accountNo === accountNo) && !sharedPrompt.isOpen && !sharedViewerMode) {
+
+            // Check if onboarding is completed
+            const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+
+            if (!onboardingCompleted) {
+                // If onboarding not completed, store the shared link for later
+                setPendingSharedLink(accountNo);
+                return;
+            }
+
+            // Check if account is already in the list
+            const accountExists = accounts.some(acc => acc.accountNo === accountNo);
+
+            if (accountExists) {
+                // Account already exists, navigate directly to dashboard
+                // The DashboardWrapper will handle showing the account
+                return;
+            }
+
+            // Account doesn't exist and user is onboarded, show confirmation modal
+            if (!sharedPrompt.isOpen && !sharedViewerMode) {
                 setSharedPrompt({ isOpen: true, accountNo });
                 setSharedError(null);
             }
@@ -312,6 +375,7 @@ const App: React.FC = () => {
             // Reset shared prompt if navigating away
             if (sharedPrompt.isOpen) setSharedPrompt({ isOpen: false, accountNo: null });
             if (sharedViewerMode) setSharedViewerMode(false);
+            setPendingSharedLink(null);
         }
     }, [location, accounts, sharedPrompt.isOpen, sharedViewerMode]);
 
@@ -322,16 +386,10 @@ const App: React.FC = () => {
         try {
             const result = await verifyAccount(sharedPrompt.accountNo);
             if (result.success && result.data) {
-                // Construct Account object with defaults
-                const newAccount = {
-                    ...result.data,
-                    dateAdded: new Date().toISOString(),
-                    aiInsightsEnabled: true,
-                    banglaEnabled: false,
-                    displayName: result.data.customerName || null,
-                };
-                addAccount(newAccount);
-                setNotification({ message: t('accountAdded') || 'Account added!', type: 'info' });
+                // Close the shared prompt and open AddAccountModal with pre-verified data
+                setSharedPrompt({ isOpen: false, accountNo: null });
+                setPreVerifiedAccount({ accountNo: sharedPrompt.accountNo, data: result.data });
+                setAddAccountModalOpen(true);
             } else {
                 setSharedError(result.message || 'Could not fetch account details.');
             }
@@ -339,14 +397,19 @@ const App: React.FC = () => {
             setSharedError('Network error. Please try again.');
         } finally {
             setSharedLoading(false);
-            setSharedPrompt({ isOpen: false, accountNo: null });
         }
-    }, [sharedPrompt.accountNo, addAccount, t]);
+    }, [sharedPrompt.accountNo, t]);
 
     const handleDeclineSharedAdd = useCallback(() => {
+        const accountNo = sharedPrompt.accountNo;
         setSharedPrompt({ isOpen: false, accountNo: null });
         setSharedViewerMode(true);
-    }, []);
+
+        // Navigate to the dashboard in view-only mode
+        if (accountNo) {
+            navigate(`/dashboard/${accountNo}?shared=1`);
+        }
+    }, [sharedPrompt.accountNo, navigate]);
 
     // Clean up checkedAccounts when accounts are deleted
     useEffect(() => {
@@ -397,7 +460,20 @@ const App: React.FC = () => {
 
     const handleCloseOnboarding = useCallback(() => {
         setShowOnboarding(false);
-    }, []);
+
+        // If there's a pending shared link, show the confirmation modal
+        if (pendingSharedLink) {
+            // Check if account is already in the list
+            const accountExists = accounts.some(acc => acc.accountNo === pendingSharedLink);
+
+            if (!accountExists) {
+                // Show confirmation modal for the pending shared link
+                setSharedPrompt({ isOpen: true, accountNo: pendingSharedLink });
+                setSharedError(null);
+            }
+            setPendingSharedLink(null);
+        }
+    }, [pendingSharedLink, accounts]);
 
     return (
         <>
@@ -407,6 +483,7 @@ const App: React.FC = () => {
                         accounts={accounts}
                         showNotification={showNotification}
                         onDelete={handleDeleteFromDashboard}
+                        sharedViewerMode={sharedViewerMode}
                     />
                 } />
                 <Route path="/" element={
@@ -433,9 +510,13 @@ const App: React.FC = () => {
             </Routes>
             <AddAccountModal
                 isOpen={addAccountModalOpen}
-                onClose={() => setAddAccountModalOpen(false)}
+                onClose={() => {
+                    setAddAccountModalOpen(false);
+                    setPreVerifiedAccount(null);
+                }}
                 onAccountAdded={handleAccountAdded}
                 existingAccounts={accounts}
+                preVerifiedAccount={preVerifiedAccount}
             />
             <ConfirmationDialog
                 isOpen={deleteConfirmation.isOpen}
@@ -467,10 +548,10 @@ const App: React.FC = () => {
                 isOpen={sharedPrompt.isOpen}
                 onClose={handleDeclineSharedAdd}
                 onConfirm={handleConfirmSharedAdd}
-                title={t('addSharedAccount') || 'Add Shared Account?'}
-                message={sharedError ? (sharedError) : (t('sharedAccountPrompt') || 'Do you want to add this shared account to your list?')}
-                confirmText={sharedLoading ? (t('adding') || 'Adding...') : (t('yes') || 'Yes')}
-                cancelText={t('no') || 'No'}
+                title={t('sharedAccountTitle') || 'Shared Account'}
+                message={sharedError ? (sharedError) : (t('sharedAccountMessage') || 'This account was shared with you. What would you like to do?')}
+                confirmText={sharedLoading ? (t('adding') || 'Adding...') : (t('addAccount') || 'Add account')}
+                cancelText={t('viewOnly') || 'View only'}
                 confirmButtonClass={sharedLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700'}
                 icon={<BoltIcon />}
             />

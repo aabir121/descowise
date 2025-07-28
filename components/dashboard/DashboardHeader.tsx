@@ -5,25 +5,19 @@ import { Account } from '../../types';
 import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
 import SectionSettingsModal from '../common/SectionSettingsModal';
+import ShareModal from '../common/ShareModal';
 import Notification from '../common/Notification';
 
 const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; setPortalConfirmation: (state: { isOpen: boolean }) => void }> = ({ account, onClose, onDelete, setPortalConfirmation }) => {
   const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = React.useRef(null);
   const [notification, setNotification] = useState<string | null>(null);
 
-  const handleShare = async () => {
-    const url = `${window.location.origin}/dashboard/${account.accountNo}?shared=1`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setNotification('Link copied!');
-      setTimeout(() => setNotification(null), 2000);
-    } catch {
-      setNotification('Failed to copy link');
-      setTimeout(() => setNotification(null), 2000);
-    }
+  const handleShare = () => {
+    setIsShareModalOpen(true);
   };
 
   return (
@@ -128,10 +122,16 @@ const DashboardHeader: React.FC<{ account: Account; onClose: () => void; onDelet
           )}
         </div>
       </header>
-      
-            <SectionSettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
+
+      <SectionSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        account={account}
+      />
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        account={account}
       />
       {notification && <Notification message={notification} />}
     </>

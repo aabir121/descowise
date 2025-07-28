@@ -12,9 +12,10 @@ interface AddAccountModalProps {
     onClose: () => void;
     onAccountAdded: (account: Account) => void;
     existingAccounts: Account[];
+    preVerifiedAccount?: { accountNo: string; data: AccountInfo } | null;
 }
 
-const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAccountAdded, existingAccounts }) => {
+const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAccountAdded, existingAccounts, preVerifiedAccount }) => {
     const { t, i18n } = useTranslation();
     const [step, setStep] = useState<'form' | 'details'>('form');
     const [isLoading, setIsLoading] = useState(false);
@@ -26,15 +27,25 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
     const [banglaEnabled, setBanglaEnabled] = useState(false);
 
     const resetState = useCallback(() => {
-        setStep('form');
+        if (preVerifiedAccount) {
+            // If we have a pre-verified account, go directly to details step
+            setStep('details');
+            setAccountNumber(preVerifiedAccount.accountNo);
+            setVerifiedData(preVerifiedAccount.data);
+            setDisplayName(preVerifiedAccount.data.customerName || '');
+            setMessage({ text: t('accountVerifiedSuccessfully'), type: 'success' });
+        } else {
+            // Normal reset for manual entry
+            setStep('form');
+            setAccountNumber('');
+            setDisplayName('');
+            setVerifiedData(null);
+            setMessage(null);
+        }
         setIsLoading(false);
-        setMessage(null);
-        setAccountNumber('');
-        setDisplayName('');
-        setVerifiedData(null);
         setAiInsightsEnabled(true);
         setBanglaEnabled(i18n.language === 'bn');
-    }, [i18n.language]);
+    }, [i18n.language, preVerifiedAccount, t]);
 
     useEffect(() => {
         if (isOpen) {
