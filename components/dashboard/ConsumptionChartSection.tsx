@@ -6,6 +6,7 @@ import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, L
 import { getDashboardLabel } from './dashboardLabels';
 import { optimizeChartData, debounceChartUpdate } from '../../utils/chartOptimization';
 import ConsumptionAiInsights from './AiInsights/ConsumptionAiInsights';
+import { SkeletonChart } from '../common/SkeletonComponents';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
@@ -22,7 +23,8 @@ const ConsumptionChartSection = memo(({
   onInfoClick,
   // New props for distributed AI insights
   consumptionAiInsights,
-  isAiLoading
+  isAiLoading,
+  isDataLoading = false
 }) => {
   const [chartView, setChartView] = useState<ChartView>('cost');
 
@@ -33,7 +35,7 @@ const ConsumptionChartSection = memo(({
     }
   }, [consumptionTimeRange, setConsumptionTimeRange]);
 
-  // Memoize expensive calculations with chart optimization
+  // Memoize expensive calculations with chart optimization (must be before early return)
   const { totalValue, chartData } = useMemo(() => {
     if (!consumptionChartData || consumptionChartData.length === 0) {
       return { totalValue: 0, chartData: [] };
@@ -56,34 +58,76 @@ const ConsumptionChartSection = memo(({
     };
   }, [consumptionChartData, chartView]);
 
+  // Time range options (must be before early return)
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
     { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
     { value: 'thisMonth', label: getDashboardLabel('thisMonth', banglaEnabled) },
     { value: '30days', label: getDashboardLabel('last30Days', banglaEnabled) },
     { value: '6months', label: getDashboardLabel('last6Months', banglaEnabled) },
     { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) },
-    { value: '2years', label: getDashboardLabel('last2Years', banglaEnabled) },
+    { value: '2years', label: getDashboardLabel('last2Years', banglaEnabled) }
   ];
+
+  // Create summary value for header (memoized, must be before early return)
+  const summaryValueComponent = useMemo(() => (
+    <div className="text-right">
+      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}>
+        {totalValue.toLocaleString('en-US', {
+          minimumFractionDigits: chartView === 'energy' ? 2 : 0,
+          maximumFractionDigits: chartView === 'energy' ? 2 : 0
+        })} {chartView === 'energy' ? 'kWh' : 'BDT'}
+      </div>
+      <div className="text-xs text-slate-400">{t('total')}</div>
+    </div>
+  ), [totalValue, chartView, t]);
+
+  // Show skeleton when data is loading
+  if (isDataLoading || !consumptionChartData) {
+    return (
+      <div className="bg-slate-800 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-3 sm:p-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-5 h-5 bg-slate-700 rounded animate-pulse" />
+            <div className="h-5 bg-slate-700 rounded w-32 animate-pulse" />
+            {showInfoIcon && (
+              <div className="w-4 h-4 bg-slate-700 rounded animate-pulse" />
+            )}
+          </div>
+        </div>
+        <div className="p-4 sm:p-6">
+          {/* Chart controls skeleton */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-8 bg-slate-700 rounded w-20 animate-pulse"
+              />
+            ))}
+          </div>
+
+          {/* Chart area skeleton */}
+          <div className="animate-pulse">
+            <div className="bg-slate-700 rounded h-64 w-full" />
+          </div>
+
+          {/* Chart legend skeleton */}
+          <div className="flex justify-center gap-4 mt-4">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-slate-700 rounded animate-pulse" />
+                <div className="h-4 bg-slate-700 rounded w-12 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const chartViewOptions: { value: ChartView; label: string }[] = [
     { value: 'cost', label: getDashboardLabel('costComparison', banglaEnabled) },
     { value: 'energy', label: getDashboardLabel('energyConsumption', banglaEnabled) },
   ];
-
-  // Create summary value for header (memoized)
-  const summaryValueComponent = useMemo(() => (
-    <div className="text-right">
-      <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}>
-        {totalValue.toLocaleString('en-US', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: chartView === 'energy' ? 1 : 0
-        })}
-        <span className="text-slate-400 text-xs sm:text-sm font-medium ml-1">
-          {chartView === 'energy' ? t('kWh') : t('BDT')}
-        </span>
-      </div>
-    </div>
-  ), [totalValue, chartView, t]);
 
   if (!chartData || chartData.length === 0) return null;
 
@@ -94,7 +138,19 @@ const ConsumptionChartSection = memo(({
       sectionId={sectionId}
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
-      summaryValue={summaryValueComponent}
+      summaryValue={
+        <div className="text-right">
+          <div className={`text-lg sm:text-xl font-bold ${chartView === 'energy' ? 'text-orange-400' : 'text-cyan-400'}`}>
+            {totalValue.toLocaleString('en-US', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: chartView === 'energy' ? 1 : 0
+            })}
+            <span className="text-slate-400 text-xs sm:text-sm font-medium ml-1">
+              {chartView === 'energy' ? t('kWh') : t('BDT')}
+            </span>
+          </div>
+        </div>
+      }
       isAiLoading={isAiLoading}
       aiLoadingText={t('analyzingUsage')}
     >

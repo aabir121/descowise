@@ -8,6 +8,7 @@ import Modal from '../common/Modal';
 import { useBalanceWarning } from '../../hooks/useBalanceWarning';
 import BalanceAiInsights from './AiInsights/BalanceAiInsights';
 import { DistributedAiInsights } from '../../utils/aiInsightDistribution';
+import { SkeletonAccountBalance, LoadingStateWrapper } from '../common/SkeletonComponents';
 
 const AccountBalanceSection = ({
   gaugeData,
@@ -24,9 +25,56 @@ const AccountBalanceSection = ({
   estimatedDaysRemaining,
   // New props for distributed AI insights
   balanceAiInsights,
-  isAiLoading
+  isAiLoading,
+  isDataLoading = false
 }) => {
   const { open: openBalanceWarning } = useBalanceWarning();
+
+  // Show skeleton when data is loading
+  if (isDataLoading || (!gaugeData && !balanceUnavailable)) {
+    return (
+      <div className="bg-slate-800 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-3 sm:p-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-5 h-5 bg-slate-700 rounded animate-pulse" />
+            <div className="h-5 bg-slate-700 rounded w-32 animate-pulse" />
+            {showInfoIcon && (
+              <div className="w-4 h-4 bg-slate-700 rounded animate-pulse" />
+            )}
+          </div>
+        </div>
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Balance gauge skeleton */}
+            <div className="flex flex-col items-center justify-center p-6 bg-slate-700/50 rounded-xl">
+              <div className="animate-pulse">
+                <div className="w-32 h-32 bg-slate-700 rounded-full mb-4" />
+                <div className="h-6 bg-slate-700 rounded w-24 mx-auto mb-2" />
+                <div className="h-4 bg-slate-700 rounded w-16 mx-auto" />
+              </div>
+            </div>
+
+            {/* Balance details skeleton */}
+            <div className="space-y-4">
+              <div className="bg-slate-700/30 p-4 rounded-lg">
+                <div className="h-4 bg-slate-700 rounded w-20 mb-2 animate-pulse" />
+                <div className="h-4 bg-slate-700 rounded w-32 animate-pulse" />
+              </div>
+              <div className="bg-slate-700/30 p-4 rounded-lg">
+                <div className="h-4 bg-slate-700 rounded w-24 mb-2 animate-pulse" />
+                <div className="h-4 bg-slate-700 rounded w-28 animate-pulse" />
+              </div>
+              <div className="bg-slate-700/30 p-4 rounded-lg">
+                <div className="h-4 bg-slate-700 rounded w-16 mb-2 animate-pulse" />
+                <div className="h-6 bg-slate-700 rounded-full w-20 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Section
       title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)}

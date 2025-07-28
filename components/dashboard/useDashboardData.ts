@@ -47,6 +47,7 @@ type UseDashboardDataReturn = {
 const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [data, setData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isDataProcessing, setIsDataProcessing] = useState<boolean>(false);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [isAiAvailable, setIsAiAvailable] = useState<boolean>(true);
   const [aiError, setAiError] = useState<AiError | null>(null);
@@ -70,7 +71,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       try {
         if (!isMounted) return;
         setIsLoading(true);
+        setIsDataProcessing(true);
         setError(null);
+
         const [location, monthlyConsumption, rechargeHistory, dailyConsumption, balanceResult] = await Promise.all([
           api.getCustomerLocation(account.accountNo),
           api.getCustomerMonthlyConsumption(account.accountNo, account.meterNo, 24),
@@ -78,10 +81,27 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 90), // Increased to 90 days to ensure we have enough recent data
           api.getAccountBalance(account.accountNo)
         ]);
-        
+
         if (!isMounted) return;
-        setData({ location, monthlyConsumption, rechargeHistory, dailyConsumption, balance: balanceResult.success ? balanceResult.data : null, aiSummary: null, banglaEnabled: account.banglaEnabled, account });
-        
+
+        // Set data immediately but keep processing state active
+        setData({
+          location,
+          monthlyConsumption,
+          rechargeHistory,
+          dailyConsumption,
+          balance: balanceResult.success ? balanceResult.data : null,
+          aiSummary: null,
+          banglaEnabled: account.banglaEnabled,
+          account
+        });
+
+        // Allow a brief moment for data to be processed and UI to stabilize
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        if (!isMounted) return;
+        setIsDataProcessing(false);
+
         if (balanceResult.success) {
           if (account.aiInsightsEnabled) {
             if (balanceResult.data?.balance !== null && balanceResult.data?.balance !== undefined) {
@@ -99,9 +119,16 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       } catch (err: any) {
         if (!isMounted) return;
         setError(err.message || 'Failed to load dashboard data. Please try again later.');
+        setIsDataProcessing(false);
       } finally {
         if (!isMounted) return;
-        setIsLoading(false);
+        // Only set loading to false after data processing is complete
+        // This prevents flashing by ensuring processed data is ready
+        setTimeout(() => {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        }, 50);
       }
     };
     
@@ -420,7 +447,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
 
   return {
     processedData,
-    isLoading,
+    isLoading: isLoading || isDataProcessing, // Include data processing in loading state
     error,
     isAiLoading,
     isAiAvailable,

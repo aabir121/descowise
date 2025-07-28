@@ -10,6 +10,7 @@ import Footer from './common/Footer';
 import { useBalanceWarning } from '../hooks/useBalanceWarning';
 import { useTranslation } from 'react-i18next';
 import Notification from './common/Notification';
+import { SkeletonDashboard, FadeTransition } from './common/SkeletonComponents';
 
 // Helper function to calculate data staleness
 function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: string): { isStale: boolean; message: string } {
@@ -119,33 +120,54 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 </div>
             )}
             <main className="flex-grow px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8 lg:pt-8 lg:pb-8 overflow-y-auto">
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-full"><Spinner size="w-12 h-12" /></div>
-                ) : error ? (
-                    <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg">{t('aiError', { error })}</div>
-                ) : (
-                    <DashboardSections
-                        processedData={processedData}
-                        data={data}
-                        isAiLoading={isAiLoading}
-                        isAiAvailable={isAiAvailable}
-                        consumptionTimeRange={consumptionTimeRange}
-                        setConsumptionTimeRange={setConsumptionTimeRange}
-                        comparisonMetric={comparisonMetric}
-                        setComparisonMetric={setComparisonMetric}
-                        rechargeYear={rechargeYear}
-                        isHistoryLoading={isHistoryLoading}
-                        handleYearChange={handleYearChange}
-                        banglaEnabled={account.banglaEnabled}
-                        balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.balance === undefined))}
-                        account={account}
-                        showNotification={handleShowNotification}
-                        retryAiSummary={retryAiSummary}
-                        // New distributed AI insights
-                        distributedAiInsights={distributedAiInsights}
-                        aiLoadingStates={aiLoadingStates}
-                    />
-                )}
+                <div className="relative min-h-full">
+                    {/* Skeleton Dashboard with fade out transition */}
+                    <div className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                        isLoading ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                    }`}>
+                        <SkeletonDashboard />
+                    </div>
+
+                    {/* Error state */}
+                    {error && !isLoading && (
+                        <div className="transition-opacity duration-300 ease-in-out opacity-100">
+                            <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg">
+                                {t('aiError', { error })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Main dashboard content with fade in transition */}
+                    {!error && (
+                        <div className={`transition-all duration-500 ease-in-out ${
+                            isLoading
+                                ? 'opacity-0 transform translate-y-4 pointer-events-none'
+                                : 'opacity-100 transform translate-y-0'
+                        }`}>
+                            <DashboardSections
+                                processedData={processedData}
+                                data={data}
+                                isAiLoading={isAiLoading}
+                                isAiAvailable={isAiAvailable}
+                                consumptionTimeRange={consumptionTimeRange}
+                                setConsumptionTimeRange={setConsumptionTimeRange}
+                                comparisonMetric={comparisonMetric}
+                                setComparisonMetric={setComparisonMetric}
+                                rechargeYear={rechargeYear}
+                                isHistoryLoading={isHistoryLoading}
+                                handleYearChange={handleYearChange}
+                                banglaEnabled={account.banglaEnabled}
+                                balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.balance === undefined))}
+                                account={account}
+                                showNotification={handleShowNotification}
+                                retryAiSummary={retryAiSummary}
+                                // New distributed AI insights
+                                distributedAiInsights={distributedAiInsights}
+                                aiLoadingStates={aiLoadingStates}
+                            />
+                        </div>
+                    )}
+                </div>
             </main>
             <ConfirmationDialog
                 isOpen={portalConfirmation.isOpen}

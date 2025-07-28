@@ -9,6 +9,7 @@ import AccountBalanceSection from './AccountBalanceSection';
 import RechargeHistorySection from './RechargeHistorySection';
 import ConsumerInformationSection from './ConsumerInformationSection';
 import SectionInfoModal from '../common/SectionInfoModal';
+import { SlideUpTransition } from '../common/SkeletonComponents';
 import { getTranslationForLanguage } from '../../utils/i18n';
 import i18n from '../../utils/i18n';
 import BalanceDisplay from '../account/BalanceDisplay';
@@ -67,6 +68,7 @@ const DashboardSections: React.FC<any> = ({
   // New distributed AI insights props
   distributedAiInsights,
   aiLoadingStates,
+  isDataLoading = false,
 }) => {
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
@@ -131,98 +133,115 @@ const DashboardSections: React.FC<any> = ({
   return (
     <div className="space-y-6" key={preferencesVersion}>
       {/* 1. AI Insights - Most valuable, actionable insights */}
-      <AIDashboardInsightsSection
-        aiSummary={aiSummary}
-        isAiLoading={isAiLoading}
-        isAiAvailable={isAiAvailable}
-        aiError={data?.aiError}
-        banglaEnabled={banglaEnabled}
-        t={t}
-        balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
-        showInfoIcon={true}
-        onInfoClick={() => handleInfoClick('aiInsights')}
-        onRetry={retryAiSummary}
-        // New props for distributed insights
-        distributedAiInsights={distributedAiInsights}
-        aiLoadingStates={aiLoadingStates}
-      />
+      <SlideUpTransition show={!isDataLoading} delay="delay-75">
+        <AIDashboardInsightsSection
+          aiSummary={aiSummary}
+          isAiLoading={isAiLoading}
+          isAiAvailable={isAiAvailable}
+          aiError={data?.aiError}
+          banglaEnabled={banglaEnabled}
+          t={t}
+          balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
+          showInfoIcon={true}
+          onInfoClick={() => handleInfoClick('aiInsights')}
+          onRetry={retryAiSummary}
+          // New props for distributed insights
+          distributedAiInsights={distributedAiInsights}
+          aiLoadingStates={aiLoadingStates}
+        />
+      </SlideUpTransition>
+
       {/* 2. Consumer Information - Essential account context (collapsible) */}
-      <ConsumerInformationSection
-        account={account}
-        locationData={data?.location}
-        banglaEnabled={banglaEnabled}
-        t={t}
-        showNotification={showNotification}
-        defaultOpen={getDefaultOpen('consumer-information')}
-        sectionId="consumer-information"
-        showInfoIcon={true}
-        onInfoClick={() => handleInfoClick('consumerInfo')}
-      />
+      <SlideUpTransition show={!isDataLoading} delay="delay-100">
+        <ConsumerInformationSection
+          account={account}
+          locationData={data?.location}
+          banglaEnabled={banglaEnabled}
+          t={t}
+          showNotification={showNotification}
+          defaultOpen={getDefaultOpen('consumer-information')}
+          sectionId="consumer-information"
+          showInfoIcon={true}
+          onInfoClick={() => handleInfoClick('consumerInfo')}
+        />
+      </SlideUpTransition>
       {/* 3. Account Balance - Current status */}
-      <AccountBalanceSection
-        gaugeData={processedData?.gaugeData}
-        banglaEnabled={banglaEnabled}
-        t={t}
-        balanceUnavailable={balanceUnavailable}
-        defaultOpen={getDefaultOpen('account-balance-status')}
-        sectionId="account-balance-status"
-        showInfoIcon={true}
-        onInfoClick={() => handleInfoClick('accountBalance')}
-        aiInsight={aiInsight}
-        aiError={aiBalanceError}
-        isAiBalanceLoading={isAiBalanceLoading}
-        estimatedDaysRemaining={estimatedDaysRemaining}
-        // New distributed AI insights
-        balanceAiInsights={distributedAiInsights?.balance}
-        isAiLoading={aiLoadingStates?.balance}
-      />
-      {/* 4. Consumption Chart - Primary usage visualization */}
-      <Suspense fallback={<ChartSectionLoader />}>
-        <ConsumptionChartSection
-          consumptionChartData={processedData?.consumptionChartData}
-          consumptionTimeRange={consumptionTimeRange}
-          setConsumptionTimeRange={setConsumptionTimeRange}
+      <SlideUpTransition show={!isDataLoading} delay="delay-150">
+        <AccountBalanceSection
+          gaugeData={processedData?.gaugeData}
           banglaEnabled={banglaEnabled}
           t={t}
-          defaultOpen={getDefaultOpen('consumption-chart')}
-          sectionId="consumption-chart"
+          balanceUnavailable={balanceUnavailable}
+          defaultOpen={getDefaultOpen('account-balance-status')}
+          sectionId="account-balance-status"
           showInfoIcon={true}
-          onInfoClick={() => handleInfoClick('consumptionChart')}
+          onInfoClick={() => handleInfoClick('accountBalance')}
+          aiInsight={aiInsight}
+          aiError={aiBalanceError}
+          isAiBalanceLoading={isAiBalanceLoading}
+          estimatedDaysRemaining={estimatedDaysRemaining}
           // New distributed AI insights
-          consumptionAiInsights={distributedAiInsights?.consumption}
-          isAiLoading={aiLoadingStates?.consumption}
+          balanceAiInsights={distributedAiInsights?.balance}
+          isAiLoading={aiLoadingStates?.balance}
+          isDataLoading={!processedData}
         />
-      </Suspense>
+      </SlideUpTransition>
+
+      {/* 4. Consumption Chart - Primary usage visualization */}
+      <SlideUpTransition show={!isDataLoading} delay="delay-200">
+        <Suspense fallback={<ChartSectionLoader />}>
+          <ConsumptionChartSection
+            consumptionChartData={processedData?.consumptionChartData}
+            consumptionTimeRange={consumptionTimeRange}
+            setConsumptionTimeRange={setConsumptionTimeRange}
+            banglaEnabled={banglaEnabled}
+            t={t}
+            defaultOpen={getDefaultOpen('consumption-chart')}
+            sectionId="consumption-chart"
+            showInfoIcon={true}
+            onInfoClick={() => handleInfoClick('consumptionChart')}
+            // New distributed AI insights
+            consumptionAiInsights={distributedAiInsights?.consumption}
+            isAiLoading={aiLoadingStates?.consumption}
+            isDataLoading={!processedData}
+          />
+        </Suspense>
+      </SlideUpTransition>
       {/* 5. Recharge History - Important transaction history */}
-      <RechargeHistorySection
-        rechargeHistory={data?.rechargeHistory}
-        rechargeYear={rechargeYear}
-        isHistoryLoading={isHistoryLoading}
-        setRechargeYear={handleYearChange}
-        banglaEnabled={banglaEnabled}
-        t={t}
-        defaultOpen={getDefaultOpen('recharge-history')}
-        sectionId="recharge-history"
-        showInfoIcon={true}
-        onInfoClick={() => handleInfoClick('rechargeHistory')}
-        // New distributed AI insights
-        rechargeAiInsights={distributedAiInsights?.recharge}
-        isAiLoading={aiLoadingStates?.recharge}
-      />
-      {/* 6. Comparison Chart - Performance analysis */}
-      <Suspense fallback={<ChartSectionLoader />}>
-        <ComparisonChartSection
-          comparisonData={processedData?.comparisonData}
-          comparisonMetric={comparisonMetric}
-          setComparisonMetric={setComparisonMetric}
+      <SlideUpTransition show={!isDataLoading} delay="delay-300">
+        <RechargeHistorySection
+          rechargeHistory={data?.rechargeHistory}
+          rechargeYear={rechargeYear}
+          isHistoryLoading={isHistoryLoading}
+          setRechargeYear={handleYearChange}
           banglaEnabled={banglaEnabled}
           t={t}
-          defaultOpen={getDefaultOpen('comparison-chart')}
-          sectionId="comparison-chart"
+          defaultOpen={getDefaultOpen('recharge-history')}
+          sectionId="recharge-history"
           showInfoIcon={true}
-          onInfoClick={() => handleInfoClick('comparisonChart')}
+          onInfoClick={() => handleInfoClick('rechargeHistory')}
+          // New distributed AI insights
+          rechargeAiInsights={distributedAiInsights?.recharge}
+          isAiLoading={aiLoadingStates?.recharge}
         />
-      </Suspense>
+      </SlideUpTransition>
+
+      {/* 6. Comparison Chart - Performance analysis */}
+      <SlideUpTransition show={!isDataLoading} delay="delay-500">
+        <Suspense fallback={<ChartSectionLoader />}>
+          <ComparisonChartSection
+            comparisonData={processedData?.comparisonData}
+            comparisonMetric={comparisonMetric}
+            setComparisonMetric={setComparisonMetric}
+            banglaEnabled={banglaEnabled}
+            t={t}
+            defaultOpen={getDefaultOpen('comparison-chart')}
+            sectionId="comparison-chart"
+            showInfoIcon={true}
+            onInfoClick={() => handleInfoClick('comparisonChart')}
+          />
+        </Suspense>
+      </SlideUpTransition>
       {/* 7. Recharge vs Consumption - Usage patterns */}
       <RechargeVsConsumptionSection
         rechargeVsConsumptionData={processedData?.rechargeVsConsumptionData}
