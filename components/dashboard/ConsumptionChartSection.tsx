@@ -5,11 +5,25 @@ import CustomTooltip from '../common/CustomTooltip';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 import { optimizeChartData, debounceChartUpdate } from '../../utils/chartOptimization';
+import ConsumptionAiInsights from './AiInsights/ConsumptionAiInsights';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
 type ChartView = 'energy' | 'cost';
 
-const ConsumptionChartSection = memo(({ consumptionChartData, consumptionTimeRange, setConsumptionTimeRange, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
+const ConsumptionChartSection = memo(({
+  consumptionChartData,
+  consumptionTimeRange,
+  setConsumptionTimeRange,
+  banglaEnabled,
+  t,
+  defaultOpen,
+  sectionId,
+  showInfoIcon,
+  onInfoClick,
+  // New props for distributed AI insights
+  consumptionAiInsights,
+  isAiLoading
+}) => {
   const [chartView, setChartView] = useState<ChartView>('cost');
 
   // Default to 7days if not set
@@ -74,14 +88,21 @@ const ConsumptionChartSection = memo(({ consumptionChartData, consumptionTimeRan
   if (!chartData || chartData.length === 0) return null;
 
   return (
-    <Section 
-      title={getDashboardLabel('consumptionChart', banglaEnabled)} 
+    <Section
+      title={getDashboardLabel('consumptionChart', banglaEnabled)}
       defaultOpen={defaultOpen}
       sectionId={sectionId}
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
       summaryValue={summaryValueComponent}
+      isAiLoading={isAiLoading}
+      aiLoadingText={t('analyzingUsage')}
     >
+      {/* AI Insights - First content item */}
+      {consumptionAiInsights && (
+        <ConsumptionAiInsights insights={consumptionAiInsights} t={t} />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
         {/* Chart View Toggle */}
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">

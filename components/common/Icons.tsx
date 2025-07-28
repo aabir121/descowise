@@ -13,6 +13,10 @@ export const WandSparklesIcon = (props) => (
   <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25M12 18.75V21M4.219 4.219l1.591 1.591M18.19 18.19l1.591 1.591M3 12h2.25M18.75 12H21M4.219 19.781l1.591-1.591M18.19 5.81l1.591-1.591" /></svg>
 );
 
+export const LightBulbIcon = (props) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75-7.478v-.353a6.01 6.01 0 00-3.75-5.568m3.75 5.921v.353a6.01 6.01 0 01-3.75 5.568m0-11.136a6.01 6.01 0 013.75 5.568m-3.75-5.568a6.01 6.01 0 00-3.75 5.568m3.75 5.921a6.01 6.01 0 00-3.75-5.568" /></svg>
+);
+
 export const ExternalLinkIcon = (props) => (
   <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75V3.75a.75.75 0 00-.75-.75h-12a.75.75 0 00-.75.75v16.5a.75.75 0 00.75.75h16.5a.75.75 0 00.75-.75v-12a.75.75 0 00-.75-.75h-3" /><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 8.25l6-6m0 0v4.5m0-4.5h-4.5" /></svg>
 );

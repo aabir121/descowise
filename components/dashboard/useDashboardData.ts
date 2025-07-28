@@ -2,6 +2,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import * as api from '../../services/descoService';
 import { Account, AiSummary, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, BalanceData, AiError } from '../../types';
+import {
+  DistributedAiInsights,
+  AiLoadingStates,
+  distributeAiInsights,
+  createInitialLoadingStates,
+  startAiAnalysis,
+  completeAiAnalysis,
+  failAiAnalysis
+} from '../../utils/aiInsightDistribution';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '3months' | '6months' | '1year' | '2years';
 
@@ -30,6 +39,9 @@ type UseDashboardDataReturn = {
   handleYearChange: (year: number) => void;
   data: any | null;
   retryAiSummary: () => void;
+  // New distributed AI insights
+  distributedAiInsights: DistributedAiInsights | null;
+  aiLoadingStates: AiLoadingStates;
 };
 
 const useDashboardData = (account: Account): UseDashboardDataReturn => {
@@ -46,6 +58,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [rechargeYear, setRechargeYear] = useState<number>(new Date().getFullYear());
   const [consumptionTimeRange, setConsumptionTimeRange] = useState<TimeRange>('7days');
   const [comparisonMetric, setComparisonMetric] = useState<'bdt' | 'kwh'>('bdt');
+
+  // Distributed AI insights state
+  const [distributedAiInsights, setDistributedAiInsights] = useState<DistributedAiInsights | null>(null);
+  const [aiLoadingStates, setAiLoadingStates] = useState<AiLoadingStates>(createInitialLoadingStates());
 
   useEffect(() => {
     let isMounted = true;
@@ -95,23 +111,32 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsAiLoading(true);
         setIsAiAvailable(true);
         setAiError(null);
+        // Start AI loading for all panels
+        setAiLoadingStates(startAiAnalysis);
+
         const currentMonth = new Date().toISOString().substring(0, 7);
         // Get the last 14 days of dailyConsumption
         const recentDailyConsumption = dailyConsumption
           ? [...dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
           : [];
-        const readingTime = balanceData?.readingTime;
         const aiResponse = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
-        
+
         if (!isMounted) return;
-        
+
         if (aiResponse.success && aiResponse.data) {
-          setData(prevData => prevData ? { 
-            ...prevData, 
+          // Distribute AI insights across panels
+          const distributed = distributeAiInsights(aiResponse.data);
+          setDistributedAiInsights(distributed);
+
+          setData(prevData => prevData ? {
+            ...prevData,
             aiSummary: aiResponse.data,
             balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined,
             aiError: null
           } : null);
+
+          // Complete AI loading for all panels
+          setAiLoadingStates(completeAiAnalysis);
         } else {
           // Handle AI error
           setAiError(aiResponse.error || {
@@ -122,6 +147,8 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           });
           setData(prevData => prevData ? { ...prevData, aiError: aiResponse.error } : { aiError: aiResponse.error });
           setIsAiAvailable(false);
+          // Fail AI loading for all panels
+          setAiLoadingStates(failAiAnalysis);
         }
       } catch (err) {
         if (!isMounted) return;
@@ -143,6 +170,8 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           retryable: true
         }});
         setIsAiAvailable(false);
+        // Fail AI loading for all panels
+        setAiLoadingStates(failAiAnalysis);
       } finally {
         if (!isMounted) return;
         setIsAiLoading(false);
@@ -414,6 +443,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     handleYearChange,
     data,
     retryAiSummary,
+    // New distributed AI insights
+    distributedAiInsights,
+    aiLoadingStates,
   };
 };
 

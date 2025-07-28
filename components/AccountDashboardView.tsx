@@ -56,6 +56,10 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         handleDeleteAccount,
         handleYearChange,
         data,
+        retryAiSummary,
+        // New distributed AI insights
+        distributedAiInsights,
+        aiLoadingStates,
     } = useDashboardData(account);
 
     // Add notification state for dashboard view
@@ -136,6 +140,10 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                         balanceUnavailable={!!(data?.balance && (data.balance.balance === null || data.balance.balance === undefined))}
                         account={account}
                         showNotification={handleShowNotification}
+                        retryAiSummary={retryAiSummary}
+                        // New distributed AI insights
+                        distributedAiInsights={distributedAiInsights}
+                        aiLoadingStates={aiLoadingStates}
                     />
                 )}
             </main>

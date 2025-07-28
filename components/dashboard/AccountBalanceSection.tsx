@@ -6,17 +6,42 @@ import { formatCurrency, sanitizeCurrency } from '../common/format';
 import { InformationCircleIcon } from '../common/Icons';
 import Modal from '../common/Modal';
 import { useBalanceWarning } from '../../hooks/useBalanceWarning';
+import BalanceAiInsights from './AiInsights/BalanceAiInsights';
+import { DistributedAiInsights } from '../../utils/aiInsightDistribution';
 
-const AccountBalanceSection = ({ gaugeData, banglaEnabled, balanceUnavailable, t, defaultOpen, sectionId, showInfoIcon, onInfoClick, aiInsight, aiError, isAiBalanceLoading, estimatedDaysRemaining }) => {
+const AccountBalanceSection = ({
+  gaugeData,
+  banglaEnabled,
+  balanceUnavailable,
+  t,
+  defaultOpen,
+  sectionId,
+  showInfoIcon,
+  onInfoClick,
+  aiInsight,
+  aiError,
+  isAiBalanceLoading,
+  estimatedDaysRemaining,
+  // New props for distributed AI insights
+  balanceAiInsights,
+  isAiLoading
+}) => {
   const { open: openBalanceWarning } = useBalanceWarning();
   return (
-    <Section 
-      title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)} 
+    <Section
+      title={getDashboardLabel('balance', banglaEnabled) + ' ' + getDashboardLabel('status', banglaEnabled)}
       defaultOpen={defaultOpen}
       sectionId={sectionId}
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
+      isAiLoading={isAiLoading}
+      aiLoadingText={t('analyzingBalance')}
     >
+      {/* AI Insights - First content item */}
+      {balanceAiInsights && (
+        <BalanceAiInsights insights={balanceAiInsights} t={t} />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col items-center justify-center p-6 bg-slate-700/50 rounded-xl">
           {balanceUnavailable ? (

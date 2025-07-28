@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import { ChevronDownIcon, ChevronRightIcon, InformationCircleIcon } from './Icons';
+import Spinner from './Spinner';
 import type { ReactNode } from 'react';
 
 interface SectionProps {
@@ -13,18 +14,22 @@ interface SectionProps {
     alwaysExpanded?: boolean; // If true, section is always expanded and not managed by preferences
     onInfoClick?: () => void; // Callback for info icon click
     showInfoIcon?: boolean; // Whether to show the info icon
+    isAiLoading?: boolean; // Whether AI analysis is in progress for this section
+    aiLoadingText?: string; // Optional text to show next to loading spinner
 }
 
-const Section: React.FC<SectionProps> = ({ 
-    title, 
-    children, 
-    defaultOpen = true, 
-    summaryValue, 
+const Section: React.FC<SectionProps> = ({
+    title,
+    children,
+    defaultOpen = true,
+    summaryValue,
     sectionId,
     onToggle,
     alwaysExpanded = false,
     onInfoClick,
-    showInfoIcon = false
+    showInfoIcon = false,
+    isAiLoading = false,
+    aiLoadingText
 }) => {
     // Generate a unique ID if not provided
     const uniqueId = sectionId || `section-${title.toLowerCase().replace(/\s+/g, '-')}`;
@@ -100,6 +105,14 @@ const Section: React.FC<SectionProps> = ({
                         >
                             {title}
                         </button>
+                        {isAiLoading && (
+                            <div className="flex items-center gap-2 text-purple-400">
+                                <Spinner size="w-4 h-4" color="border-purple-400" />
+                                {aiLoadingText && (
+                                    <span className="text-xs hidden sm:inline">{aiLoadingText}</span>
+                                )}
+                            </div>
+                        )}
                         {showInfoIcon && onInfoClick && (
                             <button
                                 onClick={(e) => {

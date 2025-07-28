@@ -5,6 +5,7 @@ import Modal from '../common/Modal';
 import VirtualTable from '../common/VirtualTable';
 import { getDashboardLabel } from './dashboardLabels';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
+import RechargeAiInsights from './AiInsights/RechargeAiInsights';
 
 const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
   const printRef = useRef();
@@ -86,7 +87,21 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
   );
 };
 
-const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoading, setRechargeYear, banglaEnabled, t, defaultOpen, sectionId, showInfoIcon, onInfoClick }) => {
+const RechargeHistorySection = ({
+  rechargeHistory,
+  rechargeYear,
+  isHistoryLoading,
+  setRechargeYear,
+  banglaEnabled,
+  t,
+  defaultOpen,
+  sectionId,
+  showInfoIcon,
+  onInfoClick,
+  // New props for distributed AI insights
+  rechargeAiInsights,
+  isAiLoading
+}) => {
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -185,13 +200,20 @@ const RechargeHistorySection = ({ rechargeHistory, rechargeYear, isHistoryLoadin
   }, [rechargeHistory]);
 
   return (
-    <Section 
-      title={getDashboardLabel('rechargeHistory', banglaEnabled) + ' ' + t('last1Year')} 
+    <Section
+      title={getDashboardLabel('rechargeHistory', banglaEnabled) + ' ' + t('last1Year')}
       defaultOpen={defaultOpen}
       sectionId={sectionId}
       showInfoIcon={showInfoIcon}
       onInfoClick={onInfoClick}
+      isAiLoading={isAiLoading}
+      aiLoadingText={t('analyzingRecharges')}
     >
+      {/* AI Insights - First content item */}
+      {rechargeAiInsights && (
+        <RechargeAiInsights insights={rechargeAiInsights} t={t} />
+      )}
+
       <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-4 mb-4">
         {/* Summary Section */}
         {!isHistoryLoading && rechargeHistory && rechargeHistory.length > 0 && (

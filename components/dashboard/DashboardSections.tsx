@@ -4,6 +4,7 @@ import { Account, AiSummary, RechargeHistoryItem } from '../../types';
 import { useSectionPreferences } from '../common/Section';
 import { useDebounce, useDeepMemo } from '../../hooks/usePerformanceOptimization';
 import AIDashboardInsightsSection from './AIDashboardInsightsSection';
+import OverviewAiInsights from './AiInsights/OverviewAiInsights';
 import AccountBalanceSection from './AccountBalanceSection';
 import RechargeHistorySection from './RechargeHistorySection';
 import ConsumerInformationSection from './ConsumerInformationSection';
@@ -63,6 +64,9 @@ const DashboardSections: React.FC<any> = ({
   account,
   showNotification,
   retryAiSummary,
+  // New distributed AI insights props
+  distributedAiInsights,
+  aiLoadingStates,
 }) => {
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
@@ -138,6 +142,9 @@ const DashboardSections: React.FC<any> = ({
         showInfoIcon={true}
         onInfoClick={() => handleInfoClick('aiInsights')}
         onRetry={retryAiSummary}
+        // New props for distributed insights
+        distributedAiInsights={distributedAiInsights}
+        aiLoadingStates={aiLoadingStates}
       />
       {/* 2. Consumer Information - Essential account context (collapsible) */}
       <ConsumerInformationSection
@@ -165,6 +172,9 @@ const DashboardSections: React.FC<any> = ({
         aiError={aiBalanceError}
         isAiBalanceLoading={isAiBalanceLoading}
         estimatedDaysRemaining={estimatedDaysRemaining}
+        // New distributed AI insights
+        balanceAiInsights={distributedAiInsights?.balance}
+        isAiLoading={aiLoadingStates?.balance}
       />
       {/* 4. Consumption Chart - Primary usage visualization */}
       <Suspense fallback={<ChartSectionLoader />}>
@@ -178,6 +188,9 @@ const DashboardSections: React.FC<any> = ({
           sectionId="consumption-chart"
           showInfoIcon={true}
           onInfoClick={() => handleInfoClick('consumptionChart')}
+          // New distributed AI insights
+          consumptionAiInsights={distributedAiInsights?.consumption}
+          isAiLoading={aiLoadingStates?.consumption}
         />
       </Suspense>
       {/* 5. Recharge History - Important transaction history */}
@@ -192,6 +205,9 @@ const DashboardSections: React.FC<any> = ({
         sectionId="recharge-history"
         showInfoIcon={true}
         onInfoClick={() => handleInfoClick('rechargeHistory')}
+        // New distributed AI insights
+        rechargeAiInsights={distributedAiInsights?.recharge}
+        isAiLoading={aiLoadingStates?.recharge}
       />
       {/* 6. Comparison Chart - Performance analysis */}
       <Suspense fallback={<ChartSectionLoader />}>
