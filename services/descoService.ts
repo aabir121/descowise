@@ -3,6 +3,8 @@ import { AccountInfo, BalanceData, BalanceResponse, CustomerLocation, MonthlyCon
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
 import { fetchJsonWithHandling } from '../utils/api';
 import { generateAiDashboardPrompt } from '../ai/promptGenerators';
+import { getApiKeyForRequest } from '../utils/deploymentConfig';
+import { getUserApiKey, setApiKeyValidationStatus } from '../utils/apiKeyStorage';
 
 // Helper to process recharge history into monthly format
 const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[]): Array<{month: string, rechargeAmount: number, rechargeCount: number}> => {
@@ -93,14 +95,16 @@ export const getAiDashboardSummary = async (
         const sanitizedCurrentBalance = balanceData?.balance !== null && balanceData?.balance !== undefined ? sanitizeCurrency(balanceData.balance) : 0;
         const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
         
-        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        const userApiKey = getUserApiKey();
+        const apiKey = getApiKeyForRequest(userApiKey);
+
         if (!apiKey || apiKey === 'your_gemini_api_key_here') {
             return {
                 success: false,
                 error: {
                     type: 'api_key',
                     message: 'Gemini API key not configured',
-                    details: 'Please set GEMINI_API_KEY in your Vercel environment variables.',
+                    details: 'Please configure your Gemini API key to enable AI insights.',
                     retryable: false
                 }
             };
@@ -198,6 +202,8 @@ export const getAiDashboardSummary = async (
         
         // Handle specific error types
         if (error.message?.includes('API key')) {
+            // Mark API key as invalid
+            setApiKeyValidationStatus(false);
             return {
                 success: false,
                 error: {
@@ -286,7 +292,9 @@ export const getAiBalanceEstimate = async (
         const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
         const readingTime = balanceData?.readingTime;
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        const userApiKey = getUserApiKey();
+        const apiKey = getApiKeyForRequest(userApiKey);
+
         if (!apiKey || apiKey === 'your_gemini_api_key_here') {
             return {
                 estimate: null,
@@ -345,6 +353,51 @@ export const getAiBalanceEstimate = async (
             estimatedDaysRemaining: null,
             error: error.message || 'AI analysis failed'
         };
+    }
+};
+
+/**
+ * Validate a Gemini API key by making a simple test request
+ */
+export const validateApiKey = async (apiKey: string): Promise<{ isValid: boolean; error?: string }> => {
+    try {
+        if (!apiKey || apiKey.trim() === '' || apiKey === 'your_gemini_api_key_here') {
+            return { isValid: false, error: 'API key is required' };
+        }
+
+        const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
+        const model = 'gemini-2.5-flash';
+
+        // Make a simple test request
+        const response = await ai.models.generateContent({
+            model,
+            contents: 'Say "API key is valid" in JSON format: {"status": "valid"}',
+            config: {
+                responseMimeType: "application/json",
+                temperature: 0
+            }
+        });
+
+        if (response?.text) {
+            // Mark as valid and store validation status
+            setApiKeyValidationStatus(true);
+            return { isValid: true };
+        } else {
+            setApiKeyValidationStatus(false);
+            return { isValid: false, error: 'Invalid response from API' };
+        }
+    } catch (error: any) {
+        setApiKeyValidationStatus(false);
+
+        if (error.message?.includes('API key')) {
+            return { isValid: false, error: 'Invalid API key' };
+        } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+            return { isValid: false, error: 'API quota exceeded' };
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            return { isValid: false, error: 'Network error - please check your connection' };
+        } else {
+            return { isValid: false, error: 'API key validation failed' };
+        }
     }
 };
 

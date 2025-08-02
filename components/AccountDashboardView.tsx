@@ -11,6 +11,7 @@ import { useBalanceWarning } from '../hooks/useBalanceWarning';
 import { useTranslation } from 'react-i18next';
 import Notification from './common/Notification';
 import { SkeletonDashboard, FadeTransition } from './common/SkeletonComponents';
+import ApiKeyManagementModal from './ApiKeyManagementModal';
 
 // Helper function to calculate data staleness
 function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: string): { isStale: boolean; message: string } {
@@ -37,6 +38,7 @@ function getDataStalenessInfo(readingTime?: string, t?: any, daysBehindPlural?: 
 const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; onDelete: (accountNo: string) => void; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; }> = ({ account, onClose, onDelete, showNotification }) => {
     const { t, i18n } = useTranslation();
     const { open: openBalanceWarning } = useBalanceWarning();
+    const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const {
         processedData,
         isLoading,
@@ -164,6 +166,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                 // New distributed AI insights
                                 distributedAiInsights={distributedAiInsights}
                                 aiLoadingStates={aiLoadingStates}
+                                onSetupApiKey={() => setIsApiKeyModalOpen(true)}
                             />
                         </div>
                     )}
@@ -202,6 +205,17 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     icon={<TrashIcon className="w-6 h-6" />}
                 />
             )}
+
+            {/* API Key Management Modal */}
+            <ApiKeyManagementModal
+                isOpen={isApiKeyModalOpen}
+                onClose={() => setIsApiKeyModalOpen(false)}
+                onApiKeyUpdated={() => {
+                    showNotification('API key updated successfully', 'info');
+                    // Trigger a refresh of the dashboard data
+                    window.location.reload();
+                }}
+            />
 
             <Footer />
         </div>

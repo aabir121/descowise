@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:premium": "bash scripts/deploy-premium.sh",
+    "deploy:standard": "bash scripts/deploy-standard.sh",
+    "deploy:premium:win": "scripts\\deploy-premium.bat",
+    "deploy:standard:win": "scripts\\deploy-standard.bat"
   },
   "dependencies": {
     "@google/genai": "^1.8.0",

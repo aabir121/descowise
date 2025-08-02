@@ -69,6 +69,7 @@ const DashboardSections: React.FC<any> = ({
   distributedAiInsights,
   aiLoadingStates,
   isDataLoading = false,
+  onSetupApiKey,
 }) => {
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
@@ -145,6 +146,7 @@ const DashboardSections: React.FC<any> = ({
           showInfoIcon={true}
           onInfoClick={() => handleInfoClick('aiInsights')}
           onRetry={retryAiSummary}
+          onSetupApiKey={onSetupApiKey}
           // New props for distributed insights
           distributedAiInsights={distributedAiInsights}
           aiLoadingStates={aiLoadingStates}

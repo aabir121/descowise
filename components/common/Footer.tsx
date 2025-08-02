@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
 
   return (
     <>
-      <footer className="w-full bg-slate-900/95 border-t border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 px-3 py-2 backdrop-blur-md">
+      <footer className="sticky bottom-0 w-full bg-slate-900/95 border-t border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-center gap-2 px-3 py-2 backdrop-blur-md z-10">
         <div className="flex flex-col sm:flex-row items-center justify-center text-center flex-1 gap-1 sm:gap-2">
           <span>{t('footerLine1')}</span>
           <span className="hidden sm:inline">&middot;</span>

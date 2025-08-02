@@ -47,7 +47,25 @@ While DESCO already provides excellent official Android and iOS apps, as well as
    npm run dev
    ```
 
-## Deploy to Vercel
+## Deployment Options
+
+DescoWise supports two deployment strategies to manage AI costs effectively:
+
+### Option 1: Premium Deployment (Pre-configured API Key)
+For personal use or invited users with your API key:
+
+```bash
+GEMINI_API_KEY=your_api_key_here ./scripts/deploy-premium.sh
+```
+
+### Option 2: Standard Deployment (User-provided API Keys)
+For public access where users provide their own API keys:
+
+```bash
+./scripts/deploy-standard.sh
+```
+
+### Manual Vercel Deployment
 
 1. **Push your code to GitHub**
 
@@ -58,7 +76,8 @@ While DESCO already provides excellent official Android and iOS apps, as well as
 
 3. **Set environment variables:**
    - In your Vercel project dashboard, go to **Settings → Environment Variables**
-   - Add: `GEMINI_API_KEY` = your actual Gemini API key
+   - For **Premium**: Add `DEPLOYMENT_TYPE=premium` and `GEMINI_API_KEY=your_key`
+   - For **Standard**: Add `DEPLOYMENT_TYPE=standard` (no API key needed)
    - Select all environments (Production, Preview, Development)
    - Click "Save"
 
@@ -66,11 +85,32 @@ While DESCO already provides excellent official Android and iOS apps, as well as
    - Vercel will automatically deploy on every push to your main branch
    - Your app will be available at your Vercel URL
 
+📖 **For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)**
+
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GEMINI_API_KEY` | Google Gemini API key for AI insights | Yes (for AI features) |
+| Variable | Description | Premium | Standard |
+|----------|-------------|---------|----------|
+| `DEPLOYMENT_TYPE` | Deployment configuration (`premium` or `standard`) | Required | Required |
+| `GEMINI_API_KEY` | Google Gemini API key for AI insights | Required | Not used |
+| `GEMINI_MODEL` | AI model to use (default: `gemini-2.5-flash`) | Optional | Optional |
+| `GEMINI_TEMPERATURE` | AI temperature setting (default: `0.3`) | Optional | Optional |
+
+## Deployment Types
+
+### Premium Version
+- ✅ AI insights enabled by default
+- ✅ No user setup required
+- ✅ Immediate access to all features
+- ⚠️ You pay for all API usage
+- 🔒 Consider access restrictions
+
+### Standard Version
+- 🔧 Users configure their own API keys
+- 💰 Users pay for their own API usage
+- 🌐 Suitable for public deployment
+- 📱 Graceful feature degradation
+- 🔐 Privacy-focused (keys stored locally)
 
 ## First-Time User Onboarding
 

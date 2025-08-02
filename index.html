@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>DescoWise</title>
 
     <!-- Resource hints for performance -->
@@ -27,7 +27,7 @@
 @keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translate(-50%, -20px);
+    transform: translate(-50%, -10px);
   }
   to {
     opacity: 1;
@@ -35,7 +35,9 @@
   }
 }
 .animate-fade-in-down {
-  animation: fadeInDown 0.1s ease-out forwards;
+  animation: fadeInDown 0.2s ease-out forwards;
+  /* Ensure initial position is set to prevent CLS */
+  transform: translate(-50%, 0);
 }
   .floating-info-btn {
     position: fixed;
@@ -99,6 +101,26 @@
     }
     .desco-chat-btn {
       bottom: 4.5rem;
+    }
+  }
+
+  /* Prevent zoom issues on mobile */
+  @media screen and (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+      transform: translateZ(0);
+    }
+
+    /* Prevent iOS zoom on input focus */
+    input:focus, textarea:focus, select:focus {
+      font-size: 16px !important;
+    }
+
+    /* Ensure body doesn't zoom after modal interactions */
+    body {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
   }
 </style>

@@ -11,6 +11,8 @@ import {
   completeAiAnalysis,
   failAiAnalysis
 } from '../../utils/aiInsightDistribution';
+import { shouldEnableAiFeatures } from '../../utils/deploymentConfig';
+import { getUserApiKey } from '../../utils/apiKeyStorage';
 
 type TimeRange = '7days' | 'thisMonth' | '30days' | '3months' | '6months' | '1year' | '2years';
 
@@ -103,7 +105,11 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsDataProcessing(false);
 
         if (balanceResult.success) {
-          if (account.aiInsightsEnabled) {
+          // Check if AI features should be enabled based on deployment and API key availability
+          const userApiKey = getUserApiKey();
+          const aiShouldBeEnabled = account.aiInsightsEnabled && shouldEnableAiFeatures(userApiKey);
+
+          if (aiShouldBeEnabled) {
             if (balanceResult.data?.balance !== null && balanceResult.data?.balance !== undefined) {
               fetchAiSummary(monthlyConsumption, rechargeHistory, balanceResult.data, dailyConsumption);
             } else {

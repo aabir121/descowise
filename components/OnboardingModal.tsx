@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BoltIcon, CloseIcon, GlobeAltIcon, InformationCircleIcon, CogIcon, WandSparklesIcon, ExclamationTriangleIcon } from './common/Icons';
+import { getDeploymentConfig } from '../utils/deploymentConfig';
+import { storeUserApiKey } from '../utils/apiKeyStorage';
+import { validateApiKey } from '../services/descoService';
+import ApiKeySetupStep from './ApiKeySetupStep';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -11,6 +15,12 @@ interface OnboardingModalProps {
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLanguageSelect }) => {
   const { t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'bn'>(i18n.language as 'en' | 'bn');
+  const [currentStep, setCurrentStep] = useState<'language' | 'apikey' | 'complete'>('language');
+  const [apiKey, setApiKey] = useState('');
+  const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+
+  const deploymentConfig = getDeploymentConfig();
 
   // Update selected language when i18n language changes
   useEffect(() => {
@@ -22,6 +32,44 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLa
   const handleLanguageSelect = (language: 'en' | 'bn') => {
     setSelectedLanguage(language);
     onLanguageSelect(language);
+  };
+
+  const handleLanguageNext = () => {
+    if (deploymentConfig.showApiKeySetup) {
+      setCurrentStep('apikey');
+    } else {
+      handleGetStarted();
+    }
+  };
+
+  const handleApiKeyValidation = async () => {
+    if (!apiKey.trim()) {
+      // Skip API key setup
+      handleGetStarted();
+      return;
+    }
+
+    setIsValidatingApiKey(true);
+    setApiKeyError(null);
+
+    try {
+      const result = await validateApiKey(apiKey.trim());
+      if (result.isValid) {
+        storeUserApiKey(apiKey.trim());
+        handleGetStarted();
+      } else {
+        setApiKeyError(result.error || 'Invalid API key');
+      }
+    } catch (error) {
+      setApiKeyError('Failed to validate API key');
+    } finally {
+      setIsValidatingApiKey(false);
+    }
+  };
+
+  const handleSkipApiKey = () => {
+    setApiKey('');
+    handleGetStarted();
   };
 
   const handleGetStarted = () => {
@@ -51,15 +99,18 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLa
 
         {/* Content */}
         <div className="px-6 py-6">
-          {/* Welcome Section */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-100 mb-4">
-              {t('onboardingTitle')}
-            </h2>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-              {t('onboardingSubtitle')}
-            </p>
-          </div>
+          {/* Language Selection Step */}
+          {currentStep === 'language' && (
+            <>
+              {/* Welcome Section */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-slate-100 mb-4">
+                  {t('onboardingTitle')}
+                </h2>
+                <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+                  {t('onboardingSubtitle')}
+                </p>
+              </div>
 
           {/* Language Selection */}
           <div className="bg-slate-700/50 rounded-xl p-6 mb-8">
@@ -347,17 +398,33 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLa
               </div>
             </div>
           </div>
+            </>
+          )}
+
+          {/* API Key Setup Step */}
+          {currentStep === 'apikey' && (
+            <ApiKeySetupStep
+              apiKey={apiKey}
+              setApiKey={setApiKey}
+              isValidating={isValidatingApiKey}
+              error={apiKeyError}
+              onValidate={handleApiKeyValidation}
+              onSkip={handleSkipApiKey}
+            />
+          )}
         </div>
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-slate-800 border-t border-slate-700 px-6 py-4 rounded-b-2xl">
           <div className="flex justify-end">
-            <button
-              onClick={handleGetStarted}
-              className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
-            >
-              {t('getStarted')}
-            </button>
+            {currentStep === 'language' && (
+              <button
+                onClick={handleLanguageNext}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
+              >
+                {deploymentConfig.showApiKeySetup ? 'Continue' : t('getStarted')}
+              </button>
+            )}
           </div>
         </div>
       </div>

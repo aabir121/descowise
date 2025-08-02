@@ -5,6 +5,7 @@ import AIInsightsLoading from './AIDashboardInsights/AIInsightsLoading';
 import AIInsightsError from './AIDashboardInsights/AIInsightsError';
 import BalanceUnavailableNotice from './AIDashboardInsights/BalanceUnavailableNotice';
 import MainAiInsights from './AiInsights/MainAiInsights';
+import AiFeatureDisabledNotice from './AiFeatureDisabledNotice';
 
 const AIDashboardInsightsSection = ({
   aiSummary,
@@ -17,6 +18,7 @@ const AIDashboardInsightsSection = ({
   showInfoIcon,
   onInfoClick,
   onRetry,
+  onSetupApiKey,
   // New props for distributed insights
   distributedAiInsights,
   aiLoadingStates
@@ -42,7 +44,20 @@ const AIDashboardInsightsSection = ({
   }, [isAiLoading]);
   const randomTip = tips[tipIdx];
 
-  if (!isAiAvailable && !aiError && !isAiLoading) return null;
+  // Show disabled notice if AI is not available and there's no error or loading
+  if (!isAiAvailable && !aiError && !isAiLoading) {
+    return (
+      <Section
+        title={t('aiInsights')}
+        defaultOpen={false}
+        sectionId="ai-powered-insights"
+        showInfoIcon={showInfoIcon}
+        onInfoClick={onInfoClick}
+      >
+        <AiFeatureDisabledNotice t={t} onSetupApiKey={onSetupApiKey} />
+      </Section>
+    );
+  }
   return (
     <Section
       title={t('aiInsights')}
