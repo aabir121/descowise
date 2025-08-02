@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance, verifyAccount } from './services/descoService';
-import { useIntelligentPreloader, preloadCriticalResources, addResourceHints } from './utils/preloadStrategies';
+import { useIntelligentPreloader, preloadCriticalResources, addResourceHints, registerServiceWorker } from './utils/preloadStrategies';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
@@ -211,6 +211,8 @@ const AccountListPage: React.FC<{
   setIsApiKeyModalOpen: (open: boolean) => void;
   isHelpModalOpen: boolean;
   setIsHelpModalOpen: (open: boolean) => void;
+  isNotificationSettingsOpen: boolean;
+  setIsNotificationSettingsOpen: (open: boolean) => void;
 }> = ({
   accounts,
   loadingBalances,
@@ -230,7 +232,9 @@ const AccountListPage: React.FC<{
   Footer,
   setIsApiKeyModalOpen,
   isHelpModalOpen,
-  setIsHelpModalOpen
+  setIsHelpModalOpen,
+  isNotificationSettingsOpen,
+  setIsNotificationSettingsOpen
 }) => {
   const navigate = useNavigate();
   const handleSelectAccount = useCallback((accountNo: string) => {
@@ -372,10 +376,11 @@ const App: React.FC = () => {
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
     const { trackAction, preloadForRoute } = useIntelligentPreloader();
 
-    // Initialize performance optimizations
+    // Initialize performance optimizations and service worker
     useEffect(() => {
         preloadCriticalResources();
         addResourceHints();
+        registerServiceWorker();
     }, []);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo: string | null; accountName: string }>({
         isOpen: false,
@@ -706,6 +711,8 @@ const App: React.FC = () => {
                           setIsApiKeyModalOpen={setIsApiKeyModalOpen}
                           isHelpModalOpen={isHelpModalOpen}
                           setIsHelpModalOpen={setIsHelpModalOpen}
+                          isNotificationSettingsOpen={isNotificationSettingsOpen}
+                          setIsNotificationSettingsOpen={setIsNotificationSettingsOpen}
                         />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />

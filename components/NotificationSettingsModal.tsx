@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import Modal from './common/Modal';
 import { CloseIcon, BellIcon, ExclamationTriangleIcon } from './common/Icons';
 import { notificationPermissionService, NotificationPermissionStatus } from '../services/notificationPermissionService';
 import { notificationScheduler } from '../services/notificationScheduler';
@@ -13,7 +11,6 @@ interface NotificationSettingsModalProps {
 }
 
 const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ isOpen, onClose }) => {
-  const { t } = useTranslation();
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('default');
   const [settings, setSettings] = useState(notificationPermissionService.getSettings());
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +20,25 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
     nextScheduledTime: '',
     timeUntilNext: '',
   });
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -48,15 +64,22 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
   };
 
   const handleEnableNotifications = async () => {
+    console.log('Enabling notifications...');
     setIsLoading(true);
     try {
       const success = await notificationPermissionService.enableNotifications();
+      console.log('Enable notifications result:', success);
       if (success) {
         setSettings(notificationPermissionService.getSettings());
         updateSchedulerStatus();
+        console.log('Notifications enabled successfully');
+      } else {
+        console.log('Failed to enable notifications');
+        alert('Failed to enable notifications. Please check your browser settings.');
       }
     } catch (error) {
       console.error('Error enabling notifications:', error);
+      alert(`Error enabling notifications: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -75,13 +98,29 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
   };
 
   const handleTestNotification = async () => {
+    console.log('Test notification button clicked');
+    console.log('Current settings:', settings);
+    console.log('Permission status:', permissionStatus);
+    console.log('Notifications enabled:', notificationPermissionService.areNotificationsEnabled());
+
     setIsLoading(true);
     try {
-      await notificationPermissionService.showTestNotification();
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Test notification timed out after 10 seconds')), 10000);
+      });
+
+      await Promise.race([
+        notificationPermissionService.showTestNotification(),
+        timeoutPromise
+      ]);
+
       setTestNotificationSent(true);
       setTimeout(() => setTestNotificationSent(false), 3000);
+      console.log('Test notification sent successfully');
     } catch (error) {
       console.error('Error sending test notification:', error);
+      alert(`Error sending test notification: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -112,13 +151,16 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
   const monitoringStats = notificationStorageService.getTodaysSummary();
   const statusInfo = getPermissionStatusText();
 
+  if (!isOpen) return null;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-800 rounded-lg w-full max-w-md mx-auto border border-slate-700 shadow-xl max-h-[85vh] flex flex-col">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <BellIcon className="w-6 h-6 text-blue-400" />
-            <h2 className="text-xl font-semibold text-slate-100">Notification Settings</h2>
+            <h2 id="notification-settings-title" className="text-xl font-semibold text-slate-100">Notification Settings</h2>
           </div>
           <button
             onClick={onClose}
@@ -129,7 +171,9 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
           </button>
         </div>
 
-        <div className="space-y-6">
+        {/* Scrollable Content */}
+        <div className="px-6 pb-6 overflow-y-auto flex-1">
+          <div className="space-y-6">
           {/* Permission Status */}
           <div className="bg-slate-700 rounded-lg p-4">
             <h3 className="text-sm font-medium text-slate-300 mb-2">Permission Status</h3>
@@ -141,13 +185,19 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
                 <span className="text-xs text-red-400">Not supported</span>
               )}
             </div>
+            <div className="mt-2 text-xs text-slate-400">
+              <div>Supported: {notificationPermissionService.isSupported() ? 'Yes' : 'No'}</div>
+              <div>Enabled: {settings.enabled ? 'Yes' : 'No'}</div>
+              <div>Permission: {permissionStatus}</div>
+              <div>Can test: {settings.enabled && permissionStatus === 'granted' ? 'Yes' : 'No'}</div>
+            </div>
           </div>
 
           {/* Enable/Disable Notifications */}
           <div className="bg-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-slate-300">Daily Notifications</h3>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer" aria-label="Toggle daily notifications">
                 <input
                   type="checkbox"
                   checked={settings.enabled}
@@ -160,6 +210,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
                   }}
                   className="sr-only"
                   disabled={isLoading}
+                  aria-describedby="notification-toggle-description"
                 />
                 <div className={`w-11 h-6 rounded-full transition-colors ${
                   settings.enabled ? 'bg-blue-600' : 'bg-slate-600'
@@ -170,7 +221,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
                 </div>
               </label>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400" id="notification-toggle-description">
               Get notified daily at 3:00 PM BDT about low balances and data issues
             </p>
           </div>
@@ -284,9 +335,10 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 };
 

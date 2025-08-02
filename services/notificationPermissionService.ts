@@ -173,26 +173,65 @@ class NotificationPermissionService {
    * Show a test notification
    */
   async showTestNotification(): Promise<void> {
+    console.log('showTestNotification called');
+
     if (!this.areNotificationsEnabled()) {
       throw new Error('Notifications are not enabled or permitted');
     }
 
-    if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification('DESCO Account Manager', {
-        body: 'Test notification - your notification system is working!',
-        icon: '/icon-192x192.png',
-        badge: '/icon-72x72.png',
-        tag: 'test-notification',
-        requireInteraction: false,
-        silent: false,
-      });
-    } else {
-      // Fallback to regular notification
-      new Notification('DESCO Account Manager', {
-        body: 'Test notification - your notification system is working!',
-        icon: '/icon-192x192.png',
-      });
+    console.log('Notifications are enabled, proceeding...');
+
+    try {
+      if ('serviceWorker' in navigator) {
+        console.log('Using service worker for notification');
+
+        // Add timeout for service worker ready
+        const registrationPromise = navigator.serviceWorker.ready;
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Service worker ready timeout')), 5000);
+        });
+
+        try {
+          const registration = await Promise.race([registrationPromise, timeoutPromise]);
+          console.log('Service worker ready:', registration);
+
+          // Add timeout for showNotification
+          const notificationPromise = registration.showNotification('DESCO Account Manager', {
+            body: 'Test notification - your notification system is working!',
+            icon: '/icon-192x192.png',
+            badge: '/icon-72x72.png',
+            tag: 'test-notification',
+            requireInteraction: false,
+            silent: false,
+          });
+
+          const notificationTimeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Service worker notification timeout')), 3000);
+          });
+
+          await Promise.race([notificationPromise, notificationTimeoutPromise]);
+          console.log('Service worker notification sent');
+        } catch (swError) {
+          console.warn('Service worker failed, falling back to regular notification:', swError);
+          // Fallback to regular notification
+          new Notification('DESCO Account Manager', {
+            body: 'Test notification - your notification system is working!',
+            icon: '/icon-192x192.png',
+          });
+          console.log('Fallback notification sent');
+        }
+      } else {
+        console.log('Using fallback notification');
+        // Fallback to regular notification
+        new Notification('DESCO Account Manager', {
+          body: 'Test notification - your notification system is working!',
+          icon: '/icon-192x192.png',
+        });
+        console.log('Fallback notification sent');
+      }
+    } catch (error) {
+      console.error('Error in showTestNotification:', error);
+      throw error;
     }
   }
 }

@@ -201,18 +201,22 @@ export function addResourceHints() {
 }
 
 /**
- * Service Worker registration for caching strategies
+ * Service Worker registration for caching strategies and notifications
  */
 export function registerServiceWorker() {
-  if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  if ('serviceWorker' in navigator) {
+    console.log('Registering service worker...');
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
           console.log('SW registered: ', registration);
+          console.log('Service worker registration successful');
         })
         .catch(registrationError => {
-          console.log('SW registration failed: ', registrationError);
+          console.error('SW registration failed: ', registrationError);
         });
     });
+  } else {
+    console.log('Service workers not supported');
   }
 }
