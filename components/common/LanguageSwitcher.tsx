@@ -37,17 +37,14 @@ const LanguageSwitcher: React.FC = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Main button */}
+      {/* Main button - improved mobile touch target */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/70 transition-colors text-slate-200 hover:text-white border border-slate-600/50 hover:border-slate-500/70"
+        className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/70 transition-colors text-slate-200 hover:text-white border border-slate-600/50 hover:border-slate-500/70 min-h-[2rem] sm:min-h-[2.25rem]"
         aria-label="Switch language"
       >
-        <GlobeAltIcon className="w-4 h-4" />
-        <span className="text-sm font-medium hidden sm:inline">
-          {isEnglish ? 'EN' : 'বাং'}
-        </span>
-        <span className="text-xs sm:hidden">
+        <GlobeAltIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+        <span className="text-xs sm:text-sm font-medium">
           {isEnglish ? 'EN' : 'বাং'}
         </span>
       </button>

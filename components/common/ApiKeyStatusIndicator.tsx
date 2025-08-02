@@ -162,6 +162,10 @@ const ApiKeyStatusIndicator: React.FC<ApiKeyStatusIndicatorProps> = ({
     if (variant === 'compact') {
       return hasApiKey ? t('configured', 'Configured') : t('notConfigured', 'Not Configured');
     }
+    // For mobile button variant, use shorter labels
+    if (variant === 'button' && className?.includes('sm:hidden')) {
+      return hasApiKey ? t('manage', 'Manage') : t('setup', 'Setup');
+    }
     return statusConfig.label;
   };
 

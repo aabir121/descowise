@@ -166,33 +166,47 @@ const AccountListPage: React.FC<{
         <Notification message={notification.message} type={notification.type} />
       )}
       <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <header className="text-center mb-8 sm:mb-12 relative">
-          {/* Top controls - responsive positioning */}
-          <div className="flex justify-end mb-4 sm:absolute sm:top-0 sm:right-0 sm:mb-0 z-10">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <ApiKeyStatusIndicator
-                variant="button"
-                size="sm"
-                onClick={() => setIsApiKeyModalOpen(true)}
-                showTooltip={true}
-                className="hidden sm:flex"
-              />
-              <ApiKeyStatusIndicator
-                variant="compact"
-                size="sm"
-                onClick={() => setIsApiKeyModalOpen(true)}
-                showTooltip={false}
-                showLabel={false}
-                className="flex sm:hidden"
-              />
-              <LanguageSwitcher />
+        <header className="mb-6 sm:mb-12 animate-fade-in">
+          {/* Header design with consistent branding */}
+          <div className="flex flex-col gap-4 sm:gap-6">
+            {/* Controls bar - always at top */}
+            <div className="flex justify-end py-1">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <ApiKeyStatusIndicator
+                  variant="button"
+                  size="sm"
+                  onClick={() => setIsApiKeyModalOpen(true)}
+                  showTooltip={true}
+                  showLabel={true}
+                  className="hidden sm:flex"
+                />
+                <ApiKeyStatusIndicator
+                  variant="button"
+                  size="sm"
+                  onClick={() => setIsApiKeyModalOpen(true)}
+                  showTooltip={false}
+                  showLabel={true}
+                  className="flex sm:hidden text-xs font-medium"
+                />
+                <LanguageSwitcher />
+              </div>
+            </div>
+
+            {/* Main branding section - always visible and centered */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-cyan-400/10 border border-cyan-400/20">
+                  <BoltIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-cyan-400"/>
+                </div>
+                <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-50 bg-gradient-to-r from-slate-50 to-slate-200 bg-clip-text">
+                  {t('appTitle')}
+                </h1>
+              </div>
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-400 leading-relaxed max-w-4xl mx-auto opacity-90 px-4 sm:px-0">
+                {t('appSubtitle')}
+              </p>
             </div>
           </div>
-          <div className="inline-flex items-center gap-3">
-            <BoltIcon className="w-8 h-8 text-cyan-400"/>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-50">{t('appTitle')}</h1>
-          </div>
-          <p className="text-base sm:text-lg lg:text-xl text-slate-400 mt-2">{t('appSubtitle')}</p>
         </header>
         <main>
           {accounts.length === 0 ? (
