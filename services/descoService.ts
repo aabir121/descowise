@@ -95,7 +95,7 @@ export const getAiDashboardSummary = async (
         const sanitizedCurrentBalance = balanceData?.balance !== null && balanceData?.balance !== undefined ? sanitizeCurrency(balanceData.balance) : 0;
         const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
         
-        const userApiKey = getUserApiKey();
+        const userApiKey = await getUserApiKey();
         const apiKey = getApiKeyForRequest(userApiKey);
 
         if (!apiKey || apiKey === 'your_gemini_api_key_here') {
@@ -292,7 +292,7 @@ export const getAiBalanceEstimate = async (
         const currentMonthConsumption = balanceData?.currentMonthConsumption !== null && balanceData?.currentMonthConsumption !== undefined ? sanitizeCurrency(balanceData.currentMonthConsumption) : null;
         const readingTime = balanceData?.readingTime;
 
-        const userApiKey = getUserApiKey();
+        const userApiKey = await getUserApiKey();
         const apiKey = getApiKeyForRequest(userApiKey);
 
         if (!apiKey || apiKey === 'your_gemini_api_key_here') {

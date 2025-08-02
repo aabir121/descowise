@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { WandSparklesIcon, CogIcon } from '../common/Icons';
-import { hasUserApiKey } from '../../utils/apiKeyStorage';
+import { hasStoredApiKey } from '../../utils/apiKeyStorage';
 
 interface AiFeatureDisabledNoticeProps {
   t: (key: string) => string;
@@ -8,7 +8,12 @@ interface AiFeatureDisabledNoticeProps {
 }
 
 const AiFeatureDisabledNotice: React.FC<AiFeatureDisabledNoticeProps> = ({ t, onSetupApiKey }) => {
-  const hasApiKey = hasUserApiKey();
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  useEffect(() => {
+    // Use synchronous check for quick UI updates
+    setHasApiKey(hasStoredApiKey());
+  }, []);
 
   // Don't show notice if user has already configured API key
   if (hasApiKey) {

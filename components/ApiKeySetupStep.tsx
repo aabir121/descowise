@@ -92,9 +92,21 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
                 <li>Click "Create API Key" and copy it</li>
                 <li>Paste it above and click "Validate & Continue"</li>
               </ol>
-              <p className="mt-2 text-xs text-blue-300">
-                <strong>Privacy:</strong> Your API key is stored securely on your device and never shared.
-              </p>
+              <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 rounded">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-green-400 rounded-full flex items-center justify-center">
+                    <svg className="w-2 h-2 text-green-900" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-semibold text-green-200">🔒 Your API Key Security</span>
+                </div>
+                <ul className="text-xs text-green-100 space-y-0.5 ml-5">
+                  <li>• AES-256 encrypted in your browser</li>
+                  <li>• Never sent to our servers</li>
+                  <li>• You maintain full control</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

@@ -4,31 +4,154 @@ const API_KEY_STORAGE_KEY = 'desco_user_api_key';
 const API_KEY_VALIDATION_KEY = 'desco_api_key_validated';
 
 /**
- * Simple encryption/decryption using base64 encoding with a salt
- * Note: This is basic obfuscation, not cryptographically secure
- * For production, consider using Web Crypto API or server-side encryption
+ * Secure encryption/decryption using Web Crypto API with AES-GCM
+ * Falls back to base64 obfuscation if Web Crypto API is not available
  */
-class SimpleEncryption {
+class SecureEncryption {
   private static readonly SALT = 'DescoWise2024';
+  private static readonly ALGORITHM = 'AES-GCM';
+  private static readonly KEY_LENGTH = 256;
+  private static readonly IV_LENGTH = 12; // 96 bits for GCM
 
-  static encrypt(text: string): string {
+  /**
+   * Generate a cryptographic key from a password using PBKDF2
+   */
+  private static async generateKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: this.ALGORITHM, length: this.KEY_LENGTH },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  /**
+   * Generate a deterministic salt from the static salt
+   */
+  private static generateSalt(): Uint8Array {
+    const encoder = new TextEncoder();
+    const saltData = encoder.encode(this.SALT);
+    // Pad or truncate to 16 bytes
+    const salt = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) {
+      salt[i] = saltData[i % saltData.length];
+    }
+    return salt;
+  }
+
+  /**
+   * Encrypt text using AES-GCM
+   */
+  static async encrypt(text: string): Promise<string> {
+    try {
+      // Check if Web Crypto API is available
+      if (!crypto.subtle) {
+        return this.fallbackEncrypt(text);
+      }
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+
+      const salt = this.generateSalt();
+      const key = await this.generateKey(this.SALT, salt);
+
+      // Generate random IV
+      const iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+
+      const encrypted = await crypto.subtle.encrypt(
+        { name: this.ALGORITHM, iv: iv },
+        key,
+        data
+      );
+
+      // Combine IV and encrypted data
+      const combined = new Uint8Array(iv.length + encrypted.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(encrypted), iv.length);
+
+      // Convert to base64 for storage
+      return btoa(String.fromCharCode(...combined));
+    } catch (error) {
+      console.error('Encryption failed, falling back to simple obfuscation:', error);
+      return this.fallbackEncrypt(text);
+    }
+  }
+
+  /**
+   * Decrypt text using AES-GCM
+   */
+  static async decrypt(encryptedText: string): Promise<string> {
+    try {
+      // Check if Web Crypto API is available
+      if (!crypto.subtle) {
+        return this.fallbackDecrypt(encryptedText);
+      }
+
+      // Convert from base64
+      const combined = new Uint8Array(
+        atob(encryptedText).split('').map(char => char.charCodeAt(0))
+      );
+
+      // Extract IV and encrypted data
+      const iv = combined.slice(0, this.IV_LENGTH);
+      const encrypted = combined.slice(this.IV_LENGTH);
+
+      const salt = this.generateSalt();
+      const key = await this.generateKey(this.SALT, salt);
+
+      const decrypted = await crypto.subtle.decrypt(
+        { name: this.ALGORITHM, iv: iv },
+        key,
+        encrypted
+      );
+
+      const decoder = new TextDecoder();
+      return decoder.decode(decrypted);
+    } catch (error) {
+      console.error('Decryption failed, trying fallback method:', error);
+      return this.fallbackDecrypt(encryptedText);
+    }
+  }
+
+  /**
+   * Fallback encryption using base64 obfuscation
+   */
+  private static fallbackEncrypt(text: string): string {
     try {
       const combined = this.SALT + text + this.SALT;
       return btoa(combined);
     } catch (error) {
-      console.error('Encryption failed:', error);
-      return text; // Fallback to plain text
+      console.error('Fallback encryption failed:', error);
+      return text; // Last resort fallback
     }
   }
 
-  static decrypt(encryptedText: string): string {
+  /**
+   * Fallback decryption using base64 obfuscation
+   */
+  private static fallbackDecrypt(encryptedText: string): string {
     try {
       const decoded = atob(encryptedText);
       const saltLength = this.SALT.length;
       return decoded.slice(saltLength, -saltLength);
     } catch (error) {
-      console.error('Decryption failed:', error);
-      return encryptedText; // Fallback to treating as plain text
+      console.error('Fallback decryption failed:', error);
+      return encryptedText; // Last resort fallback
     }
   }
 }
@@ -36,14 +159,14 @@ class SimpleEncryption {
 /**
  * Store user's API key securely in localStorage
  */
-export function storeUserApiKey(apiKey: string): boolean {
+export async function storeUserApiKey(apiKey: string): Promise<boolean> {
   try {
     if (!apiKey || apiKey.trim() === '') {
       removeUserApiKey();
       return true;
     }
 
-    const encrypted = SimpleEncryption.encrypt(apiKey.trim());
+    const encrypted = await SecureEncryption.encrypt(apiKey.trim());
     localStorage.setItem(API_KEY_STORAGE_KEY, encrypted);
     return true;
   } catch (error) {
@@ -55,14 +178,14 @@ export function storeUserApiKey(apiKey: string): boolean {
 /**
  * Retrieve user's API key from localStorage
  */
-export function getUserApiKey(): string | null {
+export async function getUserApiKey(): Promise<string | null> {
   try {
     const encrypted = localStorage.getItem(API_KEY_STORAGE_KEY);
     if (!encrypted) {
       return null;
     }
 
-    return SimpleEncryption.decrypt(encrypted);
+    return await SecureEncryption.decrypt(encrypted);
   } catch (error) {
     console.error('Failed to retrieve API key:', error);
     return null;
@@ -84,9 +207,18 @@ export function removeUserApiKey(): void {
 /**
  * Check if user has stored an API key
  */
-export function hasUserApiKey(): boolean {
-  const apiKey = getUserApiKey();
+export async function hasUserApiKey(): Promise<boolean> {
+  const apiKey = await getUserApiKey();
   return !!(apiKey && apiKey.trim() !== '');
+}
+
+/**
+ * Synchronous check if user has stored an API key (checks only if encrypted data exists)
+ * Use this for quick checks where you don't need the actual key value
+ */
+export function hasStoredApiKey(): boolean {
+  const encrypted = localStorage.getItem(API_KEY_STORAGE_KEY);
+  return !!(encrypted && encrypted.trim() !== '');
 }
 
 /**
@@ -137,12 +269,12 @@ export function clearApiKeyValidationStatus(): void {
 /**
  * Get API key display format (masked for security)
  */
-export function getApiKeyDisplayFormat(apiKey?: string): string {
-  const key = apiKey || getUserApiKey();
+export async function getApiKeyDisplayFormat(apiKey?: string): Promise<string> {
+  const key = apiKey || await getUserApiKey();
   if (!key || key.length < 8) {
     return 'Not configured';
   }
-  
+
   return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
 }
 

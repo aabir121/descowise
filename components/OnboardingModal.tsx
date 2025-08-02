@@ -55,12 +55,13 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLa
     try {
       const result = await validateApiKey(apiKey.trim());
       if (result.isValid) {
-        storeUserApiKey(apiKey.trim());
+        await storeUserApiKey(apiKey.trim());
         handleGetStarted();
       } else {
         setApiKeyError(result.error || 'Invalid API key');
       }
     } catch (error) {
+      console.error('API key validation error:', error);
       setApiKeyError('Failed to validate API key');
     } finally {
       setIsValidatingApiKey(false);

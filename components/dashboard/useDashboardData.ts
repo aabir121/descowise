@@ -106,7 +106,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
 
         if (balanceResult.success) {
           // Check if AI features should be enabled based on deployment and API key availability
-          const userApiKey = getUserApiKey();
+          const userApiKey = await getUserApiKey();
           const aiShouldBeEnabled = account.aiInsightsEnabled && shouldEnableAiFeatures(userApiKey);
 
           if (aiShouldBeEnabled) {

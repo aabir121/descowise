@@ -24,12 +24,15 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
 
   useEffect(() => {
     if (isOpen) {
-      const existingKey = getUserApiKey();
-      setHasExistingKey(!!existingKey);
-      setApiKey('');
-      setValidationError(null);
-      setValidationSuccess(false);
-      setShowApiKey(false);
+      const checkExistingKey = async () => {
+        const existingKey = await getUserApiKey();
+        setHasExistingKey(!!existingKey);
+        setApiKey('');
+        setValidationError(null);
+        setValidationSuccess(false);
+        setShowApiKey(false);
+      };
+      checkExistingKey();
     }
   }, [isOpen]);
 
@@ -46,10 +49,10 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
     try {
       const result = await validateApiKey(apiKey.trim());
       if (result.isValid) {
-        storeUserApiKey(apiKey.trim());
+        await storeUserApiKey(apiKey.trim());
         setValidationSuccess(true);
         setValidationError(null);
-        
+
         // Close modal after a brief success display
         setTimeout(() => {
           onApiKeyUpdated?.();
@@ -60,6 +63,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
         setValidationSuccess(false);
       }
     } catch (error) {
+      console.error('API key validation error:', error);
       setValidationError('Failed to validate API key');
       setValidationSuccess(false);
     } finally {
@@ -194,14 +198,31 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
             )}
 
             {/* Info */}
-            <div className="flex items-start gap-3 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
-              <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-blue-200 text-sm space-y-2">
-                <p><strong>Get your API key:</strong></p>
-                <p>Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Google AI Studio</a> to create a free API key.</p>
-                <p className="text-xs text-blue-300">
-                  <strong>Privacy:</strong> Your API key is stored securely on your device and never shared.
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
+                <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-blue-200 text-sm space-y-2">
+                  <p><strong>Get your API key:</strong></p>
+                  <p>Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Google AI Studio</a> to create a free API key.</p>
+                </div>
+              </div>
+
+              {/* Security Information */}
+              <div className="flex items-start gap-3 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                <div className="w-5 h-5 bg-green-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3 h-3 text-green-900" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="text-green-200 text-sm space-y-1">
+                  <p><strong>🔒 Your API Key Security:</strong></p>
+                  <ul className="text-xs text-green-100 space-y-1 ml-2">
+                    <li>• <strong>AES-256 encrypted</strong> before storing in your browser</li>
+                    <li>• <strong>Never transmitted</strong> to our servers</li>
+                    <li>• <strong>Stays on your device</strong> - you have complete control</li>
+                    <li>• <strong>Can be removed</strong> anytime from settings</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
