@@ -49,34 +49,30 @@ const Section: React.FC<SectionProps> = ({
         }
     });
 
-    // Save preference to localStorage whenever it changes
-    const savePreference = useCallback((open: boolean) => {
-        // Don't save preferences for always expanded sections
-        if (alwaysExpanded) return;
-        
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(open));
-        } catch (error) {
-            console.error('Failed to save section preference to localStorage:', error);
-        }
-    }, [storageKey, alwaysExpanded]);
+
 
     // Handle toggle with persistence
     const handleToggle = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         // Don't allow toggling for always expanded sections
         if (alwaysExpanded) return;
-        
+
         const newState = !isOpen;
         setIsOpen(newState);
-        savePreference(newState);
+        // savePreference is now handled by useEffect
         onToggle?.(newState);
-    }, [isOpen, savePreference, onToggle, alwaysExpanded]);
+    }, [isOpen, onToggle, alwaysExpanded]);
 
-    // Sync with localStorage on mount
+    // Sync with localStorage only when isOpen changes, not when savePreference changes
     useEffect(() => {
-        savePreference(isOpen);
-    }, [isOpen, savePreference]);
+        if (alwaysExpanded) return;
+
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(isOpen));
+        } catch (error) {
+            console.error('Failed to save section preference to localStorage:', error);
+        }
+    }, [isOpen, storageKey, alwaysExpanded]);
 
     return (
         <div className="bg-slate-800 rounded-xl overflow-hidden">

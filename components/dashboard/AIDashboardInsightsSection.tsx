@@ -54,7 +54,7 @@ const AIDashboardInsightsSection = ({
         showInfoIcon={showInfoIcon}
         onInfoClick={onInfoClick}
       >
-        <AiFeatureDisabledNotice t={t} onSetupApiKey={onSetupApiKey} />
+        <AiFeatureDisabledNotice onSetupApiKey={onSetupApiKey} />
       </Section>
     );
   }

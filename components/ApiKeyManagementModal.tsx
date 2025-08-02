@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { CloseIcon, WandSparklesIcon, EyeIcon, EyeSlashIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
 import { getUserApiKey, storeUserApiKey, removeUserApiKey, getApiKeyDisplayFormat, getApiKeyValidationStatus } from '../utils/apiKeyStorage';
 import { validateApiKey } from '../services/descoService';
@@ -12,13 +11,13 @@ interface ApiKeyManagementModalProps {
 }
 
 const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, onClose, onApiKeyUpdated }) => {
-  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [validationSuccess, setValidationSuccess] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
+  const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
   
 
 
@@ -72,13 +71,22 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
   };
 
   const handleRemoveApiKey = () => {
+    setShowRemoveConfirmation(true);
+  };
+
+  const handleConfirmRemove = () => {
     removeUserApiKey();
     setHasExistingKey(false);
     setApiKey('');
     setValidationError(null);
     setValidationSuccess(false);
+    setShowRemoveConfirmation(false);
     onApiKeyUpdated?.();
     onClose();
+  };
+
+  const handleCancelRemove = () => {
+    setShowRemoveConfirmation(false);
   };
 
   if (!isOpen) return null;
@@ -95,7 +103,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
             <div className="flex items-center gap-3">
               <WandSparklesIcon className="w-6 h-6 text-cyan-400" />
               <h2 className="text-xl font-bold text-slate-100">
-                Manage AI API Key
+                {hasExistingKey ? 'Manage AI API Key' : 'Setup AI Features'}
               </h2>
             </div>
             <button
@@ -110,6 +118,30 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
 
         {/* Content */}
         <div className="px-6 py-6 space-y-6">
+          {/* Welcome Message for New Users */}
+          {!hasExistingKey && (
+            <div className="bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-500/30 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <WandSparklesIcon className="w-6 h-6 text-cyan-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-cyan-100 mb-2">Unlock AI-Powered Insights</h3>
+                  <p className="text-cyan-200 text-sm mb-3">
+                    Get personalized consumption insights, anomaly detection, smart recommendations, and predictive analytics by configuring your Google Gemini API key.
+                  </p>
+                  <div className="text-cyan-100 text-xs">
+                    <strong>What you'll get:</strong>
+                    <ul className="mt-1 space-y-1 text-cyan-200">
+                      <li>• Smart consumption pattern analysis</li>
+                      <li>• Personalized energy-saving recommendations</li>
+                      <li>• Anomaly detection and alerts</li>
+                      <li>• Predictive billing and usage forecasts</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Current Status */}
           {hasExistingKey && (
             <div className="bg-slate-700/50 rounded-lg p-4">
@@ -260,6 +292,48 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
           </div>
         </div>
       </div>
+
+      {/* Remove Confirmation Dialog */}
+      {showRemoveConfirmation && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-10">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start gap-2 sm:gap-3 mb-4">
+              <ExclamationTriangleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 flex-shrink-0 mt-1" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-2">Remove API Key</h3>
+                <p className="text-slate-300 text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed">
+                  Are you sure you want to remove your API key? This will disable all AI features until you configure a new key.
+                </p>
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
+                  <p className="text-red-200 text-xs font-semibold mb-1">
+                    What will happen:
+                  </p>
+                  <ul className="text-red-100 text-xs space-y-0.5 sm:space-y-1">
+                    <li>• AI insights will be disabled for all accounts</li>
+                    <li>• Smart recommendations will no longer be available</li>
+                    <li>• Consumption analysis features will be limited</li>
+                    <li>• You can re-enable by adding a new API key anytime</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+              <button
+                onClick={handleCancelRemove}
+                className="px-3 py-2 sm:px-4 sm:py-2 text-slate-300 hover:text-slate-100 font-medium transition-colors text-sm order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRemove}
+                className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-sm order-1 sm:order-2"
+              >
+                Remove API Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

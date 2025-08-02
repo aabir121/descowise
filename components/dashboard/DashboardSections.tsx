@@ -133,25 +133,27 @@ const DashboardSections: React.FC<any> = ({
 
   return (
     <div className="space-y-6" key={preferencesVersion}>
-      {/* 1. AI Insights - Most valuable, actionable insights */}
-      <SlideUpTransition show={!isDataLoading} delay="delay-75">
-        <AIDashboardInsightsSection
-          aiSummary={aiSummary}
-          isAiLoading={isAiLoading}
-          isAiAvailable={isAiAvailable}
-          aiError={data?.aiError}
-          banglaEnabled={banglaEnabled}
-          t={t}
-          balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
-          showInfoIcon={true}
-          onInfoClick={() => handleInfoClick('aiInsights')}
-          onRetry={retryAiSummary}
-          onSetupApiKey={onSetupApiKey}
-          // New props for distributed insights
-          distributedAiInsights={distributedAiInsights}
-          aiLoadingStates={aiLoadingStates}
-        />
-      </SlideUpTransition>
+      {/* 1. AI Insights - Most valuable, actionable insights - Only show if AI is enabled */}
+      {account.aiInsightsEnabled && (
+        <SlideUpTransition show={!isDataLoading} delay="delay-75">
+          <AIDashboardInsightsSection
+            aiSummary={aiSummary}
+            isAiLoading={isAiLoading}
+            isAiAvailable={isAiAvailable}
+            aiError={data?.aiError}
+            banglaEnabled={banglaEnabled}
+            t={t}
+            balanceUnavailable={data?.balanceUnavailable || balanceUnavailable}
+            showInfoIcon={true}
+            onInfoClick={() => handleInfoClick('aiInsights')}
+            onRetry={retryAiSummary}
+            onSetupApiKey={onSetupApiKey}
+            // New props for distributed insights
+            distributedAiInsights={distributedAiInsights}
+            aiLoadingStates={aiLoadingStates}
+          />
+        </SlideUpTransition>
+      )}
 
       {/* 2. Consumer Information - Essential account context (collapsible) */}
       <SlideUpTransition show={!isDataLoading} delay="delay-100">
@@ -178,13 +180,13 @@ const DashboardSections: React.FC<any> = ({
           sectionId="account-balance-status"
           showInfoIcon={true}
           onInfoClick={() => handleInfoClick('accountBalance')}
-          aiInsight={aiInsight}
-          aiError={aiBalanceError}
-          isAiBalanceLoading={isAiBalanceLoading}
-          estimatedDaysRemaining={estimatedDaysRemaining}
-          // New distributed AI insights
-          balanceAiInsights={distributedAiInsights?.balance}
-          isAiLoading={aiLoadingStates?.balance}
+          aiInsight={account.aiInsightsEnabled ? aiInsight : null}
+          aiError={account.aiInsightsEnabled ? aiBalanceError : null}
+          isAiBalanceLoading={account.aiInsightsEnabled ? isAiBalanceLoading : false}
+          estimatedDaysRemaining={account.aiInsightsEnabled ? estimatedDaysRemaining : null}
+          // New distributed AI insights - only pass if AI is enabled for this account
+          balanceAiInsights={account.aiInsightsEnabled ? distributedAiInsights?.balance : null}
+          isAiLoading={account.aiInsightsEnabled ? aiLoadingStates?.balance : false}
           isDataLoading={!processedData}
         />
       </SlideUpTransition>
@@ -202,9 +204,9 @@ const DashboardSections: React.FC<any> = ({
             sectionId="consumption-chart"
             showInfoIcon={true}
             onInfoClick={() => handleInfoClick('consumptionChart')}
-            // New distributed AI insights
-            consumptionAiInsights={distributedAiInsights?.consumption}
-            isAiLoading={aiLoadingStates?.consumption}
+            // New distributed AI insights - only pass if AI is enabled for this account
+            consumptionAiInsights={account.aiInsightsEnabled ? distributedAiInsights?.consumption : null}
+            isAiLoading={account.aiInsightsEnabled ? aiLoadingStates?.consumption : false}
             isDataLoading={!processedData}
           />
         </Suspense>
@@ -222,9 +224,9 @@ const DashboardSections: React.FC<any> = ({
           sectionId="recharge-history"
           showInfoIcon={true}
           onInfoClick={() => handleInfoClick('rechargeHistory')}
-          // New distributed AI insights
-          rechargeAiInsights={distributedAiInsights?.recharge}
-          isAiLoading={aiLoadingStates?.recharge}
+          // New distributed AI insights - only pass if AI is enabled for this account
+          rechargeAiInsights={account.aiInsightsEnabled ? distributedAiInsights?.recharge : null}
+          isAiLoading={account.aiInsightsEnabled ? aiLoadingStates?.recharge : false}
         />
       </SlideUpTransition>
 

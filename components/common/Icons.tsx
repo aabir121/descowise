@@ -327,3 +327,54 @@ export const CheckCircleIcon = (props) => (
     />
   </svg>
 );
+
+export const KeyIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    {...props}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
+    />
+  </svg>
+);
+
+export const ShieldCheckIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    {...props}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 12.75L11.25 15 15 9.75m-2.25-3a8.25 8.25 0 00-16.5 0c0 1.92.66 3.68 1.77 5.08.657.826 1.348 1.584 2.091 2.264m0 0a24.014 24.014 0 013.218 3.077c.3.32.72.32 1.02 0a24.014 24.014 0 013.218-3.077m0 0a8.25 8.25 0 002.09-2.264c1.11-1.4 1.77-3.16 1.77-5.08a8.25 8.25 0 00-16.5 0"
+    />
+  </svg>
+);
+
+export const ArrowRightIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    {...props}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+    />
+  </svg>
+);

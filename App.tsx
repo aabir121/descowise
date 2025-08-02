@@ -16,6 +16,8 @@ import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal
 import { useBalanceWarning } from './hooks/useBalanceWarning';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
 import OnboardingModal from './components/OnboardingModal';
+import ApiKeyManagementModal from './components/ApiKeyManagementModal';
+import ApiKeyStatusIndicator from './components/common/ApiKeyStatusIndicator';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 
@@ -120,6 +122,7 @@ const AccountListPage: React.FC<{
   LanguageSwitcher: any;
   BoltIcon: any;
   Footer: any;
+  setIsApiKeyModalOpen: (open: boolean) => void;
 }> = ({
   accounts,
   loadingBalances,
@@ -137,6 +140,7 @@ const AccountListPage: React.FC<{
   LanguageSwitcher,
   BoltIcon,
   Footer,
+  setIsApiKeyModalOpen
 }) => {
   const navigate = useNavigate();
   const handleSelectAccount = useCallback((accountNo: string) => {
@@ -163,15 +167,32 @@ const AccountListPage: React.FC<{
       )}
       <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <header className="text-center mb-8 sm:mb-12 relative">
-          {/* Language Switcher - positioned absolutely in top-right */}
-          <div className="absolute top-0 right-0 z-10">
-            <LanguageSwitcher />
+          {/* Top controls - responsive positioning */}
+          <div className="flex justify-end mb-4 sm:absolute sm:top-0 sm:right-0 sm:mb-0 z-10">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ApiKeyStatusIndicator
+                variant="button"
+                size="sm"
+                onClick={() => setIsApiKeyModalOpen(true)}
+                showTooltip={true}
+                className="hidden sm:flex"
+              />
+              <ApiKeyStatusIndicator
+                variant="compact"
+                size="sm"
+                onClick={() => setIsApiKeyModalOpen(true)}
+                showTooltip={false}
+                showLabel={false}
+                className="flex sm:hidden"
+              />
+              <LanguageSwitcher />
+            </div>
           </div>
           <div className="inline-flex items-center gap-3">
             <BoltIcon className="w-8 h-8 text-cyan-400"/>
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-50">{t('appTitle')}</h1>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-50">{t('appTitle')}</h1>
           </div>
-          <p className="text-lg sm:text-xl text-slate-400 mt-2">{t('appSubtitle')}</p>
+          <p className="text-base sm:text-lg lg:text-xl text-slate-400 mt-2">{t('appSubtitle')}</p>
         </header>
         <main>
           {accounts.length === 0 ? (
@@ -196,15 +217,16 @@ const AccountListPage: React.FC<{
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
               {accounts.map(account => (
-                <AccountCard 
-                  key={account.accountNo} 
-                  account={account} 
+                <AccountCard
+                  key={account.accountNo}
+                  account={account}
                   onSelect={handleSelectAccount}
                   onDelete={handleDeleteAccount}
                   isBalanceLoading={loadingBalances.has(account.accountNo)}
                   onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
                   onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
                   onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
+                  onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
                 />
               ))}
               <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
@@ -238,6 +260,7 @@ const App: React.FC = () => {
     const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
     const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     
     // Global balance warning modal state
     const { isOpen: isBalanceWarningOpen, close: closeBalanceWarning } = useBalanceWarning();
@@ -544,6 +567,7 @@ const App: React.FC = () => {
                           LanguageSwitcher={LanguageSwitcher}
                           BoltIcon={BoltIcon}
                           Footer={Footer}
+                          setIsApiKeyModalOpen={setIsApiKeyModalOpen}
                         />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />
@@ -595,6 +619,14 @@ const App: React.FC = () => {
                 cancelText={t('viewOnly') || 'View only'}
                 confirmButtonClass={sharedLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700'}
                 icon={<BoltIcon />}
+            />
+            <ApiKeyManagementModal
+                isOpen={isApiKeyModalOpen}
+                onClose={() => setIsApiKeyModalOpen(false)}
+                onApiKeyUpdated={() => {
+                    showNotification(t('apiKeyUpdatedSuccessfully', 'API key updated successfully'), 'info');
+                    setIsApiKeyModalOpen(false);
+                }}
             />
         </>
     );

@@ -1,11 +1,12 @@
-import React, { useState, memo, useCallback, useMemo } from 'react';
+import React, { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../types';
-import { TrashIcon, PencilIcon } from './common/Icons';
+import { TrashIcon, PencilIcon, ExclamationTriangleIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
 import { formatCurrency, sanitizeCurrency } from './common/format';
+import { hasStoredApiKey } from '../utils/apiKeyStorage';
 
 interface AccountCardProps {
     account: Account;
@@ -15,9 +16,10 @@ interface AccountCardProps {
     onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
     onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
     onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void; // Added prop
+    onOpenApiKeyModal?: () => void; // Added prop for API key management
 }
 
-const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled, onUpdateBanglaEnabled }) => {
+const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDelete, isBalanceLoading, onUpdateDisplayName, onUpdateAiInsightsEnabled, onUpdateBanglaEnabled, onOpenApiKeyModal }) => {
     const { t } = useTranslation();
 
     // Memoize computed values
@@ -28,6 +30,12 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
 
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [editDisplayName, setEditDisplayName] = useState(displayName);
+    const [hasApiKey, setHasApiKey] = useState(false);
+
+    // Check API key status
+    useEffect(() => {
+        setHasApiKey(hasStoredApiKey());
+    }, []);
 
     // Memoize event handlers
     const handleDeleteClick = useCallback((e: React.MouseEvent) => {
@@ -102,22 +110,40 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
                 {/* AI Insights Toggle (left) */}
                 <div className="flex items-center gap-2">
                     <span className="text-slate-400 text-xs">{t('aiInsights')}</span>
-                    <button
-                        type="button"
-                        className={`relative w-9 h-5 flex items-center rounded-full transition-colors duration-200 focus:outline-none ${account.aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                        aria-pressed={account.aiInsightsEnabled}
-                        aria-label={account.aiInsightsEnabled ? t('disableAiInsights') : t('enableAiInsights')}
-                        onClick={e => {
-                            e.stopPropagation();
-                            onUpdateAiInsightsEnabled && onUpdateAiInsightsEnabled(account.accountNo, !account.aiInsightsEnabled);
-                        }}
-                    >
-                        <span
-                            className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${account.aiInsightsEnabled ? 'translate-x-4' : 'translate-x-0'}`}
-                        />
-                        <span className="sr-only">{t('toggleAiInsights')}</span>
-                    </button>
-                    <span className={`text-xs font-semibold ${account.aiInsightsEnabled ? 'text-cyan-400' : 'text-slate-500'}`}>{account.aiInsightsEnabled ? t('on') : t('off')}</span>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            className={`relative w-9 h-5 flex items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                                account.aiInsightsEnabled ? 'bg-cyan-500' :
+                                !hasApiKey ? 'bg-yellow-600/50' : 'bg-slate-600'
+                            }`}
+                            aria-pressed={account.aiInsightsEnabled}
+                            aria-label={account.aiInsightsEnabled ? t('disableAiInsights') : t('enableAiInsights')}
+                            title={!hasApiKey ? t('apiKeyRequiredForAi', 'API key required for AI features') : undefined}
+                            onClick={e => {
+                                e.stopPropagation();
+                                if (!hasApiKey && onOpenApiKeyModal) {
+                                    onOpenApiKeyModal();
+                                } else {
+                                    onUpdateAiInsightsEnabled && onUpdateAiInsightsEnabled(account.accountNo, !account.aiInsightsEnabled);
+                                }
+                            }}
+                        >
+                            <span
+                                className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${account.aiInsightsEnabled ? 'translate-x-4' : 'translate-x-0'}`}
+                            />
+                            <span className="sr-only">{t('toggleAiInsights')}</span>
+                        </button>
+                        {!hasApiKey && (
+                            <ExclamationTriangleIcon className="absolute -top-1 -right-1 w-3 h-3 text-yellow-400" />
+                        )}
+                    </div>
+                    <span className={`text-xs font-semibold ${
+                        account.aiInsightsEnabled ? 'text-cyan-400' :
+                        !hasApiKey ? 'text-yellow-400' : 'text-slate-500'
+                    }`}>
+                        {account.aiInsightsEnabled ? t('on') : (!hasApiKey ? t('setupRequired', 'Setup Required') : t('off'))}
+                    </span>
                 </div>
                 {/* Bangla Language Toggle (right) */}
                 <div className="flex items-center gap-2">

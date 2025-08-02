@@ -99,6 +99,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 onClose={onClose}
                 onDelete={handleDeleteAccount}
                 setPortalConfirmation={setPortalConfirmation}
+                onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
             />
             {/* As of date display */}
             {data?.balance?.readingTime && (
