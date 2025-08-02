@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
-import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon } from '../common/Icons';
+import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
 import SectionSettingsModal from '../common/SectionSettingsModal';
 import ShareModal from '../common/ShareModal';
 import Notification from '../common/Notification';
 import ApiKeyStatusIndicator from '../common/ApiKeyStatusIndicator';
+import HelpModal from '../common/HelpModal';
 
 const DashboardHeader: React.FC<{
   account: Account;
@@ -24,6 +25,7 @@ const DashboardHeader: React.FC<{
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [isHelpTourOpen, setIsHelpTourOpen] = useState(false);
 
   const handleShare = () => {
     setIsShareModalOpen(true);
@@ -106,6 +108,14 @@ const DashboardHeader: React.FC<{
             showTooltip={true}
           />
           <IconButton
+            onClick={() => setIsHelpTourOpen(true)}
+            className="bg-blue-600/80 hover:bg-blue-500 text-white py-2 px-3 sm:px-4"
+            title={t('helpAndGuidance', 'Help & Guidance')}
+          >
+            <InformationCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t('help', 'Help')}</span>
+          </IconButton>
+          <IconButton
             onClick={() => setIsSettingsOpen(true)}
             className="bg-slate-600/80 hover:bg-slate-500 text-white py-2 px-3 sm:px-4"
             title={t('sectionPreferencesAndSettings')}
@@ -179,6 +189,13 @@ const DashboardHeader: React.FC<{
                 </button>
               )}
               <button
+                onClick={() => { setIsHelpTourOpen(true); setIsMenuOpen(false); }}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
+              >
+                <InformationCircleIcon className="w-5 h-5" />
+                <span>{t('help', 'Help')}</span>
+              </button>
+              <button
                 onClick={() => { setIsSettingsOpen(true); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
               >
@@ -221,6 +238,11 @@ const DashboardHeader: React.FC<{
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         account={account}
+      />
+      <HelpModal
+        isOpen={isHelpTourOpen}
+        onClose={() => setIsHelpTourOpen(false)}
+        onOpenApiKeyModal={onOpenApiKeyModal}
       />
       {notification && <Notification message={notification} />}
     </>
