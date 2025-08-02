@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon, CogIcon, WandSparklesIcon, ChevronDownIcon } from '../common/Icons';
-import Modal from '../common/Modal';
 import ApiKeySettingsSection from './ApiKeySettingsSection';
 import SectionSettingsModal from '../common/SectionSettingsModal';
+import { useModal } from '../../App';
 
 interface ComprehensiveSettingsModalProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ const ComprehensiveSettingsModal: React.FC<ComprehensiveSettingsModalProps> = ({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [showSectionSettings, setShowSectionSettings] = useState(false);
+  const Modal = useModal();
 
   const tabs = [
     { id: 'general' as SettingsTab, label: t('general', 'General'), icon: CogIcon },

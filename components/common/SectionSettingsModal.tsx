@@ -1,9 +1,9 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import Modal from './Modal';
 import { useSectionPreferences } from './Section';
 import { CogIcon } from './Icons';
+import { useModal } from '../../App';
 
 interface SectionSettingsModalProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ const SECTION_CONFIGS = [
 const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const { getSectionPreference, setSectionPreference, resetAllPreferences } = useSectionPreferences();
+  const Modal = useModal();
   const [preferences, setPreferences] = useState<Record<string, boolean>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [search, setSearch] = useState('');

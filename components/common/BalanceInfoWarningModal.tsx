@@ -1,7 +1,7 @@
 import React from 'react';
-import Modal from './Modal';
 import { InformationCircleIcon } from './Icons';
 import { useTranslation } from 'react-i18next';
+import { useModal } from '../../App';
 
 interface BalanceInfoWarningModalProps {
   isOpen: boolean;
@@ -10,22 +10,15 @@ interface BalanceInfoWarningModalProps {
 
 const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
-  if (!isOpen) return null;
-  
-  const handleModalClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-  
+  const Modal = useModal();
+
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClose();
   };
-  
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2 sm:px-0" onClick={handleModalClick}>
-      <div className="flex flex-col w-full max-w-xs sm:max-w-md md:max-w-lg bg-slate-800 rounded-2xl shadow-2xl my-4 mx-auto"
-        style={{ maxHeight: '90vh', overflowY: 'auto' }}
-      >
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-xs sm:max-w-md md:max-w-lg">
         {/* Fixed Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -97,8 +90,7 @@ const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpe
             {t('gotIt')}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

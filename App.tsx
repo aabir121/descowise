@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useCallback, useEffect, useRef, Suspense, lazy, createContext, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance, verifyAccount } from './services/descoService';
@@ -21,6 +22,88 @@ import ApiKeyStatusIndicator from './components/common/ApiKeyStatusIndicator';
 import HelpModal from './components/common/HelpModal';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+
+// Global Modal Component - moved here to stay on top of everything
+interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = '', ...props }) => {
+  // Handle escape key and prevent zoom issues
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+
+      // Prevent zoom issues on mobile
+      const viewport = document.querySelector('meta[name=viewport]');
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      }
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+
+      // Reset viewport on modal close to prevent zoom issues
+      const viewport = document.querySelector('meta[name=viewport]');
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      }
+
+      // Force a repaint to ensure zoom is reset
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          window.scrollTo(0, window.scrollY);
+        }, 100);
+      }
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  // Render modal at document root level using portal
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className={`bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] sm:max-h-[80vh] mx-4 sm:mx-auto my-8 text-slate-100 relative transform flex flex-col ${className}`}
+        style={{overflow: 'hidden'}}
+        onClick={e => e.stopPropagation()}
+        {...props}
+      >
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// Modal Context for global access
+const ModalContext = createContext<React.FC<ModalProps> | null>(null);
+
+export const useModal = () => {
+  const modal = useContext(ModalContext);
+  if (!modal) {
+    throw new Error('useModal must be used within a ModalProvider');
+  }
+  return modal;
+};
 
 // Lazy load the heavy dashboard component
 const AccountDashboardView = lazy(() => import('./components/AccountDashboardView'));
@@ -571,7 +654,7 @@ const App: React.FC = () => {
     }, [pendingSharedLink, accounts]);
 
     return (
-        <>
+        <ModalContext.Provider value={Modal}>
             <ErrorBoundary>
                 <Routes>
                     <Route path="/dashboard/:accountNo" element={
@@ -663,7 +746,7 @@ const App: React.FC = () => {
                     setIsApiKeyModalOpen(false);
                 }}
             />
-        </>
+        </ModalContext.Provider>
     );
 };
 

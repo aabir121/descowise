@@ -1,14 +1,15 @@
 // @ts-nocheck
 import React, { useState, useMemo, useRef } from 'react';
 import Section from '../common/Section';
-import Modal from '../common/Modal';
 import VirtualTable from '../common/VirtualTable';
 import { getDashboardLabel } from './dashboardLabels';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
 import RechargeAiInsights from './AiInsights/RechargeAiInsights';
+import { useModal } from '../../App';
 
 const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
   const printRef = useRef();
+  const Modal = useModal();
 
   const handlePrint = () => {
     if (!printRef.current) return;

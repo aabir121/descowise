@@ -1,6 +1,6 @@
 import React from 'react';
-import Modal from './Modal';
 import { CloseIcon } from './Icons';
+import { useModal } from '../../App';
 
 interface SectionInfoModalProps {
   isOpen: boolean;
@@ -19,6 +19,8 @@ const SectionInfoModal: React.FC<SectionInfoModalProps> = ({
   sectionInfo,
   t
 }) => {
+  const Modal = useModal();
+
   // Ensure sectionInfo is not null and has required properties
   const safeSectionInfo = sectionInfo || {
     title: 'Section Information',

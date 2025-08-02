@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
 import { CloseIcon, ShareIcon, CopyIcon, CheckIcon, BoltIcon } from './Icons';
-import Modal from './Modal';
+import { useModal } from '../../App';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface ShareModalProps {
 
 const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => {
   const { t } = useTranslation();
+  const Modal = useModal();
   const [copied, setCopied] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<'simple' | 'detailed'>('detailed');
 

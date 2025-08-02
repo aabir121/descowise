@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import Modal from './Modal';
+import { useModal } from '../../App';
 
 const ConfirmationDialog: React.FC<{
   isOpen: boolean;
@@ -23,6 +23,8 @@ const ConfirmationDialog: React.FC<{
   confirmButtonClass = 'bg-red-600 hover:bg-red-700',
   icon,
 }) => {
+  const Modal = useModal();
+
   if (!isOpen) return null;
   return (
     <Modal isOpen={isOpen} onClose={onClose}>

@@ -1,11 +1,10 @@
-import React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account, AccountInfo } from '../types';
 import { verifyAccount } from '../services/descoService';
 import { CloseIcon } from './common/Icons';
-import Modal from './common/Modal';
 import Spinner from './common/Spinner';
+import { useModal } from '../App';
 
 interface AddAccountModalProps {
     isOpen: boolean;
@@ -17,6 +16,7 @@ interface AddAccountModalProps {
 
 const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAccountAdded, existingAccounts, preVerifiedAccount }) => {
     const { t, i18n } = useTranslation();
+    const Modal = useModal();
     const [step, setStep] = useState<'form' | 'details'>('form');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);

@@ -4,11 +4,11 @@ import Section from '../common/Section';
 import { getDashboardLabel } from './dashboardLabels';
 import { formatCurrency, sanitizeCurrency } from '../common/format';
 import { InformationCircleIcon } from '../common/Icons';
-import Modal from '../common/Modal';
 import { useBalanceWarning } from '../../hooks/useBalanceWarning';
 import BalanceAiInsights from './AiInsights/BalanceAiInsights';
 import { DistributedAiInsights } from '../../utils/aiInsightDistribution';
 import { SkeletonAccountBalance, LoadingStateWrapper } from '../common/SkeletonComponents';
+
 
 const AccountBalanceSection = ({
   gaugeData,
