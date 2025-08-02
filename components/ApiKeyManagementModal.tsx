@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CloseIcon, WandSparklesIcon, EyeIcon, EyeSlashIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
 import { getUserApiKey, storeUserApiKey, removeUserApiKey, getApiKeyDisplayFormat, getApiKeyValidationStatus } from '../utils/apiKeyStorage';
 import { validateApiKey } from '../services/descoService';
-import { getDeploymentConfig } from '../utils/deploymentConfig';
+
 
 interface ApiKeyManagementModalProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
   const [validationSuccess, setValidationSuccess] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
   
-  const deploymentConfig = getDeploymentConfig();
+
 
   useEffect(() => {
     if (isOpen) {
@@ -78,11 +78,6 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
   };
 
   if (!isOpen) return null;
-
-  // Don't show for premium deployments
-  if (deploymentConfig.isPremium) {
-    return null;
-  }
 
   const existingKeyDisplay = hasExistingKey ? getApiKeyDisplayFormat() : null;
   const validationStatus = getApiKeyValidationStatus();

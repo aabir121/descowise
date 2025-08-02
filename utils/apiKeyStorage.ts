@@ -1,5 +1,4 @@
-// Secure API key storage utilities for standard deployment
-import { getDeploymentConfig } from './deploymentConfig';
+// Secure API key storage utilities
 
 const API_KEY_STORAGE_KEY = 'desco_user_api_key';
 const API_KEY_VALIDATION_KEY = 'desco_api_key_validated';
@@ -39,12 +38,6 @@ class SimpleEncryption {
  */
 export function storeUserApiKey(apiKey: string): boolean {
   try {
-    const config = getDeploymentConfig();
-    if (config.isPremium) {
-      console.warn('API key storage not needed for premium deployment');
-      return false;
-    }
-
     if (!apiKey || apiKey.trim() === '') {
       removeUserApiKey();
       return true;
@@ -64,11 +57,6 @@ export function storeUserApiKey(apiKey: string): boolean {
  */
 export function getUserApiKey(): string | null {
   try {
-    const config = getDeploymentConfig();
-    if (config.isPremium) {
-      return null; // Premium deployment doesn't use user API keys
-    }
-
     const encrypted = localStorage.getItem(API_KEY_STORAGE_KEY);
     if (!encrypted) {
       return null;

@@ -5,16 +5,11 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const isProduction = mode === 'production';
 
-    // Deployment configuration
-    const deploymentType = env.DEPLOYMENT_TYPE || 'standard'; // 'premium' or 'standard'
-    const isPremiumDeployment = deploymentType === 'premium';
-
     return {
       define: {
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.DEPLOYMENT_TYPE': JSON.stringify(deploymentType),
-        'process.env.IS_PREMIUM_DEPLOYMENT': JSON.stringify(isPremiumDeployment)
+        // Environment variables for build-time configuration
+        'process.env.GEMINI_MODEL': JSON.stringify(env.GEMINI_MODEL || 'gemini-2.5-flash'),
+        'process.env.GEMINI_TEMPERATURE': JSON.stringify(env.GEMINI_TEMPERATURE || '0.3')
       },
       resolve: {
         alias: {
