@@ -9,7 +9,7 @@ import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon } from './components/common/Icons';
+import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingInfoButton from './components/FloatingInfoButton';
 import Footer from './components/common/Footer';
@@ -20,8 +20,10 @@ import OnboardingModal from './components/OnboardingModal';
 import ApiKeyManagementModal from './components/ApiKeyManagementModal';
 import ApiKeyStatusIndicator from './components/common/ApiKeyStatusIndicator';
 import HelpModal from './components/common/HelpModal';
+import NotificationSettingsModal from './components/NotificationSettingsModal';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+import { notificationService } from './services/notificationService';
 
 // Global Modal Component - moved here to stay on top of everything
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -277,6 +279,14 @@ const AccountListPage: React.FC<{
                   className="flex sm:hidden text-xs font-medium"
                 />
                 <button
+                  onClick={() => setIsNotificationSettingsOpen(true)}
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-purple-600/80 hover:bg-purple-500 transition-colors text-white border border-purple-500/50 hover:border-purple-400/70 min-h-[2rem] sm:min-h-[2.25rem]"
+                  title="Notification Settings"
+                >
+                  <BellIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium">Notifications</span>
+                </button>
+                <button
                   onClick={() => setIsHelpModalOpen(true)}
                   className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-blue-600/80 hover:bg-blue-500 transition-colors text-white border border-blue-500/50 hover:border-blue-400/70 min-h-[2rem] sm:min-h-[2.25rem]"
                   title={t('helpAndGuidance', 'Help & Guidance')}
@@ -377,6 +387,7 @@ const App: React.FC = () => {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+    const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
     
     // Global balance warning modal state
     const { isOpen: isBalanceWarningOpen, close: closeBalanceWarning } = useBalanceWarning();
@@ -413,10 +424,19 @@ const App: React.FC = () => {
         if (!onboardingCompleted) {
             setShowOnboarding(true);
         }
-        
+
         // For testing: uncomment the line below to reset onboarding
         // localStorage.removeItem('onboardingCompleted');
     }, []);
+
+    // Initialize notification service
+    useEffect(() => {
+        notificationService.initialize(accounts);
+        return () => {
+            // Cleanup on unmount
+            notificationService.stopScheduler();
+        };
+    }, [accounts]);
 
     useEffect(() => {
         // Check if the notice was dismissed within the last 6 hours
@@ -745,6 +765,10 @@ const App: React.FC = () => {
                     showNotification(t('apiKeyUpdatedSuccessfully', 'API key updated successfully'), 'info');
                     setIsApiKeyModalOpen(false);
                 }}
+            />
+            <NotificationSettingsModal
+                isOpen={isNotificationSettingsOpen}
+                onClose={() => setIsNotificationSettingsOpen(false)}
             />
         </ModalContext.Provider>
     );

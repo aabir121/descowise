@@ -204,11 +204,56 @@ self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
     event.waitUntil(doBackgroundSync());
   }
+
+  if (event.tag === 'notification-check') {
+    event.waitUntil(performNotificationCheck());
+  }
 });
 
 async function doBackgroundSync() {
   // Implement background sync logic here
   console.log('Background sync triggered');
+}
+
+// Notification check function for background sync
+async function performNotificationCheck() {
+  console.log('Performing background notification check...');
+
+  try {
+    // Get accounts from IndexedDB or localStorage
+    const accounts = await getStoredAccounts();
+    if (!accounts || accounts.length === 0) {
+      console.log('No accounts found for notification check');
+      return;
+    }
+
+    // Check notification settings
+    const settings = await getNotificationSettings();
+    if (!settings || !settings.enabled) {
+      console.log('Notifications are disabled');
+      return;
+    }
+
+    // Check if we already performed the daily check today
+    if (await wasDailyCheckPerformed()) {
+      console.log('Daily notification check already performed today');
+      return;
+    }
+
+    // Perform account monitoring
+    const alerts = await checkAccountsForAlerts(accounts, settings.lowBalanceThreshold);
+
+    if (alerts.length > 0) {
+      await sendNotificationAlerts(alerts);
+    }
+
+    // Update last check time
+    await updateLastCheckTime();
+
+    console.log(`Notification check completed. Sent ${alerts.length} alerts.`);
+  } catch (error) {
+    console.error('Error during notification check:', error);
+  }
 }
 
 // Push notifications (if needed in the future)
@@ -248,8 +293,16 @@ self.addEventListener('push', (event) => {
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  if (event.action === 'explore') {
+
+  if (event.action === 'explore' || event.action === 'view') {
+    event.waitUntil(
+      clients.openWindow('/')
+    );
+  } else if (event.action === 'dismiss') {
+    // Just close the notification
+    return;
+  } else {
+    // Default action - open the app
     event.waitUntil(
       clients.openWindow('/')
     );
@@ -261,11 +314,174 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   if (event.data && event.data.type === 'CACHE_URLS') {
     event.waitUntil(
       caches.open(DYNAMIC_CACHE_NAME)
         .then(cache => cache.addAll(event.data.urls))
     );
   }
+
+  if (event.data && event.data.type === 'FORCE_NOTIFICATION_CHECK') {
+    event.waitUntil(performNotificationCheck());
+  }
 });
+
+// Helper functions for notification system
+
+async function getStoredAccounts() {
+  try {
+    // Try to get accounts from localStorage via clients
+    const clients = await self.clients.matchAll();
+    if (clients.length > 0) {
+      // Send message to client to get accounts
+      return new Promise((resolve) => {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = (event) => {
+          resolve(event.data.accounts || []);
+        };
+        clients[0].postMessage({ type: 'GET_ACCOUNTS' }, [messageChannel.port2]);
+      });
+    }
+    return [];
+  } catch (error) {
+    console.error('Error getting stored accounts:', error);
+    return [];
+  }
+}
+
+async function getNotificationSettings() {
+  try {
+    const clients = await self.clients.matchAll();
+    if (clients.length > 0) {
+      return new Promise((resolve) => {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = (event) => {
+          resolve(event.data.settings || null);
+        };
+        clients[0].postMessage({ type: 'GET_NOTIFICATION_SETTINGS' }, [messageChannel.port2]);
+      });
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting notification settings:', error);
+    return null;
+  }
+}
+
+async function wasDailyCheckPerformed() {
+  try {
+    const clients = await self.clients.matchAll();
+    if (clients.length > 0) {
+      return new Promise((resolve) => {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = (event) => {
+          resolve(event.data.performed || false);
+        };
+        clients[0].postMessage({ type: 'WAS_DAILY_CHECK_PERFORMED' }, [messageChannel.port2]);
+      });
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking daily check status:', error);
+    return false;
+  }
+}
+
+async function updateLastCheckTime() {
+  try {
+    const clients = await self.clients.matchAll();
+    if (clients.length > 0) {
+      clients[0].postMessage({ type: 'UPDATE_LAST_CHECK_TIME' });
+    }
+  } catch (error) {
+    console.error('Error updating last check time:', error);
+  }
+}
+
+async function checkAccountsForAlerts(accounts, threshold) {
+  const alerts = [];
+
+  for (const account of accounts) {
+    try {
+      const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${account.accountNo}`);
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        const balance = result.data.balance;
+        const accountName = account.displayName || `Account ${account.accountNo}`;
+
+        // Check for data unavailable
+        if (balance === null || balance === undefined) {
+          alerts.push({
+            accountNo: account.accountNo,
+            accountName,
+            type: 'data_unavailable',
+            message: `Account data is unavailable for ${accountName}`
+          });
+        }
+        // Check for low balance
+        else if (typeof balance === 'number' && balance < threshold) {
+          alerts.push({
+            accountNo: account.accountNo,
+            accountName,
+            type: 'low_balance',
+            balance,
+            threshold,
+            message: `Low balance: ${accountName} has ৳${balance.toFixed(2)}`
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error checking account ${account.accountNo}:`, error);
+    }
+
+    // Add delay between requests
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  return alerts;
+}
+
+async function sendNotificationAlerts(alerts) {
+  const lowBalanceAlerts = alerts.filter(alert => alert.type === 'low_balance');
+  const dataUnavailableAlerts = alerts.filter(alert => alert.type === 'data_unavailable');
+
+  if (lowBalanceAlerts.length > 0) {
+    const title = 'Low Balance Alert';
+    const body = lowBalanceAlerts.length === 1
+      ? lowBalanceAlerts[0].message
+      : `${lowBalanceAlerts.length} accounts have low balance`;
+
+    await self.registration.showNotification(title, {
+      body,
+      icon: '/icon-192x192.png',
+      badge: '/icon-72x72.png',
+      tag: 'low-balance',
+      requireInteraction: true,
+      actions: [
+        { action: 'view', title: 'View Accounts' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    });
+  }
+
+  if (dataUnavailableAlerts.length > 0) {
+    const title = 'Account Data Unavailable';
+    const body = dataUnavailableAlerts.length === 1
+      ? dataUnavailableAlerts[0].message
+      : `Data unavailable for ${dataUnavailableAlerts.length} accounts`;
+
+    await self.registration.showNotification(title, {
+      body,
+      icon: '/icon-192x192.png',
+      badge: '/icon-72x72.png',
+      tag: 'data-unavailable',
+      requireInteraction: true,
+      actions: [
+        { action: 'view', title: 'View Accounts' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    });
+  }
+}

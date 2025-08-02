@@ -33,6 +33,10 @@ export const BoltIcon = (props) => (
   <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
 );
 
+export const BellIcon = (props) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7C18 6.279 15.726 4 12.857 4a3.124 3.124 0 00-.364.027C8.24 4.344 5.25 7.644 5.25 11.25V15a2.25 2.25 0 002.25 2.25h7.357zm0 0a3 3 0 11-5.714 0" /></svg>
+);
+
 export const PlusIcon = (props) => (
   <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
 );
