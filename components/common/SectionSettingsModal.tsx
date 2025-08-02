@@ -130,10 +130,10 @@ const SectionSettingsModal: React.FC<SectionSettingsModalProps> = ({ isOpen, onC
               </span>
               <input
                 type="checkbox"
-                checked={preferences[config.id]}
+                checked={preferences[config.id] ?? config.defaultOpen}
                 onChange={e => handlePreferenceChange(config.id, e.target.checked)}
                 className="toggle-checkbox h-5 w-10 rounded-full border-2 border-slate-500 bg-slate-700 focus:ring-cyan-500 transition-colors"
-                aria-label={preferences[config.id] ? t('sectionVisible') : t('sectionHidden')}
+                aria-label={(preferences[config.id] ?? config.defaultOpen) ? t('sectionVisible') : t('sectionHidden')}
               />
             </label>
           ))}

@@ -33,20 +33,14 @@ const Section: React.FC<SectionProps> = ({
 }) => {
     // Generate a unique ID if not provided
     const uniqueId = sectionId || `section-${title.toLowerCase().replace(/\s+/g, '-')}`;
-    const storageKey = `section-preference-${uniqueId}`;
-    
+    const { getSectionPreference, setSectionPreference } = useSectionPreferences();
+
     // Initialize state from localStorage or default
     const [isOpen, setIsOpen] = useState<boolean>(() => {
         // If always expanded, ignore localStorage and always be open
         if (alwaysExpanded) return true;
-        
-        try {
-            const stored = localStorage.getItem(storageKey);
-            return stored !== null ? JSON.parse(stored) : defaultOpen;
-        } catch (error) {
-            console.error('Failed to load section preference from localStorage:', error);
-            return defaultOpen;
-        }
+
+        return getSectionPreference(uniqueId, defaultOpen);
     });
 
 
@@ -63,16 +57,12 @@ const Section: React.FC<SectionProps> = ({
         onToggle?.(newState);
     }, [isOpen, onToggle, alwaysExpanded]);
 
-    // Sync with localStorage only when isOpen changes, not when savePreference changes
+    // Sync with localStorage only when isOpen changes
     useEffect(() => {
         if (alwaysExpanded) return;
 
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(isOpen));
-        } catch (error) {
-            console.error('Failed to save section preference to localStorage:', error);
-        }
-    }, [isOpen, storageKey, alwaysExpanded]);
+        setSectionPreference(uniqueId, isOpen);
+    }, [isOpen, uniqueId, alwaysExpanded, setSectionPreference]);
 
     return (
         <div className="bg-slate-800 rounded-xl overflow-hidden">
@@ -169,11 +159,36 @@ export const DeleteButton: React.FC<{
     </button>
 );
 
-// Hook for managing section preferences globally
+// Hook for managing section preferences globally using a single localStorage object
 export const useSectionPreferences = () => {
+    const STORAGE_KEY = 'section-preferences';
+
+    // Helper function to get all preferences from localStorage
+    const getAllPreferences = useCallback(() => {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (error) {
+            console.error('Failed to get section preferences:', error);
+            return {};
+        }
+    }, []);
+
+    // Helper function to save all preferences to localStorage
+    const saveAllPreferences = useCallback((preferences: Record<string, boolean>) => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+        } catch (error) {
+            console.error('Failed to save section preferences:', error);
+        }
+    }, []);
+
     const resetAllPreferences = useCallback(() => {
         try {
-            // Find all section preference keys and remove them
+            // Remove the new single object
+            localStorage.removeItem(STORAGE_KEY);
+
+            // Also clean up any old individual keys for migration
             const keysToRemove: string[] = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -190,26 +205,44 @@ export const useSectionPreferences = () => {
     const getSectionPreference = useCallback((sectionId: string, defaultValue: boolean = true) => {
         // Don't get preferences for always expanded sections
         if (sectionId === 'ai-powered-insights') return true;
-        
+
         try {
-            const stored = localStorage.getItem(`section-preference-${sectionId}`);
-            return stored !== null ? JSON.parse(stored) : defaultValue;
+            const preferences = getAllPreferences();
+
+            // Migration: Check for old individual keys if not found in new format
+            if (!(sectionId in preferences)) {
+                const oldKey = `section-preference-${sectionId}`;
+                const oldStored = localStorage.getItem(oldKey);
+                if (oldStored !== null) {
+                    const oldValue = JSON.parse(oldStored);
+                    // Migrate to new format
+                    preferences[sectionId] = oldValue;
+                    saveAllPreferences(preferences);
+                    // Clean up old key
+                    localStorage.removeItem(oldKey);
+                    return oldValue;
+                }
+            }
+
+            return preferences[sectionId] ?? defaultValue;
         } catch (error) {
             console.error('Failed to get section preference:', error);
             return defaultValue;
         }
-    }, []);
+    }, [getAllPreferences, saveAllPreferences]);
 
     const setSectionPreference = useCallback((sectionId: string, isOpen: boolean) => {
         // Don't set preferences for always expanded sections
         if (sectionId === 'ai-powered-insights') return;
-        
+
         try {
-            localStorage.setItem(`section-preference-${sectionId}`, JSON.stringify(isOpen));
+            const preferences = getAllPreferences();
+            preferences[sectionId] = isOpen;
+            saveAllPreferences(preferences);
         } catch (error) {
             console.error('Failed to set section preference:', error);
         }
-    }, []);
+    }, [getAllPreferences, saveAllPreferences]);
 
     return {
         resetAllPreferences,
