@@ -368,12 +368,6 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, onOpenApiKeyModa
       <div className="space-y-3 sm:space-y-4">
         {[
           {
-            question: t('cantFindAccount', 'I can\'t find my electricity account number'),
-            answer: t('cantFindAccountAnswer', 'Your electricity account number is printed on your monthly DESCO bill. It\'s usually a long number (10-12 digits) at the top of the bill. If you can\'t find it, ask a family member to help you locate it on the bill.'),
-            icon: ExclamationTriangleIcon,
-            color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
-          },
-          {
             question: t('accountNotWorking', 'My account number is not working'),
             answer: t('accountNotWorkingAnswer', 'Make sure you\'ve entered the correct account number without any spaces or dashes. The number should be exactly as shown on your DESCO bill. If it still doesn\'t work, the account might be new or there might be a temporary issue with DESCO\'s system.'),
             icon: ExclamationTriangleIcon,
@@ -390,18 +384,6 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, onOpenApiKeyModa
             answer: t('howToPayBillAnswer', 'This app only shows your bill information - it doesn\'t handle payments. To pay your bill, you can use the "Official Portal" button to go to DESCO\'s website, visit a DESCO office, or use mobile banking services like bKash, Nagad, or Rocket.'),
             icon: InformationCircleIcon,
             color: 'text-green-400 bg-green-400/10 border-green-400/20'
-          },
-          {
-            question: t('appTooSmall', 'The text is too small to read'),
-            answer: t('appTooSmallAnswer', 'You can make the text larger by using your phone\'s zoom feature. On most phones, you can pinch the screen with two fingers to zoom in. You can also increase your phone\'s font size in the Settings app.'),
-            icon: EyeIcon,
-            color: 'text-purple-400 bg-purple-400/10 border-purple-400/20'
-          },
-          {
-            question: t('needMoreHelp', 'I need more help'),
-            answer: t('needMoreHelpAnswer', 'Ask a family member or friend who is familiar with smartphones to help you. You can also visit a DESCO customer service center for assistance with your electricity account.'),
-            icon: InformationCircleIcon,
-            color: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
           }
         ].map((item, index) => (
           <div key={index} className={`${item.color} border rounded-lg p-3 sm:p-4`}>
@@ -434,7 +416,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, onOpenApiKeyModa
           </p>
           <div className="bg-red-900/30 rounded-md p-2.5 sm:p-3">
             <p className="text-base sm:text-lg font-bold text-red-200">
-              {t('descoHotline', 'DESCO: 16263')}
+              {t('descoHotline', 'DESCO: 16120')}
             </p>
             <p className="text-xs sm:text-sm text-red-300 mt-1">
               {t('available24x7', 'Available 24 hours, 7 days a week')}

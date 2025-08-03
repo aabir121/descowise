@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CloseIcon, BellIcon, ExclamationTriangleIcon } from './common/Icons';
+import { CloseIcon, BellIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
 import { notificationPermissionService, NotificationPermissionStatus } from '../services/notificationPermissionService';
 import { notificationScheduler } from '../services/notificationScheduler';
 import { notificationStorageService } from '../services/notificationStorageService';
@@ -17,6 +17,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
   const [localSettings, setLocalSettings] = useState(notificationPermissionService.getSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [testNotificationSent, setTestNotificationSent] = useState(false);
+  const [monitoringStats, setMonitoringStats] = useState(notificationStorageService.getTodaysSummary());
   const [schedulerStatus, setSchedulerStatus] = useState({
     isRunning: false,
     nextScheduledTime: '',
@@ -36,6 +37,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
       const unsubscribe = notificationPermissionService.subscribe(setPermissionStatus);
       setLocalSettings(notificationPermissionService.getSettings());
       updateSchedulerStatus();
+      setMonitoringStats(notificationStorageService.getTodaysSummary());
       
       const handleEscape = (e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();
@@ -83,26 +85,22 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
     }
   };
 
-  const handleTestNotification = async () => {
+  const handleShowExampleNotification = async () => {
     setIsLoading(true);
     try {
-      await notificationPermissionService.showTestNotification();
-      setTestNotificationSent(true);
-      setTimeout(() => setTestNotificationSent(false), 3000);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(t('exampleNotificationTitle'), {
+          body: t('exampleNotificationBody'),
+          icon: '/icon-192x192.png',
+          badge: '/favicon.svg',
+        });
+        setTestNotificationSent(true);
+        setTimeout(() => setTestNotificationSent(false), 3000);
+      } else {
+        alert(t('notificationsNotGranted'));
+      }
     } catch (error) {
-      alert(`Error sending test notification: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleForceCheck = async () => {
-    setIsLoading(true);
-    try {
-      await notificationScheduler.forceExecute();
-      updateSchedulerStatus();
-    } catch (error) {
-      console.error('Error forcing check:', error);
+      alert(`${t('errorShowingExampleNotification')}: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -126,90 +124,118 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><CloseIcon className="w-6 h-6" /></button>
         </div>
 
-        <div className="px-4 sm:px-6 pb-0 overflow-y-auto flex-1 space-y-4">
-          <div className="bg-slate-700 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-slate-300 mb-2">{t('permissionStatus')}</h3>
-            <div className={`text-sm font-medium ${statusInfo.color}`}>{t(permissionStatus)}</div>
-          </div>
-
-          <div className="bg-slate-700 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-slate-300">{t('dailyNotifications')}</h3>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localSettings.enabled}
-                  onChange={(e) => handleSettingsChange({ enabled: e.target.checked })}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+        <div className="px-4 sm:px-6 pb-0 overflow-y-auto flex-1 space-y-6">
+          {/* Section: Notification Status */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-slate-100">{t('notificationStatus')}</h3>
+            <div className="bg-slate-700 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">{t('permissionStatus')}</h4>
+              <div className={`text-sm font-medium ${statusInfo.color}`}>{t(permissionStatus)}</div>
             </div>
-            <p className="text-xs text-slate-400">{t('notificationDescription')}</p>
-          </div>
 
-          {localSettings.enabled && (
-            <>
-              <div className="bg-slate-700 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-slate-300 mb-3">{t('lowBalanceThreshold')}</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400">৳</span>
-                  <input
-                    type="number"
-                    value={localSettings.lowBalanceThreshold}
-                    onChange={(e) => handleSettingsChange({ lowBalanceThreshold: Number(e.target.value) })}
-                    className="flex-1 bg-slate-600 text-slate-100 px-3 py-2 rounded text-sm w-full"
-                    min="0" max="10000" step="10"
-                    pattern="[0-9]*"
-                  />
+            <div className="bg-blue-600/20 border border-blue-600/30 rounded-lg p-3 flex items-start gap-2">
+              <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-blue-400 font-medium">{t('localNotificationDisclaimer')}</p>
+              </div>
+            </div>
+
+            {permissionStatus === 'denied' && (
+              <div className="bg-red-600/20 border border-red-600/30 rounded-lg p-3 flex items-start gap-2">
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-red-400 font-medium">{t('notificationsBlocked')}</p>
+                  <p className="text-xs text-red-300 mt-1">{t('enableNotificationsInBrowser')}</p>
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="bg-slate-700 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-slate-300 mb-3">{t('notificationTime')}</h3>
-                <input
-                  type="time"
-                  value={localSettings.notificationTime}
-                  onChange={(e) => handleSettingsChange({ notificationTime: e.target.value })}
-                  className="w-full bg-slate-600 text-slate-100 px-3 py-2 rounded text-sm"
-                />
+          {/* Section: Notification Preferences */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-slate-100">{t('notificationPreferences')}</h3>
+            <div className="bg-slate-700 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-slate-300">{t('dailyNotifications')}</h4>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.enabled}
+                    onChange={(e) => handleSettingsChange({ enabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
               </div>
+              <p className="text-xs text-slate-400">{t('notificationDescription')}</p>
+            </div>
 
+            {localSettings.enabled && (
+              <>
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">{t('lowBalanceThreshold')}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-400">৳</span>
+                    <input
+                      type="number"
+                      value={localSettings.lowBalanceThreshold}
+                      onChange={(e) => handleSettingsChange({ lowBalanceThreshold: Number(e.target.value) })}
+                      className="flex-1 bg-slate-600 text-slate-100 px-3 py-2 rounded text-sm w-full"
+                      min="0" max="10000" step="10"
+                      pattern="[0-9]*"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">{t('notificationTime')}</h4>
+                  <input
+                    type="time"
+                    value={localSettings.notificationTime}
+                    onChange={(e) => handleSettingsChange({ notificationTime: e.target.value })}
+                    className="w-full bg-slate-600 text-slate-100 px-3 py-2 rounded text-sm"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Section: Testing & Activity */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-slate-100">{t('testingAndActivity')}</h3>
+            <div className="bg-slate-700 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-slate-300 mb-3">{t('schedulerStatus')}</h4>
+              <div className="space-y-1 text-xs text-slate-400">
+                <div>{t('status')}: <span className={schedulerStatus.isRunning ? 'text-green-400' : 'text-red-400'}>{schedulerStatus.isRunning ? t('running') : t('stopped')}</span></div>
+                {schedulerStatus.isRunning && (
+                  <>
+                    <div>{t('nextCheck')}: {schedulerStatus.nextScheduledTime}</div>
+                    <div>{t('timeUntilNext')}: {schedulerStatus.timeUntilNext}</div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {monitoringStats && (
               <div className="bg-slate-700 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-slate-300 mb-3">{t('schedulerStatus')}</h3>
+                <h4 className="text-sm font-medium text-slate-300 mb-3">{t('todaysActivity')}</h4>
                 <div className="space-y-1 text-xs text-slate-400">
-                  <div>{t('status')}: <span className={schedulerStatus.isRunning ? 'text-green-400' : 'text-red-400'}>{schedulerStatus.isRunning ? t('running') : t('stopped')}</span></div>
-                  {schedulerStatus.isRunning && (
-                    <>
-                      <div>{t('nextCheck')}: {schedulerStatus.nextScheduledTime}</div>
-                      <div>{t('timeUntilNext')}: {schedulerStatus.timeUntilNext}</div>
-                    </>
+                  <div>{t('notificationsSent')}: {monitoringStats.notifications.length}</div>
+                  {monitoringStats.lastCheckTime && (
+                    <div>{t('lastCheck')}: {new Date(monitoringStats.lastCheckTime).toLocaleTimeString()}</div>
                   )}
                 </div>
               </div>
+            )}
 
-              <div className="flex gap-3">
-                <button onClick={handleTestNotification} disabled={isLoading || permissionStatus !== 'granted'} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isLoading ? <Spinner size="sm" /> : t('testNotification')}
-                </button>
-                <button onClick={handleForceCheck} disabled={isLoading} className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50">
-                  {isLoading ? <Spinner size="sm" /> : t('forceCheck')}
-                </button>
-              </div>
-            </>
-          )}
-
-          {testNotificationSent && <div className="bg-green-600/20 text-green-400 text-sm p-3 rounded-lg">{t('testNotificationSent')}</div>}
-
-          {permissionStatus === 'denied' && (
-            <div className="bg-red-600/20 border border-red-600/30 rounded-lg p-3 flex items-start gap-2">
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-red-400 font-medium">{t('notificationsBlocked')}</p>
-                <p className="text-xs text-red-300 mt-1">{t('enableNotificationsInBrowser')}</p>
-              </div>
+            <div className="flex gap-3 mb-4">
+              <button onClick={handleShowExampleNotification} disabled={isLoading || permissionStatus !== 'granted'} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                {isLoading ? <Spinner size="sm" /> : t('showExampleNotification')}
+              </button>
             </div>
-          )}
+
+            {testNotificationSent && <div className="bg-green-600/20 text-green-400 text-sm p-3 rounded-lg">{t('testNotificationSent')}</div>}
+          </div>
         </div>
 
         <div className="flex-shrink-0 p-4 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 flex justify-end gap-3">
