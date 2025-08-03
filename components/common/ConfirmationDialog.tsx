@@ -28,7 +28,7 @@ const ConfirmationDialog: React.FC<{
   if (!isOpen) return null;
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-8 text-slate-100 relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-8 text-slate-100 relative max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 mb-4">
           {icon && <span className="flex-shrink-0">{icon}</span>}
           <h2 className="text-xl font-bold text-white">{title}</h2>

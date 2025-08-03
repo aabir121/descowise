@@ -439,7 +439,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, onOpenApiKeyModa
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-xl">
+      <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-4xl w-full max-h-[70vh] overflow-hidden flex flex-col shadow-xl">
         {/* Header - More compact */}
         <div className="flex items-center justify-between p-3 sm:p-4 lg:p-5 border-b border-slate-700 bg-gradient-to-r from-blue-900/20 to-cyan-900/20">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">

@@ -18,7 +18,7 @@ const BalanceInfoWarningModal: React.FC<BalanceInfoWarningModalProps> = ({ isOpe
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-xs sm:max-w-md md:max-w-lg">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-xs sm:max-w-md md:max-w-lg max-h-[70vh]">
         {/* Fixed Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-2">

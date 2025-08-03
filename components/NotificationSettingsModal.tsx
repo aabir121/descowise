@@ -115,7 +115,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ i
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg w-full max-w-md mx-auto border border-slate-700 shadow-xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+      <div className="bg-slate-800 rounded-lg w-full max-w-md mx-auto border border-slate-700 shadow-xl max-h-[70vh] flex flex-col">
         <div className="flex items-center justify-between p-4 sm:p-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <BellIcon className="w-6 h-6 text-blue-400" />

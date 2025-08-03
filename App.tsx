@@ -82,8 +82,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = ''
       onClick={onClose}
     >
       <div
-        className={`bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] sm:max-h-[80vh] mx-4 sm:mx-auto my-8 text-slate-100 relative transform flex flex-col ${className}`}
-        style={{overflow: 'hidden'}}
+        className={`bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[70vh] mx-4 sm:mx-auto my-8 text-slate-100 relative transform flex flex-col ${className}`}
         onClick={e => e.stopPropagation()}
         {...props}
       >

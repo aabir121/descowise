@@ -104,7 +104,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
     );
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose}>
+        <Modal isOpen={isOpen} onClose={onClose} className="max-h-[70vh]">
             <div className="p-4 sm:p-5">
                 <div className="flex justify-between items-start mb-2">
                     <h2 className="text-xl font-bold text-white">{step === 'form' ? t('addNewAccount') : t('confirmAccount')}</h2>
