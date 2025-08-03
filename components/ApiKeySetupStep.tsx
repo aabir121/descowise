@@ -29,13 +29,14 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
         <div className="flex items-center justify-center gap-3 mb-4">
           <WandSparklesIcon className="w-8 h-8 text-cyan-400" />
           <h2 className="text-2xl font-bold text-slate-100">
-            Enable AI Insights (Optional)
+            {t('apiKeySetup.title', 'Enable AI Insights (Optional)')}
           </h2>
         </div>
         <p className="text-slate-300 max-w-2xl mx-auto">
-          To unlock AI-powered consumption insights and personalized recommendations, 
-          provide your Google Gemini API key. This step is optional - you can skip it 
-          and still use all other features.
+          {t('apiKeySetup.description', 'To unlock AI-powered consumption insights and personalized recommendations, provide your Google Gemini API key. This step is optional - you can skip it and still use all other features.')}
+        </p>
+        <p className="text-slate-400 text-sm mt-2 max-w-2xl mx-auto">
+          {t('apiKeySetup.skipMessage', 'Don\'t want to set this up now? No problem! You can always add your API key later through the settings menu whenever you\'re ready.')}
         </p>
       </div>
 
@@ -44,7 +45,7 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
         <div className="space-y-4">
           <div>
             <label htmlFor="apiKey" className="block text-sm font-medium text-slate-200 mb-2">
-              Google Gemini API Key
+              {t('apiKeySetup.inputLabel', 'Google Gemini API Key')}
             </label>
             <div className="relative">
               <input
@@ -52,7 +53,7 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
                 type={showApiKey ? 'text' : 'password'}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter your Gemini API key..."
+                placeholder={t('apiKeySetup.inputPlaceholder', 'Enter your Gemini API key...')}
                 className="w-full px-4 py-3 pr-12 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 disabled={isValidating}
               />
@@ -76,7 +77,7 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
             <div className="flex items-start gap-3 p-3 bg-red-900/50 border border-red-500/30 rounded-lg">
               <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
               <div className="text-red-200 text-sm">
-                <strong>Validation Failed:</strong> {error}
+                <strong>{t('apiKeySetup.validationFailed', 'Validation Failed')}:</strong> {error}
               </div>
             </div>
           )}
@@ -85,12 +86,12 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
           <div className="flex items-start gap-3 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
             <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-blue-200 text-sm space-y-2">
-              <p><strong>How to get your API key:</strong></p>
+              <p><strong>{t('apiKeySetup.howToGetKey', 'How to get your API key')}:</strong></p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Google AI Studio</a></li>
-                <li>Sign in with your Google account</li>
-                <li>Click "Create API Key" and copy it</li>
-                <li>Paste it above and click "Validate & Continue"</li>
+                <li>{t('apiKeySetup.step1', 'Visit')} <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">{t('apiKeySetup.googleAiStudio', 'Google AI Studio')}</a></li>
+                <li>{t('apiKeySetup.step2', 'Sign in with your Google account')}</li>
+                <li>{t('apiKeySetup.step3', 'Click "Create API Key" and copy it')}</li>
+                <li>{t('apiKeySetup.step4', 'Paste it above and click "Validate & Continue"')}</li>
               </ol>
               <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 rounded">
                 <div className="flex items-center gap-2 mb-1">
@@ -99,12 +100,12 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span className="text-xs font-semibold text-green-200">🔒 Your API Key Security</span>
+                  <span className="text-xs font-semibold text-green-200">{t('apiKeySetup.securityTitle', '🔒 Your API Key Security')}</span>
                 </div>
                 <ul className="text-xs text-green-100 space-y-0.5 ml-5">
-                  <li>• AES-256 encrypted in your browser</li>
-                  <li>• Never sent to our servers</li>
-                  <li>• You maintain full control</li>
+                  <li>{t('apiKeySetup.security1', '• AES-256 encrypted in your browser')}</li>
+                  <li>{t('apiKeySetup.security2', '• Never sent to our servers')}</li>
+                  <li>{t('apiKeySetup.security3', '• You maintain full control')}</li>
                 </ul>
               </div>
             </div>
@@ -119,7 +120,7 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
           className="px-6 py-3 text-slate-300 hover:text-slate-100 font-medium transition-colors"
           disabled={isValidating}
         >
-          Skip for now
+          {t('apiKeySetup.skipButton', 'Skip for now')}
         </button>
         <button
           onClick={onValidate}
@@ -129,10 +130,10 @@ const ApiKeySetupStep: React.FC<ApiKeySetupStepProps> = ({
           {isValidating ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Validating...
+              {t('apiKeySetup.validating', 'Validating...')}
             </>
           ) : (
-            'Validate & Continue'
+            t('apiKeySetup.validateButton', 'Validate & Continue')
           )}
         </button>
       </div>

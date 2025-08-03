@@ -759,5 +759,27 @@
   "monthsWithExcessRecharge": "Months where recharges exceeded consumption",
   "monthsWithHigherConsumption": "Months where consumption exceeded recharges",
   "notificationSettings": "Notification Settings",
-  "notifications": "Notifications"
+  "notifications": "Notifications",
+  "apiKeySetup": {
+    "title": "Enable AI Insights (Optional)",
+    "continue": "Continue",
+    "description": "To unlock AI-powered consumption insights and personalized recommendations, provide your Google Gemini API key. This step is optional - you can skip it and still use all other features.",
+    "skipMessage": "Don't want to set this up now? No problem! You can always add your API key later through the settings menu whenever you're ready.",
+    "inputLabel": "Google Gemini API Key",
+    "inputPlaceholder": "Enter your Gemini API key...",
+    "validationFailed": "Validation Failed",
+    "howToGetKey": "How to get your API key",
+    "step1": "Visit",
+    "googleAiStudio": "Google AI Studio",
+    "step2": "Sign in with your Google account",
+    "step3": "Click \"Create API Key\" and copy it",
+    "step4": "Paste it above and click \"Validate & Continue\"",
+    "securityTitle": "🔒 Your API Key Security",
+    "security1": "• AES-256 encrypted in your browser",
+    "security2": "• Never sent to our servers",
+    "security3": "• You maintain full control",
+    "skipButton": "Skip for now",
+    "validating": "Validating...",
+    "validateButton": "Validate & Continue"
+  }
 }

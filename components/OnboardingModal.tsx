@@ -423,7 +423,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLa
                 onClick={handleLanguageNext}
                 className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
               >
-                {deploymentConfig.showApiKeySetup ? 'Continue' : t('getStarted')}
+                {deploymentConfig.showApiKeySetup ? t('apiKeySetup.continue') : t('getStarted')}
               </button>
             )}
           </div>
