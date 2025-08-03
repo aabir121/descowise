@@ -434,13 +434,19 @@ const App: React.FC = () => {
         // localStorage.removeItem('onboardingCompleted');
     }, []);
 
-    // Initialize notification service
+    // Initialize notification service once on mount
     useEffect(() => {
         notificationService.initialize(accounts);
         return () => {
             // Cleanup on unmount
             notificationService.stopScheduler();
         };
+    }, []); // Remove accounts dependency to prevent re-initialization
+
+    // Update accounts in notification service when accounts change
+    useEffect(() => {
+        // Always update accounts, even if empty (for proper cleanup)
+        notificationService.updateAccounts(accounts);
     }, [accounts]);
 
     useEffect(() => {

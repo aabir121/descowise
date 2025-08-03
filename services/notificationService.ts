@@ -28,6 +28,8 @@ class NotificationService {
    */
   async initialize(accounts: Account[]): Promise<void> {
     if (this.isInitialized) {
+      console.log('Notification system already initialized, updating accounts only');
+      this.updateAccounts(accounts);
       return;
     }
 
@@ -66,19 +68,30 @@ class NotificationService {
       return;
     }
 
+    // Check if scheduler is already running to avoid duplicate logs
+    const wasRunning = notificationScheduler.isRunning();
+
     notificationScheduler.start(async () => {
       await this.performScheduledCheck();
     });
 
-    console.log('Notification scheduler started');
+    // Only log if scheduler wasn't already running
+    if (!wasRunning) {
+      console.log('Notification scheduler started');
+    }
   }
 
   /**
    * Stop the notification scheduler
    */
   stopScheduler(): void {
+    const wasRunning = notificationScheduler.isRunning();
     notificationScheduler.stop();
-    console.log('Notification scheduler stopped');
+
+    // Only log if scheduler was actually running
+    if (wasRunning) {
+      console.log('Notification scheduler stopped');
+    }
   }
 
   /**
@@ -271,17 +284,19 @@ class NotificationService {
    * Update notification settings
    */
   updateSettings(updates: any): void {
+    const wasRunning = notificationScheduler.isRunning();
     notificationPermissionService.updateSettings(updates);
-    
+
     // Update scheduler configuration if needed
     if (updates.notificationTime) {
       notificationScheduler.updateConfig({
         targetTime: updates.notificationTime,
       });
     }
-    
-    // Restart scheduler if it was running
-    if (notificationScheduler.isRunning()) {
+
+    // Only restart scheduler if it was running and settings actually changed
+    if (wasRunning && (updates.notificationTime || updates.enabled !== undefined)) {
+      console.log('Restarting scheduler due to settings change');
       this.startScheduler();
     }
   }
