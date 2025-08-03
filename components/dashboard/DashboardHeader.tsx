@@ -3,9 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
-import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon, BellIcon } from '../common/Icons';
+import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon, BellIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
-import SectionSettingsModal from '../common/SectionSettingsModal';
+
 import ShareModal from '../common/ShareModal';
 import Notification from '../common/Notification';
 import ApiKeyStatusIndicator from '../common/ApiKeyStatusIndicator';
@@ -29,7 +29,7 @@ const DashboardHeader: React.FC<{
   onForceRefreshAi?: () => void;
 }> = ({ account, onClose, onDelete, setPortalConfirmation, onOpenApiKeyModal, isUsingCache, cacheStatus, onForceRefreshAi }) => {
   const { t } = useTranslation();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
@@ -171,13 +171,7 @@ const DashboardHeader: React.FC<{
             >
               <InformationCircleIcon className="w-5 h-5" />
             </IconButton>
-            <IconButton
-              onClick={() => setIsSettingsOpen(true)}
-              className="bg-slate-600/80 hover:bg-slate-500 text-white p-2"
-              title={t('sectionPreferencesAndSettings')}
-            >
-              <CogIcon className="w-5 h-5" />
-            </IconButton>
+
           </div>
 
           {/* Secondary Actions Group - Icons Only with Tooltips */}
@@ -269,13 +263,7 @@ const DashboardHeader: React.FC<{
                 <InformationCircleIcon className="w-5 h-5" />
                 <span>{t('help', 'Help')}</span>
               </button>
-              <button
-                onClick={() => { setIsSettingsOpen(true); setIsMenuOpen(false); }}
-                className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
-              >
-                <CogIcon className="w-5 h-5" />
-                <span>{t('settings')}</span>
-              </button>
+
 
               {/* Secondary Actions Section */}
               <div className="border-t border-slate-600 my-1"></div>
@@ -309,11 +297,7 @@ const DashboardHeader: React.FC<{
         </div>
       </header>
 
-      <SectionSettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        account={account}
-      />
+
       <ShareModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}

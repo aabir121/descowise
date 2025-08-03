@@ -12,8 +12,7 @@ This document outlines the comprehensive API key management system implemented f
 2. **ApiKeyPrompt** - Contextual prompts for API key setup
 3. **ApiKeyManagementModal** - Comprehensive key management interface
 4. **ApiKeySettingsSection** - Dedicated settings section
-5. **ComprehensiveSettingsModal** - Tabbed settings interface
-6. **ApiKeyGuidedTour** - User onboarding and guidance
+5. **ApiKeyGuidedTour** - User onboarding and guidance
 
 ### Integration Points
 
@@ -68,8 +67,7 @@ components/
 │   ├── ApiKeyPrompt.tsx              # Contextual prompts
 │   └── ApiKeyGuidedTour.tsx          # User guidance
 ├── settings/
-│   ├── ApiKeySettingsSection.tsx     # Dedicated settings
-│   └── ComprehensiveSettingsModal.tsx # Tabbed settings
+│   └── ApiKeySettingsSection.tsx     # Dedicated settings
 ├── dashboard/
 │   └── AiFeatureDisabledNotice.tsx   # Enhanced with prompts
 └── ApiKeyManagementModal.tsx         # Enhanced modal
