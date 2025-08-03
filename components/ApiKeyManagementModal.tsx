@@ -247,7 +247,12 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
                 <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div className="text-blue-200 text-sm space-y-2">
                   <p><strong>{t('getYourApiKey')}:</strong></p>
-                  <p>{t('visitGoogleAiStudio', { ns: 'html' })}</p>
+                  <ul className="text-xs text-green-100 space-y-1 ml-2">
+                    <li>• {t('apiKeySetup.step1_text')} <a href={t('apiKeySetup.step1_url')} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">{t('apiKeySetup.step1_link')}</a></li>
+                    <li>• {t('apiKeySetup.step2')}</li>
+                    <li>• {t('apiKeySetup.step3')}</li>
+                    <li>• {t('apiKeySetup.step4')}</li>
+                  </ul>
                 </div>
               </div>
 

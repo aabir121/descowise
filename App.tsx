@@ -213,6 +213,7 @@ const AccountListPage: React.FC<{
   setIsHelpModalOpen: (open: boolean) => void;
   isNotificationSettingsOpen: boolean;
   setIsNotificationSettingsOpen: (open: boolean) => void;
+  apiKeyConfiguredStatus: any;
 }> = ({
   accounts,
   loadingBalances,
@@ -234,7 +235,8 @@ const AccountListPage: React.FC<{
   isHelpModalOpen,
   setIsHelpModalOpen,
   isNotificationSettingsOpen,
-  setIsNotificationSettingsOpen
+  setIsNotificationSettingsOpen,
+  apiKeyConfiguredStatus
 }) => {
   const navigate = useNavigate();
   const handleSelectAccount = useCallback((accountNo: string) => {
@@ -774,9 +776,9 @@ const App: React.FC = () => {
             <ApiKeyManagementModal
                 isOpen={isApiKeyModalOpen}
                 onClose={() => setIsApiKeyModalOpen(false)}
-                onApiKeyUpdated={() => {
+                                onApiKeyUpdated={() => {
                     showNotification(t('apiKeyUpdatedSuccessfully'), 'info');
-                    setIsApiKeyModalOpen(false);
+                    window.location.reload(); // Reload the page to reflect API key status change
                 }}
             />
             <NotificationSettingsModal
