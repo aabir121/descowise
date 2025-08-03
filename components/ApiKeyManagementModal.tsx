@@ -18,6 +18,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
   const [validationSuccess, setValidationSuccess] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
+  const [existingKeyDisplay, setExistingKeyDisplay] = useState<string | null>(null);
   
 
 
@@ -30,6 +31,14 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
         setValidationError(null);
         setValidationSuccess(false);
         setShowApiKey(false);
+
+        // Set the display format for existing key
+        if (existingKey) {
+          const displayFormat = await getApiKeyDisplayFormat(existingKey);
+          setExistingKeyDisplay(displayFormat);
+        } else {
+          setExistingKeyDisplay(null);
+        }
       };
       checkExistingKey();
     }
@@ -77,6 +86,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
   const handleConfirmRemove = () => {
     removeUserApiKey();
     setHasExistingKey(false);
+    setExistingKeyDisplay(null);
     setApiKey('');
     setValidationError(null);
     setValidationSuccess(false);
@@ -91,7 +101,6 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
 
   if (!isOpen) return null;
 
-  const existingKeyDisplay = hasExistingKey ? getApiKeyDisplayFormat() : null;
   const validationStatus = getApiKeyValidationStatus();
 
   return (

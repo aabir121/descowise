@@ -221,8 +221,12 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 onClose={() => setIsApiKeyModalOpen(false)}
                 onApiKeyUpdated={() => {
                     showNotification('API key updated successfully', 'info');
-                    // Trigger a refresh of the dashboard data
-                    window.location.reload();
+                    // Close the modal and refresh AI data without full page reload
+                    setIsApiKeyModalOpen(false);
+                    // Trigger a refresh of AI insights if available
+                    if (forceRefreshAiSummary) {
+                        forceRefreshAiSummary();
+                    }
                 }}
             />
 
