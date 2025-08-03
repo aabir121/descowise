@@ -10,7 +10,10 @@ interface ApiKeyManagementModalProps {
   onApiKeyUpdated?: () => void;
 }
 
+import { useTranslation } from 'react-i18next';
+
 const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, onClose, onApiKeyUpdated }) => {
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -112,7 +115,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
             <div className="flex items-center gap-3">
               <WandSparklesIcon className="w-6 h-6 text-cyan-400" />
               <h2 className="text-xl font-bold text-slate-100">
-                {hasExistingKey ? 'Manage AI API Key' : 'Setup AI Features'}
+                {hasExistingKey ? t('manageApiKey') : t('setupAiFeatures')}
               </h2>
             </div>
             <button
@@ -133,17 +136,17 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
               <div className="flex items-start gap-3">
                 <WandSparklesIcon className="w-6 h-6 text-cyan-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-cyan-100 mb-2">Unlock AI-Powered Insights</h3>
+                  <h3 className="font-semibold text-cyan-100 mb-2">{t('unlockAiInsights')}</h3>
                   <p className="text-cyan-200 text-sm mb-3">
-                    Get personalized consumption insights, anomaly detection, smart recommendations, and predictive analytics by configuring your Google Gemini API key.
+                    {t('unlockAiInsightsDescription')}
                   </p>
                   <div className="text-cyan-100 text-xs">
-                    <strong>What you'll get:</strong>
+                    <strong>{t('whatYouGet')}:</strong>
                     <ul className="mt-1 space-y-1 text-cyan-200">
-                      <li>• Smart consumption pattern analysis</li>
-                      <li>• Personalized energy-saving recommendations</li>
-                      <li>• Anomaly detection and alerts</li>
-                      <li>• Predictive billing and usage forecasts</li>
+                      <li>• {t('smartConsumptionAnalysis')}</li>
+                      <li>• {t('personalizedRecommendations')}</li>
+                      <li>• {t('anomalyDetection')}</li>
+                      <li>• {t('predictiveBilling')}</li>
                     </ul>
                   </div>
                 </div>
@@ -154,7 +157,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
           {/* Current Status */}
           {hasExistingKey && (
             <div className="bg-slate-700/50 rounded-lg p-4">
-              <h3 className="font-semibold text-slate-100 mb-2">Current API Key</h3>
+              <h3 className="font-semibold text-slate-100 mb-2">{t('currentApiKey')}</h3>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <code className="text-sm text-slate-300 bg-slate-800 px-2 py-1 rounded">
@@ -165,13 +168,13 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
                       {validationStatus.isValid && !validationStatus.isExpired ? (
                         <>
                           <CheckCircleIcon className="w-4 h-4 text-green-400" />
-                          <span className="text-xs text-green-400">Valid</span>
+                          <span className="text-xs text-green-400">{t('valid')}</span>
                         </>
                       ) : (
                         <>
                           <ExclamationTriangleIcon className="w-4 h-4 text-amber-400" />
                           <span className="text-xs text-amber-400">
-                            {validationStatus.isExpired ? 'Needs revalidation' : 'Invalid'}
+                            {validationStatus.isExpired ? t('needsRevalidation') : t('invalid')}
                           </span>
                         </>
                       )}
@@ -182,7 +185,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
                   onClick={handleRemoveApiKey}
                   className="text-red-400 hover:text-red-300 text-sm font-medium"
                 >
-                  Remove
+                  {t('remove')}
                 </button>
               </div>
             </div>
@@ -192,7 +195,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
           <div className="space-y-4">
             <div>
               <label htmlFor="apiKey" className="block text-sm font-medium text-slate-200 mb-2">
-                {hasExistingKey ? 'Update API Key' : 'Enter API Key'}
+                {hasExistingKey ? t('updateApiKey') : t('enterApiKey')}
               </label>
               <div className="relative">
                 <input
@@ -200,7 +203,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
                   type={showApiKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your Gemini API key..."
+                  placeholder={t('enterApiKeyPlaceholder')}
                   className="w-full px-4 py-3 pr-12 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   disabled={isValidating}
                 />
@@ -224,7 +227,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
               <div className="flex items-start gap-3 p-3 bg-red-900/50 border border-red-500/30 rounded-lg">
                 <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <div className="text-red-200 text-sm">
-                  <strong>Validation Failed:</strong> {validationError}
+                  <strong>{t('validationFailed')}:</strong> {t(validationError)}
                 </div>
               </div>
             )}
@@ -233,7 +236,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
               <div className="flex items-start gap-3 p-3 bg-green-900/50 border border-green-500/30 rounded-lg">
                 <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                 <div className="text-green-200 text-sm">
-                  <strong>Success:</strong> API key validated and saved successfully!
+                  <strong>{t('success')}:</strong> {t('apiKeyValidated')}
                 </div>
               </div>
             )}
@@ -243,8 +246,8 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
               <div className="flex items-start gap-3 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
                 <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div className="text-blue-200 text-sm space-y-2">
-                  <p><strong>Get your API key:</strong></p>
-                  <p>Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Google AI Studio</a> to create a free API key.</p>
+                  <p><strong>{t('getYourApiKey')}:</strong></p>
+                  <p>{t('visitGoogleAiStudio', { ns: 'html' })}</p>
                 </div>
               </div>
 
@@ -256,12 +259,12 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
                   </svg>
                 </div>
                 <div className="text-green-200 text-sm space-y-1">
-                  <p><strong>🔒 Your API Key Security:</strong></p>
+                  <p><strong>{t('apiKeySecurity')}</strong></p>
                   <ul className="text-xs text-green-100 space-y-1 ml-2">
-                    <li>• <strong>AES-256 encrypted</strong> before storing in your browser</li>
-                    <li>• <strong>Never transmitted</strong> to our servers</li>
-                    <li>• <strong>Stays on your device</strong> - you have complete control</li>
-                    <li>• <strong>Can be removed</strong> anytime from settings</li>
+                    <li>• <strong>{t('aes256Encrypted')}</strong></li>
+                    <li>• <strong>{t('neverTransmitted')}</strong></li>
+                    <li>• <strong>{t('staysOnDevice')}</strong></li>
+                    <li>• <strong>{t('canBeRemoved')}</strong></li>
                   </ul>
                 </div>
               </div>
@@ -277,7 +280,7 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
               className="px-4 py-2 text-slate-300 hover:text-slate-100 font-medium transition-colors"
               disabled={isValidating}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleValidateAndSave}
@@ -287,15 +290,15 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
               {isValidating ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Validating...
+                  {t('validating')}
                 </>
               ) : validationSuccess ? (
                 <>
                   <CheckCircleIcon className="w-4 h-4" />
-                  Saved
+                  {t('saved')}
                 </>
               ) : (
-                'Validate & Save'
+                t('validateAndSave')
               )}
             </button>
           </div>
@@ -309,19 +312,19 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
             <div className="flex items-start gap-2 sm:gap-3 mb-4">
               <ExclamationTriangleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 flex-shrink-0 mt-1" />
               <div className="min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-2">Remove API Key</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-2">{t('removeApiKey')}</h3>
                 <p className="text-slate-300 text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed">
-                  Are you sure you want to remove your API key? This will disable all AI features until you configure a new key.
+                  {t('removeApiKeyConfirmation')}
                 </p>
                 <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
                   <p className="text-red-200 text-xs font-semibold mb-1">
-                    What will happen:
+                    {t('whatWillHappen')}
                   </p>
                   <ul className="text-red-100 text-xs space-y-0.5 sm:space-y-1">
-                    <li>• AI insights will be disabled for all accounts</li>
-                    <li>• Smart recommendations will no longer be available</li>
-                    <li>• Consumption analysis features will be limited</li>
-                    <li>• You can re-enable by adding a new API key anytime</li>
+                    <li>• {t('aiInsightsWillBeDisabled')}</li>
+                    <li>• {t('smartRecommendationsWillBeUnavailable')}</li>
+                    <li>• {t('consumptionAnalysisWillBeLimited')}</li>
+                    <li>• {t('canReEnableAnytime')}</li>
                   </ul>
                 </div>
               </div>
@@ -331,13 +334,13 @@ const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({ isOpen, o
                 onClick={handleCancelRemove}
                 className="px-3 py-2 sm:px-4 sm:py-2 text-slate-300 hover:text-slate-100 font-medium transition-colors text-sm order-2 sm:order-1"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={handleConfirmRemove}
                 className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-sm order-1 sm:order-2"
               >
-                Remove API Key
+                {t('removeApiKey')}
               </button>
             </div>
           </div>

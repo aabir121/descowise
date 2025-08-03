@@ -775,7 +775,7 @@ const App: React.FC = () => {
                 isOpen={isApiKeyModalOpen}
                 onClose={() => setIsApiKeyModalOpen(false)}
                 onApiKeyUpdated={() => {
-                    showNotification(t('apiKeyUpdatedSuccessfully', 'API key updated successfully'), 'info');
+                    showNotification(t('apiKeyUpdatedSuccessfully'), 'info');
                     setIsApiKeyModalOpen(false);
                 }}
             />
