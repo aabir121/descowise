@@ -265,7 +265,7 @@ const AccountListPage: React.FC<{
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Controls bar - always at top */}
             <div className="flex justify-around py-1">
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center flex-wrap justify-center gap-2 sm:gap-3">
                 <ApiKeyStatusIndicator
                   variant="button"
                   size="sm"
@@ -285,10 +285,10 @@ const AccountListPage: React.FC<{
                 <button
                   onClick={() => setIsNotificationSettingsOpen(true)}
                   className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-purple-600/80 hover:bg-purple-500 transition-colors text-white border border-purple-500/50 hover:border-purple-400/70 min-h-[2rem] sm:min-h-[2.25rem]"
-                  title="Notification Settings"
+                  title={t('notificationSettings')}
                 >
                   <BellIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm font-medium">Notifications</span>
+                  <span className="text-xs sm:text-sm font-medium">{t('notifications')}</span>
                 </button>
                 <button
                   onClick={() => setIsHelpModalOpen(true)}
