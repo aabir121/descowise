@@ -264,7 +264,7 @@ const AccountListPage: React.FC<{
           {/* Header design with consistent branding */}
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Controls bar - always at top */}
-            <div className="flex justify-end py-1">
+            <div className="flex justify-around py-1">
               <div className="flex items-center gap-2 sm:gap-3">
                 <ApiKeyStatusIndicator
                   variant="button"
