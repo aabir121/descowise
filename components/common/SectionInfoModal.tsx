@@ -9,6 +9,9 @@ interface SectionInfoModalProps {
     title: string;
     description: string;
     benefits: string[];
+    example?: string;
+    useCase?: string;
+    tips?: string[];
   };
   t: (key: string) => string;
 }
@@ -25,7 +28,10 @@ const SectionInfoModal: React.FC<SectionInfoModalProps> = ({
   const safeSectionInfo = sectionInfo || {
     title: 'Section Information',
     description: 'Information about this section is not available.',
-    benefits: ['Provides useful insights', 'Helps with analysis', 'Improves understanding']
+    benefits: ['Provides useful insights', 'Helps with analysis', 'Improves understanding'],
+    example: 'This section helps you understand your electricity usage patterns.',
+    useCase: 'Use this information to make informed decisions about your electricity consumption.',
+    tips: ['Check this section regularly', 'Compare with previous periods', 'Look for patterns']
   };
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg">
@@ -54,14 +60,38 @@ const SectionInfoModal: React.FC<SectionInfoModalProps> = ({
           {safeSectionInfo.description}
         </p>
 
+        {/* Practical Example */}
+        {safeSectionInfo.example && (
+          <div className="bg-slate-800 rounded-lg p-4 mb-4">
+            <h5 className="text-cyan-400 font-medium mb-2">
+              {t('practicalExample')}
+            </h5>
+            <p className="text-slate-300 text-sm">
+              {safeSectionInfo.example}
+            </p>
+          </div>
+        )}
+
+        {/* Use Case */}
+        {safeSectionInfo.useCase && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+            <h5 className="text-blue-400 font-medium mb-2">
+              {t('whenToUse')}
+            </h5>
+            <p className="text-slate-300 text-sm">
+              {safeSectionInfo.useCase}
+            </p>
+          </div>
+        )}
+
         {/* Benefits */}
-        <div>
+        <div className="mb-4">
           <h4 className="text-sm font-medium text-slate-400 mb-3 uppercase tracking-wide">
-            {t('sectionInfoDescription')}
+            {t('keyBenefits')}
           </h4>
           <ul className="space-y-2">
             {safeSectionInfo.benefits.map((benefit, index) => (
-              <li key={index} className="flex items-start gap-3">
+              <li key={`benefit-${index}`} className="flex items-start gap-3">
                 <span className="text-cyan-400 mt-1 flex-shrink-0">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -74,6 +104,23 @@ const SectionInfoModal: React.FC<SectionInfoModalProps> = ({
             ))}
           </ul>
         </div>
+
+        {/* Pro Tips */}
+        {safeSectionInfo.tips && safeSectionInfo.tips.length > 0 && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+            <h5 className="text-green-400 font-medium mb-2">
+              💡 {t('proTips')}
+            </h5>
+            <ul className="space-y-1">
+              {safeSectionInfo.tips.map((tip, index) => (
+                <li key={`tip-${index}`} className="text-slate-300 text-sm flex items-start gap-2">
+                  <span className="text-green-400 mt-1 flex-shrink-0">•</span>
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Close Button */}
         <div className="mt-8 pt-4 border-t border-slate-700">

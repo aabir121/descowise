@@ -3,6 +3,7 @@ import React from 'react';
 import { DistributedAiInsights } from '../../../utils/aiInsightDistribution';
 import { formatCurrency } from '../../common/format';
 import { WandSparklesIcon, ExclamationTriangleIcon } from '../../common/Icons';
+import AiInsightTooltip from '../../common/AiInsightTooltip';
 
 interface ConsumptionAiInsightsProps {
   insights: DistributedAiInsights['consumption'];
@@ -19,6 +20,7 @@ const ConsumptionAiInsights: React.FC<ConsumptionAiInsightsProps> = ({ insights,
       <div className="flex items-center gap-2 mb-3">
         <WandSparklesIcon className="w-5 h-5 text-purple-400" />
         <h4 className="text-sm font-semibold text-purple-400">{t('aiInsights')}</h4>
+        <AiInsightTooltip insightType="consumption" t={t} />
       </div>
       
       <div className="space-y-3">
@@ -38,7 +40,10 @@ const ConsumptionAiInsights: React.FC<ConsumptionAiInsightsProps> = ({ insights,
         {/* Seasonal Trend */}
         {seasonalTrend && seasonalTrend.observed && (
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-            <h5 className="font-medium text-sm text-blue-400 mb-1">{t('seasonalTrend')}</h5>
+            <div className="flex items-center gap-2 mb-1">
+              <h5 className="font-medium text-sm text-blue-400">{t('seasonalTrend')}</h5>
+              <AiInsightTooltip insightType="seasonal" t={t} />
+            </div>
             <p className="text-xs text-slate-300">{seasonalTrend.details}</p>
           </div>
         )}
@@ -46,7 +51,10 @@ const ConsumptionAiInsights: React.FC<ConsumptionAiInsightsProps> = ({ insights,
         {/* Current Month Bill Forecast */}
         {currentMonthBillForecast && (
           <div className="bg-slate-700/30 rounded-lg p-3">
-            <h5 className="font-medium text-sm text-slate-200 mb-1">{t('currentMonthForecast')}</h5>
+            <div className="flex items-center gap-2 mb-1">
+              <h5 className="font-medium text-sm text-slate-200">{t('currentMonthForecast')}</h5>
+              <AiInsightTooltip insightType="forecast" t={t} />
+            </div>
             <div className="text-lg font-bold text-cyan-300 mb-1">
               {formatCurrency(currentMonthBillForecast.estimatedTotal)}
             </div>

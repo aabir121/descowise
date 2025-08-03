@@ -3,6 +3,7 @@ import React from 'react';
 import { DistributedAiInsights } from '../../../utils/aiInsightDistribution';
 import { formatCurrency } from '../../common/format';
 import { WandSparklesIcon } from '../../common/Icons';
+import AiInsightTooltip from '../../common/AiInsightTooltip';
 
 interface BalanceAiInsightsProps {
   insights: DistributedAiInsights['balance'];
@@ -19,6 +20,7 @@ const BalanceAiInsights: React.FC<BalanceAiInsightsProps> = ({ insights, t }) =>
       <div className="flex items-center gap-2 mb-3">
         <WandSparklesIcon className="w-5 h-5 text-purple-400" />
         <h4 className="text-sm font-semibold text-purple-400">{t('aiInsights')}</h4>
+        <AiInsightTooltip insightType="balance" t={t} />
       </div>
       
       <div className="space-y-3">

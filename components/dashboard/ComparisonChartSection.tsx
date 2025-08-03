@@ -19,14 +19,16 @@ const ComparisonChartSection = memo(({ comparisonData, comparisonMetric, setComp
       <div className="flex justify-end mb-4">
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600">
           <button
-            className={`px-4 py-2 font-semibold rounded-l-lg ${comparisonMetric === 'bdt' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+            className={`px-6 py-3 font-semibold rounded-l-lg transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 ${comparisonMetric === 'bdt' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
             onClick={() => setComparisonMetric('bdt')}
+            style={{ minHeight: '44px', minWidth: '80px' }}
           >
             {t('BDT')}
           </button>
           <button
-            className={`px-4 py-2 font-semibold rounded-r-lg ${comparisonMetric === 'kwh' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+            className={`px-6 py-3 font-semibold rounded-r-lg transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 ${comparisonMetric === 'kwh' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
             onClick={() => setComparisonMetric('kwh')}
+            style={{ minHeight: '44px', minWidth: '80px' }}
           >
             {t('kWh')}
           </button>

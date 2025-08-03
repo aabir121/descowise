@@ -2,6 +2,7 @@
 import React from 'react';
 import { DistributedAiInsights } from '../../../utils/aiInsightDistribution';
 import { WandSparklesIcon, LightBulbIcon } from '../../common/Icons';
+import AiInsightTooltip from '../../common/AiInsightTooltip';
 
 interface RechargeAiInsightsProps {
   insights: DistributedAiInsights['recharge'];
@@ -18,6 +19,7 @@ const RechargeAiInsights: React.FC<RechargeAiInsightsProps> = ({ insights, t }) 
       <div className="flex items-center gap-2 mb-3">
         <WandSparklesIcon className="w-5 h-5 text-purple-400" />
         <h4 className="text-sm font-semibold text-purple-400">{t('aiInsights')}</h4>
+        <AiInsightTooltip insightType="recharge" t={t} />
       </div>
       
       <div className="space-y-3">

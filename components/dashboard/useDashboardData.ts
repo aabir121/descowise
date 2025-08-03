@@ -14,7 +14,7 @@ import {
 import { shouldEnableAiFeatures } from '../../utils/deploymentConfig';
 import { getUserApiKey } from '../../utils/apiKeyStorage';
 
-type TimeRange = '7days' | 'thisMonth' | '30days' | '3months' | '6months' | '1year' | '2years';
+type TimeRange = 'thisMonth' | '6months' | '1year';
 
 type UseDashboardDataReturn = {
   processedData: any | null;
@@ -59,7 +59,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [portalConfirmation, setPortalConfirmation] = useState<{ isOpen: boolean }>({ isOpen: false });
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo?: string }>({ isOpen: false });
   const [rechargeYear, setRechargeYear] = useState<number>(new Date().getFullYear());
-  const [consumptionTimeRange, setConsumptionTimeRange] = useState<TimeRange>('7days');
+  const [consumptionTimeRange, setConsumptionTimeRange] = useState<TimeRange>('thisMonth');
   const [comparisonMetric, setComparisonMetric] = useState<'bdt' | 'kwh'>('bdt');
 
   // Distributed AI insights state
@@ -307,37 +307,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     
     // Calculate consumption chart data based on time range
     let consumptionChartData;
-    if (consumptionTimeRange === '7days') {
-      // Get the last 7 days from today
-      const today = new Date();
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(today.getDate() - 6); // 7 days including today
-      
-      // Fill missing dates with zeros
-      const last7Days = fillMissingDates(sortedDaily, sevenDaysAgo, today);
-      
-      consumptionChartData = last7Days.map(d => ({ 
-        name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
-        kWh: (d.consumedUnit || 0), 
-        BDT: d.consumedTaka,
-        missing: d.missing
-      }));
-    } else if (consumptionTimeRange === '30days') {
-      // Get the last 30 days from today
-      const today = new Date();
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(today.getDate() - 29); // 30 days including today
-      
-      // Fill missing dates with zeros
-      const last30Days = fillMissingDates(sortedDaily, thirtyDaysAgo, today);
-      
-      consumptionChartData = last30Days.map(d => ({ 
-        name: new Date(d.date).toLocaleDateString('default', { day: 'numeric', month: 'short' }), 
-        kWh: (d.consumedUnit || 0), 
-        BDT: d.consumedTaka,
-        missing: d.missing
-      }));
-    } else if (consumptionTimeRange === 'thisMonth') {
+    if (consumptionTimeRange === 'thisMonth') {
       // Get current month's data from 1st day to today, both at local midnight
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -356,11 +326,8 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       }));
     } else {
       // For monthly ranges, determine how many months to show
-      let monthsToShow = 12; // default
-      if (consumptionTimeRange === '3months') monthsToShow = 3;
-      else if (consumptionTimeRange === '6months') monthsToShow = 6;
-      else if (consumptionTimeRange === '1year') monthsToShow = 12;
-      else if (consumptionTimeRange === '2years') monthsToShow = 24;
+      let monthsToShow = 12; // default for 1year
+      if (consumptionTimeRange === '6months') monthsToShow = 6;
       
       const monthlyConsumptionForRange = sortedMonthly.slice(-monthsToShow);
       consumptionChartData = monthlyConsumptionForRange.map(m => ({ 

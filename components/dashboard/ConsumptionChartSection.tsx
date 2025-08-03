@@ -2,13 +2,14 @@
 import React, { useState, memo, useMemo } from 'react';
 import Section from '../common/Section';
 import CustomTooltip from '../common/CustomTooltip';
-import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
+import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ReferenceDot } from 'recharts';
 import { getDashboardLabel } from './dashboardLabels';
 import { optimizeChartData, debounceChartUpdate } from '../../utils/chartOptimization';
 import ConsumptionAiInsights from './AiInsights/ConsumptionAiInsights';
 import { SkeletonChart } from '../common/SkeletonComponents';
+import { detectSignificantChanges, getAnnotationExplanation, processDataWithAnnotations } from '../../utils/chartAnnotations';
 
-type TimeRange = '7days' | 'thisMonth' | '30days' | '6months' | '1year' | '2years';
+type TimeRange = 'thisMonth' | '6months' | '1year';
 type ChartView = 'energy' | 'cost';
 
 const ConsumptionChartSection = memo(({
@@ -28,25 +29,57 @@ const ConsumptionChartSection = memo(({
 }) => {
   const [chartView, setChartView] = useState<ChartView>('cost');
 
-  // Default to 7days if not set
+  // Mobile-first responsive configuration
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const mobileChartConfig = useMemo(() => ({
+    height: isMobile ? 280 : 320, // Increased mobile height
+    margin: {
+      top: 10,
+      right: isMobile ? 10 : 20,
+      left: isMobile ? 5 : -10, // Positive margin for mobile
+      bottom: isMobile ? 25 : 5 // More bottom space for mobile legends
+    },
+    fontSize: isMobile ? 14 : 12, // Larger font for mobile
+    dotRadius: isMobile ? 6 : 4, // Larger touch targets
+    strokeWidth: isMobile ? 3 : 2, // Thicker lines for mobile
+    legendStyle: {
+      color: '#e5e7eb',
+      paddingTop: isMobile ? '25px' : '20px',
+      fontSize: isMobile ? 14 : 12
+    }
+  }), [isMobile]);
+
+  // Default to thisMonth if not set
   React.useEffect(() => {
     if (!consumptionTimeRange) {
-      setConsumptionTimeRange('7days');
+      setConsumptionTimeRange('thisMonth');
     }
   }, [consumptionTimeRange, setConsumptionTimeRange]);
 
-  // Memoize expensive calculations with chart optimization (must be before early return)
-  const { totalValue, chartData } = useMemo(() => {
+  // Memoize expensive calculations with chart optimization and annotations
+  const { totalValue, chartData, annotations } = useMemo(() => {
     if (!consumptionChartData || consumptionChartData.length === 0) {
-      return { totalValue: 0, chartData: [] };
+      return { totalValue: 0, chartData: [], annotations: [] };
     }
 
     const total = consumptionChartData.reduce((sum, item) => {
       return sum + (chartView === 'energy' ? (item.kWh || 0) : (item.BDT || 0));
     }, 0);
 
+    // Process data with annotations for significant changes
+    const dataKey = chartView === 'energy' ? 'kWh' : 'BDT';
+    const { data: enhancedData, annotations: detectedAnnotations } = processDataWithAnnotations(
+      consumptionChartData,
+      dataKey,
+      {
+        minChangePercent: 20, // 20% change threshold for electricity usage
+        detectPeaks: true,
+        detectAnomalies: true
+      }
+    );
+
     // Optimize chart data to reduce DOM complexity
-    const optimizedData = optimizeChartData(consumptionChartData, 'line', {
+    const optimizedData = optimizeChartData(enhancedData, 'line', {
       maxPoints: 50,
       keyField: 'name',
       preserveExtremes: true
@@ -54,18 +87,16 @@ const ConsumptionChartSection = memo(({
 
     return {
       totalValue: total,
-      chartData: optimizedData
+      chartData: optimizedData,
+      annotations: detectedAnnotations
     };
   }, [consumptionChartData, chartView]);
 
-  // Time range options (must be before early return)
+  // Simplified time range options for better mobile UX (3 essential options)
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
-    { value: '7days', label: getDashboardLabel('last7Days', banglaEnabled) },
     { value: 'thisMonth', label: getDashboardLabel('thisMonth', banglaEnabled) },
-    { value: '30days', label: getDashboardLabel('last30Days', banglaEnabled) },
     { value: '6months', label: getDashboardLabel('last6Months', banglaEnabled) },
-    { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) },
-    { value: '2years', label: getDashboardLabel('last2Years', banglaEnabled) }
+    { value: '1year', label: getDashboardLabel('last1Year', banglaEnabled) }
   ];
 
   // Create summary value for header (memoized, must be before early return)
@@ -160,42 +191,46 @@ const ConsumptionChartSection = memo(({
       )}
 
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-        {/* Chart View Toggle */}
+        {/* Chart View Toggle - Mobile optimized */}
         <div className="inline-flex rounded-lg bg-slate-700/50 border border-slate-600 overflow-hidden w-full sm:w-auto">
           {chartViewOptions.map((option, index) => (
             <button
               key={option.value}
-              className={`px-4 py-2 text-sm sm:text-base font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:z-10
-                ${chartView === option.value 
-                  ? 'bg-cyan-600 text-white' 
+              className={`flex-1 sm:flex-none px-6 py-3 text-sm sm:text-base font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:z-10
+                ${chartView === option.value
+                  ? 'bg-cyan-600 text-white shadow-sm'
                   : 'text-slate-300 hover:bg-slate-600'}
                 ${index === 0 ? 'rounded-l-lg' : ''}
                 ${index === chartViewOptions.length - 1 ? 'rounded-r-lg' : ''}
                 ${index > 0 && index < chartViewOptions.length - 1 ? 'border-l border-slate-600' : ''}
               `}
               onClick={() => setChartView(option.value)}
-              style={{ minWidth: 90 }}
+              style={{
+                minHeight: '44px',
+                minWidth: isMobile ? 'auto' : '120px'
+              }}
             >
               {option.label}
             </button>
           ))}
         </div>
 
-        {/* Time Range Toggle - wrap on mobile, more margin */}
+        {/* Simplified Time Range Toggle - mobile-optimized */}
         <div className="my-3 sm:my-0">
-          <div className="flex flex-wrap gap-2 rounded-lg bg-slate-700/50 border border-slate-600 p-1">
+          <div className="flex gap-1 rounded-lg bg-slate-700/50 border border-slate-600 p-1">
             {timeRangeOptions.map((option, index) => (
               <button
                 key={option.value}
-                className={`px-3 py-2 text-sm sm:text-base font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:z-10
-                  ${consumptionTimeRange === option.value 
-                    ? 'bg-cyan-600 text-white' 
+                className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:z-10 rounded-md
+                  ${consumptionTimeRange === option.value
+                    ? 'bg-cyan-600 text-white shadow-sm'
                     : 'text-slate-300 hover:bg-slate-600'}
-                  ${index === 0 ? 'rounded-l-lg' : ''}
-                  ${index === timeRangeOptions.length - 1 ? 'rounded-r-lg' : ''}
                 `}
                 onClick={() => setConsumptionTimeRange(option.value)}
-                style={{ minWidth: 90 }}
+                style={{
+                  minHeight: '44px', // Minimum touch target size
+                  minWidth: isMobile ? 'auto' : '100px' // Flexible width on mobile
+                }}
               >
                 {option.label}
               </button>
@@ -204,29 +239,130 @@ const ConsumptionChartSection = memo(({
         </div>
       </div>
 
-      <div className="w-full h-60 sm:h-80 px-1 sm:px-0">
+      <div
+        className="w-full px-2 sm:px-0"
+        style={{ height: mobileChartConfig.height }}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+          <LineChart data={chartData} margin={mobileChartConfig.margin}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} stroke="#4b5563" fontSize={12} />
+            <XAxis
+              dataKey="name"
+              tick={{ fill: '#9ca3af', fontSize: mobileChartConfig.fontSize }}
+              stroke="#4b5563"
+              fontSize={mobileChartConfig.fontSize}
+              height={isMobile ? 50 : 30} // More space for mobile labels
+            />
             {chartView === 'energy' ? (
               <>
-                <YAxis tick={{ fill: '#fb923c', fontSize: 12 }} stroke="#f97316" label={{ value: t('kWh'), angle: -90, position: 'insideLeft', fill: '#fb923c', dx: -10, fontSize: 12 }} />
+                <YAxis
+                  tick={{ fill: '#fb923c', fontSize: mobileChartConfig.fontSize }}
+                  stroke="#f97316"
+                  label={{
+                    value: t('kWh'),
+                    angle: -90,
+                    position: 'insideLeft',
+                    fill: '#fb923c',
+                    dx: isMobile ? 0 : -10, // Better positioning for mobile
+                    fontSize: mobileChartConfig.fontSize
+                  }}
+                />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px', fontSize: 12 }} />
-                <Line type="monotone" dataKey="kWh" stroke="#fb923c" strokeWidth={2} dot={{ fill: '#fb923c', strokeWidth: 2, r: 4 }} name={t('kWh')} />
+                <Legend wrapperStyle={mobileChartConfig.legendStyle} />
+                <Line
+                  type="monotone"
+                  dataKey="kWh"
+                  stroke="#fb923c"
+                  strokeWidth={mobileChartConfig.strokeWidth}
+                  dot={{
+                    fill: '#fb923c',
+                    strokeWidth: mobileChartConfig.strokeWidth,
+                    r: mobileChartConfig.dotRadius
+                  }}
+                  name={t('kWh')}
+                />
+
+                {/* Add annotations for significant changes */}
+                {annotations.map((annotation, index) => (
+                  <ReferenceDot
+                    key={`annotation-kwh-${index}`}
+                    x={annotation.dataKey}
+                    y={annotation.value}
+                    r={8}
+                    fill={annotation.color}
+                    stroke="white"
+                    strokeWidth={2}
+                    className="animate-pulse"
+                  />
+                ))}
               </>
             ) : (
               <>
-                <YAxis tick={{ fill: '#22d3ee', fontSize: 12 }} stroke="#06b6d4" label={{ value: t('BDT'), angle: -90, position: 'insideLeft', fill: '#22d3ee', dx: -10, fontSize: 12 }} />
+                <YAxis
+                  tick={{ fill: '#22d3ee', fontSize: mobileChartConfig.fontSize }}
+                  stroke="#06b6d4"
+                  label={{
+                    value: t('BDT'),
+                    angle: -90,
+                    position: 'insideLeft',
+                    fill: '#22d3ee',
+                    dx: isMobile ? 0 : -10, // Better positioning for mobile
+                    fontSize: mobileChartConfig.fontSize
+                  }}
+                />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ color: '#e5e7eb', paddingTop: '20px', fontSize: 12 }} />
-                <Line type="monotone" dataKey="BDT" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', strokeWidth: 2, r: 4 }} name={t('BDT')} />
+                <Legend wrapperStyle={mobileChartConfig.legendStyle} />
+                <Line
+                  type="monotone"
+                  dataKey="BDT"
+                  stroke="#22d3ee"
+                  strokeWidth={mobileChartConfig.strokeWidth}
+                  dot={{
+                    fill: '#22d3ee',
+                    strokeWidth: mobileChartConfig.strokeWidth,
+                    r: mobileChartConfig.dotRadius
+                  }}
+                  name={t('BDT')}
+                />
+
+                {/* Add annotations for significant changes */}
+                {annotations.map((annotation, index) => (
+                  <ReferenceDot
+                    key={`annotation-bdt-${index}`}
+                    x={annotation.dataKey}
+                    y={annotation.value}
+                    r={8}
+                    fill={annotation.color}
+                    stroke="white"
+                    strokeWidth={2}
+                    className="animate-pulse"
+                  />
+                ))}
               </>
             )}
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Annotation Legend */}
+      {annotations.length > 0 && (
+        <div className="mt-4 p-3 bg-slate-700/30 rounded-lg">
+          <h5 className="text-sm font-medium text-slate-300 mb-2">{t('significantChanges')}</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {annotations.map((annotation, index) => (
+              <div key={`legend-${index}`} className="flex items-center gap-2 text-xs">
+                <div
+                  className="w-3 h-3 rounded-full border-2 border-white"
+                  style={{ backgroundColor: annotation.color }}
+                />
+                <span className="text-slate-300">
+                  {annotation.dataKey}: {getAnnotationExplanation(annotation, t)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </Section>
   );
 });

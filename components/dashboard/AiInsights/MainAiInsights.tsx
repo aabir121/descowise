@@ -2,6 +2,7 @@
 import React from 'react';
 import { DistributedAiInsights } from '../../../utils/aiInsightDistribution';
 import { WandSparklesIcon, ExclamationTriangleIcon, LightBulbIcon } from '../../common/Icons';
+import AiInsightTooltip from '../../common/AiInsightTooltip';
 
 interface MainAiInsightsProps {
   insights: DistributedAiInsights['main'];
@@ -37,10 +38,13 @@ const MainAiInsights: React.FC<MainAiInsightsProps> = ({ insights, t }) => {
         <div className="bg-red-500/10 border border-red-500/20 border-l-4 border-l-red-400 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <ExclamationTriangleIcon className="w-6 h-6 text-red-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <h5 className="font-semibold text-base text-red-400 mb-2">
-                {t('criticalAlert')}
-              </h5>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h5 className="font-semibold text-base text-red-400">
+                  {t('criticalAlert')}
+                </h5>
+                <AiInsightTooltip insightType="anomaly" t={t} />
+              </div>
               <p className="text-sm text-slate-300 leading-relaxed">
                 {criticalAnomalies.details}
               </p>
@@ -59,10 +63,13 @@ const MainAiInsights: React.FC<MainAiInsightsProps> = ({ insights, t }) => {
         <div className="bg-cyan-500/10 border border-cyan-500/20 border-l-4 border-l-cyan-400 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <LightBulbIcon className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <h5 className="font-medium text-sm text-cyan-400 mb-2">
-                {t('keyRecommendation')}
-              </h5>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h5 className="font-medium text-sm text-cyan-400">
+                  {t('keyRecommendation')}
+                </h5>
+                <AiInsightTooltip insightType="optimization" t={t} />
+              </div>
               <p className="text-sm text-slate-300 leading-relaxed">
                 {generalActionableTip}
               </p>
