@@ -134,7 +134,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 <div className="relative min-h-full">
                     {/* Skeleton Dashboard with fade out transition */}
                     <div className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
-                        isLoading ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                        isLoading ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none hidden'
                     }`}>
                         <SkeletonDashboard />
                     </div>
