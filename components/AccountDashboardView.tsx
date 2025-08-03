@@ -130,7 +130,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     </div>
                 </div>
             )}
-            <main className="flex-grow px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8 lg:pt-8 lg:pb-8 overflow-y-auto">
+            <main className="flex-grow px-4 pt-2 pb-4 sm:px-6 sm:pt-2 sm:pb-6 lg:px-8 lg:pt-2 lg:pb-8 overflow-y-auto">
                 <div className="relative min-h-full">
                     {/* Skeleton Dashboard with fade out transition */}
                     <div className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${

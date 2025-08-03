@@ -429,7 +429,7 @@ const DashboardSections: React.FC<any> = ({
         activeView={dashboardView}
         onViewChange={setDashboardView}
         t={t}
-        className="sticky top-4 z-20"
+        className="sticky top-0 z-20"
       />
 
       {/* Render sections with staggered loading */}

@@ -85,22 +85,13 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 )}
               </div>
-              
-              {/* Mobile: Show description on active tab */}
-              {isActive && (
-                <div className="sm:hidden mt-2 pt-2 border-t border-cyan-400/20">
-                  <p className="text-xs text-cyan-100 leading-relaxed">
-                    {tab.description}
-                  </p>
-                </div>
-              )}
             </button>
           );
         })}
       </div>
       
       {/* Desktop: Show description below tabs */}
-      <div className="hidden sm:block mt-3 pt-3 border-t border-slate-600">
+      <div className="sm:block mt-3 pt-3 border-t border-slate-600">
         <p className="text-sm text-slate-400 text-center">
           {tabs.find(tab => tab.id === activeView)?.description}
         </p>
