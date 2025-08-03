@@ -13,12 +13,36 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
 
   const handlePrint = () => {
     if (!printRef.current) return;
-    const printContents = printRef.current.innerHTML;
-    const originalContents = document.body.innerHTML;
-    document.body.innerHTML = printContents;
-    window.print();
-    document.body.innerHTML = originalContents;
-    window.location.reload(); // reload to restore event handlers
+
+    // Use a more modern approach that doesn't require page reload
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Recharge Details</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .print-content { max-width: 800px; margin: 0 auto; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="print-content">
+            ${printRef.current.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   if (!recharge) return null;
@@ -233,7 +257,10 @@ const RechargeHistorySection = ({
           disabled={isHistoryLoading}
           className="bg-slate-700 text-slate-200 px-4 py-2 rounded-lg border border-slate-600 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition disabled:opacity-50"
         >
-          {[...Array(5)].map((_, i) => <option key={i} value={new Date().getFullYear() - i}>{new Date().getFullYear() - i}</option>)}
+          {[...Array(5)].map((_, i) => {
+            const year = new Date().getFullYear() - i;
+            return <option key={year} value={year}>{year}</option>;
+          })}
         </select>
       </div>
       <VirtualTable

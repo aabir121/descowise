@@ -7,7 +7,8 @@ import { getDashboardLabel } from './dashboardLabels';
 import { optimizeChartData, debounceChartUpdate } from '../../utils/chartOptimization';
 import ConsumptionAiInsights from './AiInsights/ConsumptionAiInsights';
 import { SkeletonChart } from '../common/SkeletonComponents';
-import { detectSignificantChanges, getAnnotationExplanation, processDataWithAnnotations } from '../../utils/chartAnnotations';
+// Temporarily commented out to fix import error
+// import { detectSignificantChanges, getAnnotationExplanation, processDataWithAnnotations } from '../../utils/chartAnnotations';
 
 type TimeRange = 'thisMonth' | '6months' | '1year';
 type ChartView = 'energy' | 'cost';
@@ -56,30 +57,18 @@ const ConsumptionChartSection = memo(({
     }
   }, [consumptionTimeRange, setConsumptionTimeRange]);
 
-  // Memoize expensive calculations with chart optimization and annotations
-  const { totalValue, chartData, annotations } = useMemo(() => {
+  // Memoize expensive calculations with chart optimization (annotations temporarily disabled)
+  const { totalValue, chartData } = useMemo(() => {
     if (!consumptionChartData || consumptionChartData.length === 0) {
-      return { totalValue: 0, chartData: [], annotations: [] };
+      return { totalValue: 0, chartData: [] };
     }
 
     const total = consumptionChartData.reduce((sum, item) => {
       return sum + (chartView === 'energy' ? (item.kWh || 0) : (item.BDT || 0));
     }, 0);
 
-    // Process data with annotations for significant changes
-    const dataKey = chartView === 'energy' ? 'kWh' : 'BDT';
-    const { data: enhancedData, annotations: detectedAnnotations } = processDataWithAnnotations(
-      consumptionChartData,
-      dataKey,
-      {
-        minChangePercent: 20, // 20% change threshold for electricity usage
-        detectPeaks: true,
-        detectAnomalies: true
-      }
-    );
-
     // Optimize chart data to reduce DOM complexity
-    const optimizedData = optimizeChartData(enhancedData, 'line', {
+    const optimizedData = optimizeChartData(consumptionChartData, 'line', {
       maxPoints: 50,
       keyField: 'name',
       preserveExtremes: true
@@ -87,8 +76,7 @@ const ConsumptionChartSection = memo(({
 
     return {
       totalValue: total,
-      chartData: optimizedData,
-      annotations: detectedAnnotations
+      chartData: optimizedData
     };
   }, [consumptionChartData, chartView]);
 
@@ -282,19 +270,7 @@ const ConsumptionChartSection = memo(({
                   name={t('kWh')}
                 />
 
-                {/* Add annotations for significant changes */}
-                {annotations.map((annotation, index) => (
-                  <ReferenceDot
-                    key={`annotation-kwh-${index}`}
-                    x={annotation.dataKey}
-                    y={annotation.value}
-                    r={8}
-                    fill={annotation.color}
-                    stroke="white"
-                    strokeWidth={2}
-                    className="animate-pulse"
-                  />
-                ))}
+                {/* Annotations temporarily disabled */}
               </>
             ) : (
               <>
@@ -325,44 +301,14 @@ const ConsumptionChartSection = memo(({
                   name={t('BDT')}
                 />
 
-                {/* Add annotations for significant changes */}
-                {annotations.map((annotation, index) => (
-                  <ReferenceDot
-                    key={`annotation-bdt-${index}`}
-                    x={annotation.dataKey}
-                    y={annotation.value}
-                    r={8}
-                    fill={annotation.color}
-                    stroke="white"
-                    strokeWidth={2}
-                    className="animate-pulse"
-                  />
-                ))}
+                {/* Annotations temporarily disabled */}
               </>
             )}
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Annotation Legend */}
-      {annotations.length > 0 && (
-        <div className="mt-4 p-3 bg-slate-700/30 rounded-lg">
-          <h5 className="text-sm font-medium text-slate-300 mb-2">{t('significantChanges')}</h5>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {annotations.map((annotation, index) => (
-              <div key={`legend-${index}`} className="flex items-center gap-2 text-xs">
-                <div
-                  className="w-3 h-3 rounded-full border-2 border-white"
-                  style={{ backgroundColor: annotation.color }}
-                />
-                <span className="text-slate-300">
-                  {annotation.dataKey}: {getAnnotationExplanation(annotation, t)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Annotation Legend temporarily disabled */}
     </Section>
   );
 });

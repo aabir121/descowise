@@ -47,7 +47,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   ];
 
   return (
-    <div className={`bg-slate-800/50 border border-slate-600 rounded-xl p-1 ${className}`}>
+    <div className={`bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-1 shadow-lg ${className}`}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -56,11 +56,15 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           return (
             <button
               key={tab.id}
-              onClick={() => onViewChange(tab.id)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onViewChange(tab.id);
+              }}
               className={`
                 relative p-3 sm:p-4 rounded-lg transition-all duration-200 text-left
-                ${isActive 
-                  ? 'bg-cyan-600 text-white shadow-lg transform scale-[1.02]' 
+                ${isActive
+                  ? 'bg-cyan-600 text-white shadow-lg transform scale-[1.02]'
                   : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
                 }
                 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50

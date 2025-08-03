@@ -60,9 +60,13 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         handleYearChange,
         data,
         retryAiSummary,
+        forceRefreshAiSummary,
         // New distributed AI insights
         distributedAiInsights,
         aiLoadingStates,
+        // AI Cache information
+        isUsingCache,
+        cacheStatus,
     } = useDashboardData(account);
 
     // Add notification state for dashboard view
@@ -100,6 +104,9 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 onDelete={handleDeleteAccount}
                 setPortalConfirmation={setPortalConfirmation}
                 onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+                isUsingCache={isUsingCache}
+                cacheStatus={cacheStatus}
+                onForceRefreshAi={forceRefreshAiSummary}
             />
             {/* As of date display */}
             {data?.balance?.readingTime && (

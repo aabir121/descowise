@@ -146,8 +146,8 @@ const DashboardSections: React.FC<any> = ({
       case DASHBOARD_VIEWS.ESSENTIAL:
         return config.priority === SECTION_PRIORITIES.ESSENTIAL;
       case DASHBOARD_VIEWS.ANALYSIS:
-        return config.priority === SECTION_PRIORITIES.ESSENTIAL ||
-               config.priority === SECTION_PRIORITIES.ANALYSIS;
+        // Analysis view shows ONLY analysis sections, not essential ones
+        return config.priority === SECTION_PRIORITIES.ANALYSIS;
       case DASHBOARD_VIEWS.HISTORY:
         return config.priority === SECTION_PRIORITIES.HISTORY;
       case DASHBOARD_VIEWS.ALL:
@@ -370,6 +370,10 @@ const DashboardSections: React.FC<any> = ({
             <Suspense fallback={createSectionLoader('cumulative-consumption', false, t)}>
               <BalanceRunway
                 gaugeData={processedData?.gaugeData}
+                aiSummary={processedData?.aiSummary}
+                consumptionChartData={processedData?.consumptionChartData}
+                dailyConsumption={data?.dailyConsumption}
+                monthlyConsumption={data?.monthlyConsumption}
                 banglaEnabled={banglaEnabled}
                 t={t}
                 defaultOpen={getDefaultOpen('cumulative-consumption')}
@@ -425,7 +429,7 @@ const DashboardSections: React.FC<any> = ({
         activeView={dashboardView}
         onViewChange={setDashboardView}
         t={t}
-        className="sticky top-4 z-10"
+        className="sticky top-4 z-20"
       />
 
       {/* Render sections with staggered loading */}

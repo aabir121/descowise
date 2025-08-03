@@ -1,10 +1,11 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { AccountInfo, BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiError, AiSummaryResponse } from '../types';
+import { BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiSummaryResponse } from '../types';
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
 import { fetchJsonWithHandling } from '../utils/api';
 import { generateAiDashboardPrompt } from '../ai/promptGenerators';
 import { getApiKeyForRequest } from '../utils/deploymentConfig';
 import { getUserApiKey, setApiKeyValidationStatus } from '../utils/apiKeyStorage';
+import { BalanceCalculator } from '../utils/balanceCalculations';
 
 // Helper to process recharge history into monthly format
 const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[]): Array<{month: string, rechargeAmount: number, rechargeCount: number}> => {
@@ -22,6 +23,74 @@ const processRechargeHistoryToMonthly = (rechargeHistory: RechargeHistoryItem[])
         rechargeAmount: sanitizeCurrency(data.amount),
         rechargeCount: data.count
     })).sort((a, b) => a.month.localeCompare(b.month));
+};
+
+// Helper function to generate a basic fallback summary when AI parsing fails
+const generateBasicFallbackSummary = (
+    monthlyConsumption: MonthlyConsumption[],
+    balance: BalanceData,
+    currentMonth: string
+): AiSummary => {
+    const avgConsumption = monthlyConsumption.length > 0
+        ? monthlyConsumption.reduce((sum, item) => sum + (item.consumedTaka || 0), 0) / monthlyConsumption.length
+        : 0;
+
+    // Use unified balance calculation for consistency
+    let estimatedDaysRemaining = 0;
+    try {
+        if (balance.balance && balance.balance > 0) {
+            const balanceCalc = BalanceCalculator.calculateRemainingDays(
+                balance.balance,
+                monthlyConsumption,
+                [], // No daily data available in fallback
+                {
+                    preferredMethod: 'monthly',
+                    seasonalAdjustment: false,
+                    fallbackToBasic: true
+                }
+            );
+            estimatedDaysRemaining = balanceCalc.daysRemaining;
+        }
+    } catch (error) {
+        console.warn('Unified balance calculation failed in fallback summary:', error);
+        // Ultimate fallback calculation
+        estimatedDaysRemaining = balance.balance && avgConsumption > 0
+            ? Math.floor((balance.balance / avgConsumption) * 30)
+            : 0;
+    }
+
+    return {
+        title: "Dashboard Summary (Basic Mode)",
+        overallSummary: `Your average monthly consumption is approximately ${Math.round(avgConsumption)} BDT. This is a simplified analysis due to AI processing limitations.`,
+        anomaly: { detected: false, details: "Detailed anomaly detection unavailable in basic mode." },
+        seasonalTrend: { observed: false, details: "Seasonal trend analysis unavailable in basic mode." },
+        rechargePatternInsight: "Detailed recharge pattern analysis unavailable in basic mode.",
+        balanceStatusAndAdvice: {
+            status: balance.balance && balance.balance < 1000 ? "low" : "normal",
+            details: `Current balance: ${balance.balance || 0} BDT. ${balance.balance && balance.balance < 1000 ? 'Consider recharging soon.' : 'Balance appears adequate.'}`
+        },
+        rechargeRecommendation: {
+            recommendedAmountBDT: Math.max(2000, Math.round(avgConsumption)),
+            justification: "Based on average monthly consumption."
+        },
+        rechargeTimingInsight: "Recharge when balance gets low to avoid interruption.",
+        actionableTip: "Monitor daily usage to understand consumption patterns.",
+        balanceDepletionForecast: {
+            daysRemaining: estimatedDaysRemaining,
+            expectedDepletionDate: new Date(Date.now() + estimatedDaysRemaining * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            details: `Balance may last approximately ${estimatedDaysRemaining} days.`
+        },
+        currentMonthBillForecast: {
+            estimatedTotal: avgConsumption,
+            details: `Estimated monthly bill: ${Math.round(avgConsumption)} BDT.`
+        },
+        futureConsumptionForecast: [],
+        predictedTrueBalance: balance.balance || 0,
+        estimatedDaysRemaining: estimatedDaysRemaining,
+        balanceInsight: balance.balance && balance.balance < 1000
+            ? "Balance is low and may require attention soon."
+            : "Balance appears to be at a reasonable level."
+    };
 };
 
 export const verifyAccount = async (accountNo: string) => {
@@ -173,28 +242,70 @@ export const getAiDashboardSummary = async (
         }
 
         let jsonStr = response.text?.trim() || '';
-        const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-        const match = jsonStr.match(fenceRegex);
-        if (match && match[2]) {
-            jsonStr = match[2].trim();
-        }
 
+        // Enhanced JSON extraction with multiple fallback strategies
         try {
+            // Strategy 1: Remove code fences if present
+            const fenceRegex = /^```(\w+)?\s*\n?(.*?)\n?\s*```$/s;
+            const fenceMatch = fenceRegex.exec(jsonStr);
+            if (fenceMatch?.[2]) {
+                jsonStr = fenceMatch[2].trim();
+            }
+
+            // Strategy 2: Extract JSON from mixed content
+            // Look for JSON object boundaries
+            const jsonStartIndex = jsonStr.indexOf('{');
+            const jsonEndIndex = jsonStr.lastIndexOf('}');
+
+            if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+                const extractedJson = jsonStr.substring(jsonStartIndex, jsonEndIndex + 1);
+
+                // Strategy 3: Clean up common issues
+                let cleanedJson = extractedJson
+                    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+                    .replace(/\n\s*\n/g, '\n') // Remove extra newlines
+                    .trim();
+
+                // Strategy 4: Try parsing the cleaned JSON
+                const aiSummary = JSON.parse(cleanedJson) as AiSummary;
+
+                // Basic validation to ensure we have a valid AI summary
+                if (aiSummary && typeof aiSummary === 'object' && aiSummary.title) {
+                    return {
+                        success: true,
+                        data: aiSummary
+                    };
+                }
+            }
+
+            // Strategy 5: Fallback - try parsing original string
             const aiSummary = JSON.parse(jsonStr) as AiSummary;
+
+            // Basic validation for fallback
+            if (aiSummary && typeof aiSummary === 'object' && aiSummary.title) {
+                return {
+                    success: true,
+                    data: aiSummary
+                };
+            }
+
+            throw new Error('Parsed JSON does not contain valid AI summary structure');
+
+        } catch (e) {
+            console.error("Failed to parse AI response:", {
+                originalLength: response.text?.length,
+                processedLength: jsonStr.length,
+                firstChars: jsonStr.substring(0, 100),
+                lastChars: jsonStr.substring(Math.max(0, jsonStr.length - 100)),
+                error: e
+            });
+
+            // Use fallback summary instead of failing completely
+            const fallbackSummary = generateBasicFallbackSummary(monthlyConsumption, balance, currentMonth);
             return {
                 success: true,
-                data: aiSummary
-            };
-        } catch (e) {
-            console.error("Failed to parse AI response:", jsonStr, e);
-            return {
-                success: false,
-                error: {
-                    type: 'parsing',
-                    message: 'Failed to parse AI response',
-                    details: 'The AI generated invalid JSON format. Please try again.',
-                    retryable: true
-                }
+                data: fallbackSummary,
+                fallback: true
             };
         }
     } catch (error: any) {
@@ -325,10 +436,10 @@ export const getAiBalanceEstimate = async (
         });
 
         let jsonStr = response.text?.trim() || '';
-        const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-        const match = jsonStr.match(fenceRegex);
-        if (match && match[2]) {
-            jsonStr = match[2].trim();
+        const fenceRegex = /^```(\w+)?\s*\n?(.*?)\n?\s*```$/s;
+        const fenceMatch = fenceRegex.exec(jsonStr);
+        if (fenceMatch?.[2]) {
+            jsonStr = fenceMatch[2].trim();
         }
 
         try {
@@ -339,6 +450,7 @@ export const getAiBalanceEstimate = async (
                 estimatedDaysRemaining: typeof aiResult.estimatedDaysRemaining === 'number' ? aiResult.estimatedDaysRemaining : null,
             };
         } catch (e) {
+            console.error('Failed to parse balance estimation response:', e);
             return {
                 estimate: null,
                 insight: '',
@@ -451,9 +563,8 @@ export const getCustomerDailyConsumption = async (accountNo: string, meterNo: st
     });
 };
 
-export const getRechargeHistory = async (accountNo: string, meterNo: string, year: number): Promise<RechargeHistoryItem[]> => {
-    const fromDate = new Date(year, 0, 1); // January 1st
-    const toDate = new Date(year, 11, 31); // December 31st
+// Updated function with date range support
+export const getRechargeHistory = async (accountNo: string, meterNo: string, fromDate: Date, toDate: Date): Promise<RechargeHistoryItem[]> => {
     const url = `https://prepaid.desco.org.bd/api/unified/customer/getRechargeHistory?accountNo=${accountNo}&meterNo=${meterNo}&dateFrom=${formatDate(fromDate)}&dateTo=${formatDate(toDate)}`;
     const result = await fetchJsonWithHandling(url);
     if (result.code !== 200 || !result.data) return [];
@@ -461,6 +572,13 @@ export const getRechargeHistory = async (accountNo: string, meterNo: string, yea
         ...item,
         totalAmount: sanitizeCurrency(item.totalAmount)
     }));
+};
+
+// Legacy function for backward compatibility (year-based)
+export const getRechargeHistoryByYear = async (accountNo: string, meterNo: string, year: number): Promise<RechargeHistoryItem[]> => {
+    const fromDate = new Date(year, 0, 1); // January 1st
+    const toDate = new Date(year, 11, 31); // December 31st
+    return getRechargeHistory(accountNo, meterNo, fromDate, toDate);
 };
 
 export const getCustomerMonthlyConsumption = async (accountNo: string, meterNo: string, months: number = 24): Promise<MonthlyConsumption[]> => {

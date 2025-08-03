@@ -3,6 +3,8 @@ import React, { useMemo } from 'react';
 import Section from '../common/Section';
 import { ClockIcon, BatteryIcon, CalendarIcon, TrendingDownIcon } from '../common/Icons';
 import { formatCurrency } from '../common/format';
+import { BalanceCalculator } from '../../utils/balanceCalculations';
+import { MonthlyConsumption, DailyConsumption } from '../../types';
 
 interface BalanceRunwayProps {
   gaugeData: {
@@ -11,6 +13,22 @@ interface BalanceRunwayProps {
     daysRemaining: number;
     percentage: number;
   } | null;
+  // AI prediction data
+  aiSummary?: {
+    estimatedDaysRemaining?: number;
+    balanceDepletionForecast?: string;
+    balanceStatusAndAdvice?: string;
+  } | null;
+  // Historical consumption data for statistical analysis
+  consumptionChartData?: Array<{
+    name: string;
+    kWh: number;
+    BDT: number;
+    date?: string;
+  }> | null;
+  // Raw data for consistent calculations
+  dailyConsumption?: DailyConsumption[] | null;
+  monthlyConsumption?: MonthlyConsumption[] | null;
   banglaEnabled: boolean;
   t: (key: string) => string;
   defaultOpen: boolean;
@@ -21,6 +39,10 @@ interface BalanceRunwayProps {
 
 const BalanceRunway: React.FC<BalanceRunwayProps> = ({
   gaugeData,
+  aiSummary,
+  consumptionChartData,
+  dailyConsumption,
+  monthlyConsumption,
   banglaEnabled,
   t,
   defaultOpen,
@@ -28,47 +50,94 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
   showInfoIcon,
   onInfoClick
 }) => {
-  // Calculate runway insights
+  // Use unified balance calculation system with same data as main calculation
+  const unifiedBalanceCalculation = useMemo(() => {
+    if (!gaugeData) return null;
+
+    try {
+      // Use the same data source as the main gauge calculation for consistency
+      const result = BalanceCalculator.calculateRemainingDays(
+        gaugeData.currentBalance,
+        monthlyConsumption || [],
+        dailyConsumption || [],
+        {
+          preferredMethod: BalanceCalculator.getRecommendedMethod(monthlyConsumption || [], dailyConsumption || []),
+          seasonalAdjustment: true,
+          dataPointsLimit: 60,
+          fallbackToBasic: true
+        }
+      );
+
+      return result;
+    } catch (error) {
+      console.warn('Unified balance calculation failed in BalanceRunway:', error);
+      return null;
+    }
+  }, [gaugeData, dailyConsumption, monthlyConsumption]);
+
+  // Calculate runway insights with unified calculation system
   const runwayInsights = useMemo(() => {
     if (!gaugeData) return null;
 
     const { currentBalance, averageMonthlyCost, daysRemaining } = gaugeData;
-    
-    // Calculate daily average cost
-    const dailyAverageCost = averageMonthlyCost / 30;
-    
+
+    // Priority 1: Use AI prediction if available
+    let finalDaysRemaining = daysRemaining;
+    let dataSource = 'basic';
+    let confidence = 0.7;
+    let additionalInfo = '';
+
+    if (aiSummary?.estimatedDaysRemaining && typeof aiSummary.estimatedDaysRemaining === 'number') {
+      // Use AI prediction
+      finalDaysRemaining = aiSummary.estimatedDaysRemaining;
+      dataSource = 'ai';
+      confidence = 0.9;
+      additionalInfo = aiSummary.balanceDepletionForecast || '';
+    } else if (unifiedBalanceCalculation) {
+      // Use unified calculation system
+      finalDaysRemaining = unifiedBalanceCalculation.daysRemaining;
+      dataSource = unifiedBalanceCalculation.calculationMethod;
+      confidence = unifiedBalanceCalculation.confidence;
+      additionalInfo = unifiedBalanceCalculation.details;
+    }
+
+    // Calculate daily average cost using unified system
+    const dailyAverageCost = unifiedBalanceCalculation
+      ? unifiedBalanceCalculation.dailyAverageCost
+      : averageMonthlyCost / 30;
+
     // Determine runway status
     let status = 'good';
     let statusColor = 'text-green-400';
     let statusBgColor = 'bg-green-500/10';
     let statusBorderColor = 'border-green-500/20';
     let progressColor = 'from-green-500 to-green-400';
-    
-    if (daysRemaining <= 7) {
+
+    if (finalDaysRemaining <= 7) {
       status = 'critical';
       statusColor = 'text-red-400';
       statusBgColor = 'bg-red-500/10';
       statusBorderColor = 'border-red-500/20';
       progressColor = 'from-red-500 to-red-400';
-    } else if (daysRemaining <= 15) {
+    } else if (finalDaysRemaining <= 15) {
       status = 'warning';
       statusColor = 'text-yellow-400';
       statusBgColor = 'bg-yellow-500/10';
       statusBorderColor = 'border-yellow-500/20';
       progressColor = 'from-yellow-500 to-yellow-400';
     }
-    
+
     // Calculate progress percentage (inverse - more days = fuller bar)
     const maxDays = 60; // Consider 60 days as "full"
-    const progressPercentage = Math.min((daysRemaining / maxDays) * 100, 100);
-    
+    const progressPercentage = Math.min((finalDaysRemaining / maxDays) * 100, 100);
+
     // Calculate when balance will run out
     const runOutDate = new Date();
-    runOutDate.setDate(runOutDate.getDate() + daysRemaining);
-    
+    runOutDate.setDate(runOutDate.getDate() + finalDaysRemaining);
+
     return {
       currentBalance,
-      daysRemaining,
+      daysRemaining: finalDaysRemaining,
       dailyAverageCost,
       status,
       statusColor,
@@ -77,10 +146,13 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
       progressColor,
       progressPercentage,
       runOutDate,
-      monthsRemaining: Math.floor(daysRemaining / 30),
-      weeksRemaining: Math.floor(daysRemaining / 7)
+      monthsRemaining: Math.floor(finalDaysRemaining / 30),
+      weeksRemaining: Math.floor(finalDaysRemaining / 7),
+      dataSource,
+      confidence,
+      additionalInfo
     };
-  }, [gaugeData]);
+  }, [gaugeData, aiSummary, unifiedBalanceCalculation]);
 
   if (!gaugeData || !runwayInsights) return null;
 
@@ -198,6 +270,50 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
           </div>
         </div>
 
+        {/* Data Source Indicator */}
+        <div className="bg-slate-700/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <h5 className="text-sm font-medium text-slate-300">{t('dataSource')}</h5>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                runwayInsights.dataSource === 'ai' ? 'bg-purple-400' :
+                runwayInsights.dataSource === 'statistical' ? 'bg-blue-400' :
+                'bg-gray-400'
+              }`}></div>
+              <span className="text-xs text-slate-400">
+                {runwayInsights.dataSource === 'ai' ? t('aiPrediction') :
+                 runwayInsights.dataSource === 'statistical' ? t('statisticalAnalysis') :
+                 t('basicCalculation')}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400">{t('confidence')}</span>
+            <div className="flex items-center gap-2">
+              <div className="w-16 h-2 bg-slate-600 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    runwayInsights.confidence >= 0.8 ? 'bg-green-400' :
+                    runwayInsights.confidence >= 0.6 ? 'bg-yellow-400' :
+                    'bg-red-400'
+                  }`}
+                  style={{ width: `${runwayInsights.confidence * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-slate-300">
+                {Math.round(runwayInsights.confidence * 100)}%
+              </span>
+            </div>
+          </div>
+
+          {runwayInsights.additionalInfo && (
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              {runwayInsights.additionalInfo}
+            </p>
+          )}
+        </div>
+
         {/* Recommendation */}
         {runwayInsights.status !== 'good' && (
           <div className={`${runwayInsights.statusBgColor} ${runwayInsights.statusBorderColor} border rounded-lg p-4`}>
@@ -205,7 +321,7 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
               💡 {t('recommendation')}
             </h4>
             <p className="text-sm text-slate-300">
-              {runwayInsights.status === 'critical' 
+              {runwayInsights.status === 'critical'
                 ? t('criticalBalanceRecommendation')
                 : t('lowBalanceRecommendation')
               }

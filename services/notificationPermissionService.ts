@@ -173,13 +173,9 @@ class NotificationPermissionService {
    * Show a test notification
    */
   async showTestNotification(): Promise<void> {
-    console.log('showTestNotification called');
-
     if (!this.areNotificationsEnabled()) {
       throw new Error('Notifications are not enabled or permitted');
     }
-
-    console.log('Notifications are enabled, proceeding...');
 
     try {
       if ('serviceWorker' in navigator) {

@@ -235,5 +235,5 @@ if (typeof window !== 'undefined') {
     testMockData: testNotificationSystemWithMockData,
   };
   
-  console.log('🔧 Notification tests available in window.notificationTests');
+
 }

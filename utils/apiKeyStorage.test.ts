@@ -71,7 +71,5 @@ export async function compareEncryptionMethods() {
 if (typeof window !== 'undefined') {
   (window as any).testApiKeyEncryption = testApiKeyEncryption;
   (window as any).compareEncryptionMethods = compareEncryptionMethods;
-  console.log('API Key encryption test functions available:');
-  console.log('- testApiKeyEncryption()');
-  console.log('- compareEncryptionMethods()');
+
 }

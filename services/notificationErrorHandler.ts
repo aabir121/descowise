@@ -97,7 +97,7 @@ class NotificationErrorHandler {
     };
 
     this.storeQueuedNotification(queuedNotification);
-    console.log(`Notification queued for retry: ${queueId}`);
+
 
     return queueId;
   }
@@ -107,7 +107,7 @@ class NotificationErrorHandler {
    */
   async processQueue(): Promise<void> {
     if (!navigator.onLine) {
-      console.log('Still offline, skipping queue processing');
+
       return;
     }
 
@@ -116,7 +116,7 @@ class NotificationErrorHandler {
       return;
     }
 
-    console.log(`Processing ${queue.length} queued notifications...`);
+
 
     for (const notification of queue) {
       try {
@@ -134,7 +134,7 @@ class NotificationErrorHandler {
             notification.accountNo
           );
         } else {
-          console.log(`Retry ${notification.retryCount}/${notification.maxRetries} failed for ${notification.id}`);
+
           this.updateQueuedNotification(notification);
         }
       }
@@ -179,12 +179,10 @@ class NotificationErrorHandler {
    */
   handleOnlineStatusChange(): void {
     if (navigator.onLine) {
-      console.log('Device back online, processing notification queue...');
+
       this.processQueue().catch(error => {
         this.handleError(error, 'network');
       });
-    } else {
-      console.log('Device went offline, notifications will be queued');
     }
   }
 
@@ -311,7 +309,7 @@ class NotificationErrorHandler {
     try {
       localStorage.removeItem(this.ERROR_STORAGE_KEY);
       localStorage.removeItem(this.QUEUE_STORAGE_KEY);
-      console.log('Notification errors and queue cleared');
+
     } catch (error) {
       console.error('Failed to clear notification data:', error);
     }
@@ -331,7 +329,7 @@ class NotificationErrorHandler {
       });
     }
     
-    console.log('Notification error handler initialized');
+
   }
 
   /**

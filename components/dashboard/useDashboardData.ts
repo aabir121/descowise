@@ -13,6 +13,14 @@ import {
 } from '../../utils/aiInsightDistribution';
 import { shouldEnableAiFeatures } from '../../utils/deploymentConfig';
 import { getUserApiKey } from '../../utils/apiKeyStorage';
+import { BalanceCalculator } from '../../utils/balanceCalculations';
+import {
+  getCachedAiResponse,
+  cacheAiResponse,
+  isCacheValid,
+  getCacheStatus,
+  forceRefresh
+} from '../../utils/aiCacheManager';
 
 type TimeRange = 'thisMonth' | '6months' | '1year';
 
@@ -41,9 +49,18 @@ type UseDashboardDataReturn = {
   handleYearChange: (year: number) => void;
   data: any | null;
   retryAiSummary: () => void;
+  forceRefreshAiSummary: () => void;
   // New distributed AI insights
   distributedAiInsights: DistributedAiInsights | null;
   aiLoadingStates: AiLoadingStates;
+  // AI Cache information
+  isUsingCache: boolean;
+  cacheStatus: {
+    isCached: boolean;
+    isStale: boolean;
+    lastFetch: Date | null;
+    timeRemaining: number;
+  };
 };
 
 const useDashboardData = (account: Account): UseDashboardDataReturn => {
@@ -66,6 +83,15 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
   const [distributedAiInsights, setDistributedAiInsights] = useState<DistributedAiInsights | null>(null);
   const [aiLoadingStates, setAiLoadingStates] = useState<AiLoadingStates>(createInitialLoadingStates());
 
+  // AI Cache state
+  const [isUsingCache, setIsUsingCache] = useState<boolean>(false);
+  const [cacheStatus, setCacheStatus] = useState<{
+    isCached: boolean;
+    isStale: boolean;
+    lastFetch: Date | null;
+    timeRemaining: number;
+  }>({ isCached: false, isStale: false, lastFetch: null, timeRemaining: 0 });
+
   useEffect(() => {
     let isMounted = true;
     
@@ -76,10 +102,22 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsDataProcessing(true);
         setError(null);
 
+        // Calculate date range for consistent 24-month period across all data sources
+        const today = new Date();
+        const toMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const fromMonth = new Date();
+        fromMonth.setMonth(toMonth.getMonth() - 23); // 24 months total (0-23)
+
+        // Convert to date range for recharge history (from first day of fromMonth to last day of current month)
+        const rechargeFromDate = new Date(fromMonth.getFullYear(), fromMonth.getMonth(), 1);
+        const rechargeToDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
+
+
+
         const [location, monthlyConsumption, rechargeHistory, dailyConsumption, balanceResult] = await Promise.all([
           api.getCustomerLocation(account.accountNo),
           api.getCustomerMonthlyConsumption(account.accountNo, account.meterNo, 24),
-          api.getRechargeHistory(account.accountNo, account.meterNo, new Date().getFullYear()),
+          api.getRechargeHistory(account.accountNo, account.meterNo, rechargeFromDate, rechargeToDate),
           api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 90), // Increased to 90 days to ensure we have enough recent data
           api.getAccountBalance(account.accountNo)
         ]);
@@ -138,9 +176,37 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       }
     };
     
-    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[]) => {
+    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[], forceRefreshCache: boolean = false) => {
       try {
         if (!isMounted) return;
+
+        // Update cache status
+        const currentCacheStatus = getCacheStatus(account.accountNo);
+        setCacheStatus(currentCacheStatus);
+
+        // Check for cached response first (unless force refresh is requested)
+        if (!forceRefreshCache) {
+          const cachedResponse = getCachedAiResponse(account.accountNo, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
+          if (cachedResponse) {
+            console.log('Using cached AI insights');
+            setIsUsingCache(true);
+            setIsAiLoading(false);
+            setIsAiAvailable(true);
+            setAiError(null);
+
+            if (!isMounted) return;
+            setData(prevData => prevData ? { ...prevData, aiSummary: cachedResponse } : null);
+
+            // Distribute cached AI insights
+            const distributed = distributeAiInsights(cachedResponse);
+            setDistributedAiInsights(distributed);
+            setAiLoadingStates(completeAiAnalysis);
+            return;
+          }
+        }
+
+        // No valid cache found or force refresh requested - fetch from API
+        setIsUsingCache(false);
         setIsAiLoading(true);
         setIsAiAvailable(true);
         setAiError(null);
@@ -157,6 +223,12 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         if (!isMounted) return;
 
         if (aiResponse.success && aiResponse.data) {
+          // Cache the fresh response
+          cacheAiResponse(account.accountNo, aiResponse.data, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
+
+          // Update cache status
+          setCacheStatus(getCacheStatus(account.accountNo));
+
           // Distribute AI insights across panels
           const distributed = distributeAiInsights(aiResponse.data);
           setDistributedAiInsights(distributed);
@@ -231,7 +303,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     setRechargeYear(newYear);
     setIsHistoryLoading(true);
     try {
-      const newRechargeHistory = await api.getRechargeHistory(account.accountNo, account.meterNo, newYear);
+      const newRechargeHistory = await api.getRechargeHistoryByYear(account.accountNo, account.meterNo, newYear);
       setData(prev => prev ? { ...prev, rechargeHistory: newRechargeHistory } : null);
     } catch (err) {
       setError(`Failed to load recharge history for ${newYear}.`);
@@ -347,14 +419,61 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         'Previous Year': comparisonMetric === 'bdt' ? (prevYearData?.consumedTaka ?? 0) : ((prevYearData?.consumedUnit ?? 0)),
       };
     });
+    // Data processing for net balance analysis
+
     const rechargeVsConsumptionData = monthlyConsumptionLast12.map(mc => {
-      const rechargesInMonth = data.rechargeHistory
-        .filter(rh => rh.rechargeDate.startsWith(mc.month))
-        .reduce((sum, rh) => sum + rh.totalAmount, 0);
+      // Ensure we have valid data and handle null/undefined values
+      const monthStr = mc.month || '';
+      const consumptionAmount = mc.consumedTaka || 0;
+
+
+
+      // Filter recharges for this month with better error handling and debugging
+      const matchingRecharges = (data.rechargeHistory || [])
+        .filter(rh => {
+          // Ensure rechargeDate exists and is valid
+          if (!rh || !rh.rechargeDate || typeof rh.rechargeDate !== 'string') {
+            return false;
+          }
+
+          // Extract YYYY-MM from recharge date for comparison
+          // Handle different possible date formats
+          let rechargeDateStr;
+          try {
+            // Try to parse as date first to handle various formats
+            const rechargeDate = new Date(rh.rechargeDate);
+            if (!isNaN(rechargeDate.getTime())) {
+              // If it's a valid date, format it as YYYY-MM
+              const year = rechargeDate.getFullYear();
+              const month = (rechargeDate.getMonth() + 1).toString().padStart(2, '0');
+              rechargeDateStr = `${year}-${month}`;
+            } else {
+              // Fallback to substring method
+              rechargeDateStr = rh.rechargeDate.substring(0, 7);
+            }
+          } catch (e) {
+            // If date parsing fails, use substring method
+            rechargeDateStr = rh.rechargeDate.substring(0, 7);
+          }
+
+          const matches = rechargeDateStr === monthStr;
+          return matches;
+        });
+
+      const rechargesInMonth = matchingRecharges.reduce((sum, rh) => {
+        // Ensure totalAmount is a valid number
+        const amount = typeof rh.totalAmount === 'number' ? rh.totalAmount : 0;
+        return sum + amount;
+      }, 0);
+
+      // Ensure we return valid numbers (never null/undefined)
+      const validConsumption = Math.max(0, consumptionAmount || 0);
+      const validRecharge = Math.max(0, rechargesInMonth || 0);
+
       return {
-        month: formatMonth(mc.month),
-        Consumption: mc.consumedTaka,
-        Recharge: rechargesInMonth,
+        month: formatMonth(monthStr),
+        Consumption: validConsumption,
+        Recharge: validRecharge,
       };
     });
     const maxDemandData = monthlyConsumptionLast12.map(mc => ({ month: formatMonth(mc.month), 'Max Demand (kW)': mc.maximumDemand }));
@@ -386,12 +505,47 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       'Monthly Cost (BDT)': item.consumedTaka
     }));
     const averageMonthlyCost = sortedMonthly.slice(-6).reduce((sum, m) => sum + m.consumedTaka, 0) / 6;
-    const gaugeData = data.balance && data.balance.balance !== null && data.balance.balance !== undefined ? {
-      currentBalance: data.balance.balance,
-      averageMonthlyCost,
-      daysRemaining: Math.floor(data.balance.balance / (averageMonthlyCost / 30)),
-      percentage: Math.min((data.balance.balance / averageMonthlyCost) * 100, 100)
-    } : null;
+
+    // Use unified balance calculation system for consistency
+    const gaugeData = data.balance && data.balance.balance !== null && data.balance.balance !== undefined ? (() => {
+      try {
+        const balanceCalc = BalanceCalculator.calculateRemainingDays(
+          data.balance.balance,
+          sortedMonthly,
+          data.dailyConsumption || [],
+          {
+            preferredMethod: BalanceCalculator.getRecommendedMethod(sortedMonthly, data.dailyConsumption || []),
+            seasonalAdjustment: true,
+            dataPointsLimit: 60,
+            fallbackToBasic: true
+          }
+        );
+
+        return {
+          currentBalance: data.balance.balance,
+          averageMonthlyCost: balanceCalc.monthlyAverageCost,
+          daysRemaining: balanceCalc.daysRemaining,
+          percentage: Math.min((data.balance.balance / balanceCalc.monthlyAverageCost) * 100, 100),
+          calculationMethod: balanceCalc.calculationMethod,
+          confidence: balanceCalc.confidence,
+          dataPoints: balanceCalc.dataPoints,
+          details: balanceCalc.details
+        };
+      } catch (error) {
+        console.warn('Unified balance calculation failed, using fallback:', error);
+        // Fallback to original calculation
+        return {
+          currentBalance: data.balance.balance,
+          averageMonthlyCost,
+          daysRemaining: Math.floor(data.balance.balance / (averageMonthlyCost / 30)),
+          percentage: Math.min((data.balance.balance / averageMonthlyCost) * 100, 100),
+          calculationMethod: 'fallback',
+          confidence: 0.5,
+          dataPoints: 6,
+          details: 'Fallback calculation using 6-month average'
+        };
+      }
+    })() : null;
     return {
       consumptionChartData,
       comparisonData,
@@ -418,6 +572,21 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     }
   }, [data]);
 
+  // Add force refresh handler for AI summary
+  const forceRefreshAiSummary = useCallback(() => {
+    setAiError(null);
+    forceRefresh(account.accountNo);
+    if (data) {
+      fetchAiSummary(
+        data.monthlyConsumption || [],
+        data.rechargeHistory || [],
+        data.balance,
+        data.dailyConsumption || [],
+        true // Force refresh
+      );
+    }
+  }, [data, account.accountNo]);
+
   return {
     processedData,
     isLoading: isLoading || isDataProcessing, // Include data processing in loading state
@@ -443,9 +612,13 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     handleYearChange,
     data,
     retryAiSummary,
+    forceRefreshAiSummary,
     // New distributed AI insights
     distributedAiInsights,
     aiLoadingStates,
+    // AI Cache information
+    isUsingCache,
+    cacheStatus,
   };
 };
 

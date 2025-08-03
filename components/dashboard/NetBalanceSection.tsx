@@ -32,12 +32,20 @@ const NetBalanceSection: React.FC<NetBalanceSectionProps> = ({
   onInfoClick
 }) => {
   // Process data to calculate net balance
-  const { netBalanceData, summary } = useMemo(() => {
+  const { netBalanceData, summary, dataQualityWarnings } = useMemo(() => {
     if (!rechargeVsConsumptionData || rechargeVsConsumptionData.length === 0) {
-      return { netBalanceData: [], summary: null };
+      return { netBalanceData: [], summary: null, dataQualityWarnings: [] };
     }
 
+    const warnings = [];
     const processedData = rechargeVsConsumptionData.map(item => {
+      // Validate data quality
+      if (item.Consumption === 0 && item.Recharge === 0) {
+        warnings.push(`${item.month}: No consumption or recharge data - possible data gap`);
+      } else if (item.Consumption === 0) {
+        warnings.push(`${item.month}: No consumption recorded - unusual for active account`);
+      }
+
       const netBalance = item.Recharge - item.Consumption;
       return {
         month: item.month,
@@ -47,6 +55,11 @@ const NetBalanceSection: React.FC<NetBalanceSectionProps> = ({
         isPositive: netBalance >= 0
       };
     });
+
+    // Log warnings in development
+    if (process.env.NODE_ENV === 'development' && warnings.length > 0) {
+      console.warn('Net Balance Data Quality Warnings:', warnings);
+    }
 
     // Calculate summary statistics
     const totalRecharge = rechargeVsConsumptionData.reduce((sum, item) => sum + item.Recharge, 0);
@@ -74,7 +87,8 @@ const NetBalanceSection: React.FC<NetBalanceSectionProps> = ({
         bestMonth,
         worstMonth,
         averageNetBalance: overallNetBalance / processedData.length
-      }
+      },
+      dataQualityWarnings: warnings
     };
   }, [rechargeVsConsumptionData]);
 
@@ -129,6 +143,48 @@ const NetBalanceSection: React.FC<NetBalanceSectionProps> = ({
       }
     >
       <div className="space-y-6">
+        {/* Understanding Net Balance - Educational Panel */}
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+          <h4 className="text-blue-400 font-medium mb-2">💡 {t('understandingNetBalance')}</h4>
+          <div className="text-sm text-slate-300 space-y-2">
+            <p>{t('netBalanceExplanation')}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 bg-green-400 rounded-full mt-1 flex-shrink-0"></div>
+                <div>
+                  <p className="text-green-400 font-medium text-xs">{t('positiveMonth')}</p>
+                  <p className="text-xs text-slate-400">{t('positiveMonthExplanation')}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 bg-red-400 rounded-full mt-1 flex-shrink-0"></div>
+                <div>
+                  <p className="text-red-400 font-medium text-xs">{t('negativeMonth')}</p>
+                  <p className="text-xs text-slate-400">{t('negativeMonthExplanation')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Quality Warnings */}
+        {dataQualityWarnings && dataQualityWarnings.length > 0 && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="text-yellow-400 font-medium mb-2">⚠️ {t('dataQualityNotice')}</h4>
+            <p className="text-sm text-slate-300 mb-2">
+              {t('someMonthsMayHaveIncompleteData')}:
+            </p>
+            <ul className="text-xs text-slate-400 space-y-1">
+              {dataQualityWarnings.slice(0, 3).map((warning, index) => (
+                <li key={index}>• {warning}</li>
+              ))}
+              {dataQualityWarnings.length > 3 && (
+                <li>• {t('andNMore', { count: dataQualityWarnings.length - 3 })}</li>
+              )}
+            </ul>
+          </div>
+        )}
+
         {/* Summary Cards */}
         {summary && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -162,7 +218,7 @@ const NetBalanceSection: React.FC<NetBalanceSectionProps> = ({
                 {summary.positiveMonths}
               </p>
               <p className="text-xs text-slate-400">
-                {t('outOf')} {summary.positiveMonths + summary.negativeMonths} {t('months')}
+                {t('monthsWithExcessRecharge')}
               </p>
             </div>
 
@@ -175,7 +231,7 @@ const NetBalanceSection: React.FC<NetBalanceSectionProps> = ({
                 {summary.negativeMonths}
               </p>
               <p className="text-xs text-slate-400">
-                {t('needMoreRecharge')}
+                {t('monthsWithHigherConsumption')}
               </p>
             </div>
           </div>

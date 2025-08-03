@@ -3,13 +3,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
-import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon } from '../common/Icons';
+import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, CogIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon, BellIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
 import SectionSettingsModal from '../common/SectionSettingsModal';
 import ShareModal from '../common/ShareModal';
 import Notification from '../common/Notification';
 import ApiKeyStatusIndicator from '../common/ApiKeyStatusIndicator';
 import HelpModal from '../common/HelpModal';
+import NotificationSettingsModal from '../NotificationSettingsModal';
 
 const DashboardHeader: React.FC<{
   account: Account;
@@ -17,7 +18,16 @@ const DashboardHeader: React.FC<{
   onDelete: (accountNo: string) => void;
   setPortalConfirmation: (state: { isOpen: boolean }) => void;
   onOpenApiKeyModal?: () => void;
-}> = ({ account, onClose, onDelete, setPortalConfirmation, onOpenApiKeyModal }) => {
+  // AI Cache props
+  isUsingCache?: boolean;
+  cacheStatus?: {
+    isCached: boolean;
+    isStale: boolean;
+    lastFetch: Date | null;
+    timeRemaining: number;
+  };
+  onForceRefreshAi?: () => void;
+}> = ({ account, onClose, onDelete, setPortalConfirmation, onOpenApiKeyModal, isUsingCache, cacheStatus, onForceRefreshAi }) => {
   const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -26,6 +36,7 @@ const DashboardHeader: React.FC<{
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [isHelpTourOpen, setIsHelpTourOpen] = useState(false);
+  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
 
   const handleShare = () => {
     setIsShareModalOpen(true);
@@ -63,7 +74,7 @@ const DashboardHeader: React.FC<{
         const menuElement = document.querySelector('[data-mobile-menu]');
 
         // Don't close if clicking on the menu button or inside the menu
-        if (!menuButtonRef.current.contains(target) &&
+        if (!menuButtonRef.current?.contains(target) &&
             (!menuElement || !menuElement.contains(target))) {
           setIsMenuOpen(false);
         }
@@ -99,54 +110,100 @@ const DashboardHeader: React.FC<{
             </span>
           </div>
         </div>
-        {/* Desktop actions (inline) */}
+        {/* Desktop actions - Reorganized with better hierarchy */}
         <div className="hidden lg:flex items-center gap-2 xl:gap-3 flex-shrink-0">
-          <ApiKeyStatusIndicator
-            variant="button"
-            size="sm"
-            onClick={onOpenApiKeyModal}
-            showTooltip={true}
-          />
-          <IconButton
-            onClick={() => setIsHelpTourOpen(true)}
-            className="bg-blue-600/80 hover:bg-blue-500 text-white py-2 px-3 sm:px-4"
-            title={t('helpAndGuidance', 'Help & Guidance')}
-          >
-            <InformationCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">{t('help', 'Help')}</span>
-          </IconButton>
-          <IconButton
-            onClick={() => setIsSettingsOpen(true)}
-            className="bg-slate-600/80 hover:bg-slate-500 text-white py-2 px-3 sm:px-4"
-            title={t('sectionPreferencesAndSettings')}
-          >
-            <CogIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">{t('settings')}</span>
-          </IconButton>
-          <IconButton
-            onClick={() => setPortalConfirmation({ isOpen: true })}
-            className="bg-cyan-500/80 hover:bg-cyan-600 text-white py-2 px-4"
-            title={t('openDescoPortal')}
-          >
-            <BuildingOfficeIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">{t('officialPortal')}</span>
-          </IconButton>
-          <IconButton
-            onClick={handleShare}
-            className="bg-slate-500/80 hover:bg-slate-400 text-white py-2 px-4"
-            title={t('shareDashboard') || 'Share'}
-          >
-            <ShareIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">{t('share') || 'Share'}</span>
-          </IconButton>
-          <IconButton
-            onClick={() => onDelete(account.accountNo)}
-            className="bg-red-500/80 hover:bg-red-600 text-white py-2 px-4"
-            title={t('deleteAccount')}
-          >
-            <TrashIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">{t('delete')}</span>
-          </IconButton>
+          {/* Status Indicators Group */}
+          <div className="flex items-center gap-2 pr-2 border-r border-slate-600">
+            <ApiKeyStatusIndicator
+              variant="button"
+              size="sm"
+              onClick={onOpenApiKeyModal}
+              showTooltip={true}
+            />
+
+            {/* AI Cache Status Indicator */}
+            {cacheStatus && (
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                  isUsingCache
+                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    : 'bg-slate-700/50 text-slate-400'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    isUsingCache ? 'bg-blue-400' : 'bg-slate-500'
+                  }`} />
+                  <span>
+                    {isUsingCache ? t('cached') : t('fresh')} AI
+                  </span>
+                  {cacheStatus.isCached && (
+                    <span className="text-slate-500">
+                      ({cacheStatus.timeRemaining}m)
+                    </span>
+                  )}
+                </div>
+
+                {onForceRefreshAi && (
+                  <button
+                    onClick={onForceRefreshAi}
+                    className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
+                    title={t('refreshAiInsights')}
+                  >
+                    <WandSparklesIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Primary Actions Group - Icons Only with Tooltips */}
+          <div className="flex items-center gap-1">
+            <IconButton
+              onClick={() => setIsNotificationSettingsOpen(true)}
+              className="bg-purple-600/80 hover:bg-purple-500 text-white p-2"
+              title={t('notificationSettings', 'Notification Settings')}
+            >
+              <BellIcon className="w-5 h-5" />
+            </IconButton>
+            <IconButton
+              onClick={() => setIsHelpTourOpen(true)}
+              className="bg-blue-600/80 hover:bg-blue-500 text-white p-2"
+              title={t('helpAndGuidance', 'Help & Guidance')}
+            >
+              <InformationCircleIcon className="w-5 h-5" />
+            </IconButton>
+            <IconButton
+              onClick={() => setIsSettingsOpen(true)}
+              className="bg-slate-600/80 hover:bg-slate-500 text-white p-2"
+              title={t('sectionPreferencesAndSettings')}
+            >
+              <CogIcon className="w-5 h-5" />
+            </IconButton>
+          </div>
+
+          {/* Secondary Actions Group - Icons Only with Tooltips */}
+          <div className="flex items-center gap-1 pl-2 border-l border-slate-600">
+            <IconButton
+              onClick={() => setPortalConfirmation({ isOpen: true })}
+              className="bg-cyan-500/80 hover:bg-cyan-600 text-white p-2"
+              title={t('openDescoPortal')}
+            >
+              <BuildingOfficeIcon className="w-5 h-5" />
+            </IconButton>
+            <IconButton
+              onClick={handleShare}
+              className="bg-slate-500/80 hover:bg-slate-400 text-white p-2"
+              title={t('shareDashboard') || 'Share'}
+            >
+              <ShareIcon className="w-5 h-5" />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(account.accountNo)}
+              className="bg-red-500/80 hover:bg-red-600 text-white p-2"
+              title={t('deleteAccount')}
+            >
+              <TrashIcon className="w-5 h-5" />
+            </IconButton>
+          </div>
         </div>
         {/* Mobile/tablet overflow menu */}
         <div className="relative lg:hidden flex-shrink-0">
@@ -162,6 +219,7 @@ const DashboardHeader: React.FC<{
             <div
               data-mobile-menu
               role="menu"
+              tabIndex={0}
               className="fixed w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl flex flex-col py-2"
               style={{
                 top: `${menuPosition.top}px`,
@@ -170,7 +228,13 @@ const DashboardHeader: React.FC<{
                 pointerEvents: 'auto'
               }}
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setIsMenuOpen(false);
+                }
+              }}
             >
+              {/* Status & Management Section */}
               {onOpenApiKeyModal && (
                 <button
                   onClick={(e) => {
@@ -188,6 +252,16 @@ const DashboardHeader: React.FC<{
                   <span>{t('manageApiKey')}</span>
                 </button>
               )}
+
+              {/* Primary Actions Section */}
+              <div className="border-t border-slate-600 my-1"></div>
+              <button
+                onClick={() => { setIsNotificationSettingsOpen(true); setIsMenuOpen(false); }}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
+              >
+                <BellIcon className="w-5 h-5" />
+                <span>{t('notificationSettings', 'Notification Settings')}</span>
+              </button>
               <button
                 onClick={() => { setIsHelpTourOpen(true); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
@@ -202,6 +276,9 @@ const DashboardHeader: React.FC<{
                 <CogIcon className="w-5 h-5" />
                 <span>{t('settings')}</span>
               </button>
+
+              {/* Secondary Actions Section */}
+              <div className="border-t border-slate-600 my-1"></div>
               <button
                 onClick={() => { setPortalConfirmation({ isOpen: true }); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-left text-white w-full"
@@ -216,6 +293,9 @@ const DashboardHeader: React.FC<{
                 <ShareIcon className="w-5 h-5" />
                 <span>{t('share') || 'Share'}</span>
               </button>
+
+              {/* Destructive Actions Section */}
+              <div className="border-t border-slate-600 my-1"></div>
               <button
                 onClick={() => { onDelete(account.accountNo); setIsMenuOpen(false); }}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 text-left text-red-400 w-full"
@@ -243,6 +323,10 @@ const DashboardHeader: React.FC<{
         isOpen={isHelpTourOpen}
         onClose={() => setIsHelpTourOpen(false)}
         onOpenApiKeyModal={onOpenApiKeyModal}
+      />
+      <NotificationSettingsModal
+        isOpen={isNotificationSettingsOpen}
+        onClose={() => setIsNotificationSettingsOpen(false)}
       />
       {notification && <Notification message={notification} />}
     </>
