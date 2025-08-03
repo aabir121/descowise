@@ -750,7 +750,7 @@
   "canTest": "Can test",
   "dailyNotifications": "Daily Notifications",
   "toggleDailyNotifications": "Toggle daily notifications",
-  "notificationDescription": "Get notified daily at 3:00 PM BDT about low balances and data issues",
+  "notificationDescription": "Get notified daily about low balances and data issues at your chosen time.",
   "lowBalanceThreshold": "Low Balance Threshold",
   "lowBalanceThresholdDescription": "Get notified when account balance falls below this amount",
   "notificationTime": "Notification Time",

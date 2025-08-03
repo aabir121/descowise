@@ -754,7 +754,7 @@
   "canTest": "পরীক্ষা করা যাবে",
   "dailyNotifications": "দৈনিক বিজ্ঞপ্তি",
   "toggleDailyNotifications": "দৈনিক বিজ্ঞপ্তি টগল করুন",
-  "notificationDescription": "কম ব্যালেন্স এবং ডেটা সমস্যা সম্পর্কে প্রতিদিন বিকাল ৩টায় বিডিটি সময়ে বিজ্ঞপ্তি পান",
+  "notificationDescription": "আপনার সেট করা সময়ে প্রতিদিন কম ব্যালেন্স এবং ডেটা সমস্যা সম্পর্কে বিজ্ঞপ্তি পান।",
   "lowBalanceThreshold": "কম ব্যালেন্স থ্রেশহোল্ড",
   "lowBalanceThresholdDescription": "অ্যাকাউন্ট ব্যালেন্স এই পরিমাণের নিচে গেলে বিজ্ঞপ্তি পান",
   "notificationTime": "বিজ্ঞপ্তির সময়",
