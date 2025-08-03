@@ -92,9 +92,112 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     timeRemaining: number;
   }>({ isCached: false, isStale: false, lastFetch: null, timeRemaining: 0 });
 
+  // Move fetchAiSummary outside useEffect so it can be accessed by other functions
+  const fetchAiSummary = useCallback(async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[], forceRefreshCache: boolean = false) => {
+    try {
+      // Update cache status
+      const currentCacheStatus = getCacheStatus(account.accountNo);
+      setCacheStatus(currentCacheStatus);
+
+      // Check for cached response first (unless force refresh is requested)
+      if (!forceRefreshCache) {
+        const cachedResponse = getCachedAiResponse(account.accountNo, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
+        if (cachedResponse) {
+          console.log('Using cached AI insights');
+          setIsUsingCache(true);
+          setIsAiLoading(false);
+          setIsAiAvailable(true);
+          setAiError(null);
+
+          setData(prevData => prevData ? { ...prevData, aiSummary: cachedResponse } : null);
+
+          // Distribute cached AI insights
+          const distributed = distributeAiInsights(cachedResponse);
+          setDistributedAiInsights(distributed);
+          setAiLoadingStates(completeAiAnalysis);
+          return;
+        }
+      }
+
+      // No valid cache found or force refresh requested - fetch from API
+      setIsUsingCache(false);
+      setIsAiLoading(true);
+      setIsAiAvailable(true);
+      setAiError(null);
+      // Start AI loading for all panels
+      setAiLoadingStates(startAiAnalysis);
+
+      const currentMonth = new Date().toISOString().substring(0, 7);
+      // Get the last 14 days of dailyConsumption
+      const recentDailyConsumption = dailyConsumption
+        ? [...dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
+        : [];
+      const aiResponse = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
+
+      if (aiResponse.success && aiResponse.data) {
+        // Cache the fresh response
+        cacheAiResponse(account.accountNo, aiResponse.data, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
+
+        // Update cache status
+        setCacheStatus(getCacheStatus(account.accountNo));
+
+        // Distribute AI insights across panels
+        const distributed = distributeAiInsights(aiResponse.data);
+        setDistributedAiInsights(distributed);
+
+        setData(prevData => prevData ? {
+          ...prevData,
+          aiSummary: aiResponse.data,
+          balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined,
+          aiError: null
+        } : null);
+
+        setIsAiAvailable(true);
+
+        // Complete AI loading for all panels
+        setAiLoadingStates(completeAiAnalysis);
+      } else {
+        // Handle AI error
+        setAiError(aiResponse.error || {
+          type: 'unknown',
+          message: 'AI analysis failed',
+          details: 'An unexpected error occurred during AI analysis.',
+          retryable: true
+        });
+        setData(prevData => prevData ? { ...prevData, aiError: aiResponse.error } : { aiError: aiResponse.error });
+        setIsAiAvailable(false);
+        // Fail AI loading for all panels
+        setAiLoadingStates(failAiAnalysis);
+      }
+    } catch (err) {
+      setAiError({
+        type: 'unknown',
+        message: 'AI analysis failed',
+        details: err.message || 'An unexpected error occurred.',
+        retryable: true
+      });
+      setData(prevData => prevData ? { ...prevData, aiError: {
+        type: 'unknown',
+        message: 'AI analysis failed',
+        details: err.message || 'An unexpected error occurred.',
+        retryable: true
+      }} : { aiError: {
+        type: 'unknown',
+        message: 'AI analysis failed',
+        details: err.message || 'An unexpected error occurred.',
+        retryable: true
+      }});
+      setIsAiAvailable(false);
+      // Fail AI loading for all panels
+      setAiLoadingStates(failAiAnalysis);
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, [account.accountNo, account.banglaEnabled]);
+
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchEssentialData = async () => {
       try {
         if (!isMounted) return;
@@ -175,113 +278,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         }, 50);
       }
     };
-    
-    const fetchAiSummary = async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[], forceRefreshCache: boolean = false) => {
-      try {
-        if (!isMounted) return;
 
-        // Update cache status
-        const currentCacheStatus = getCacheStatus(account.accountNo);
-        setCacheStatus(currentCacheStatus);
+    // Use the fetchAiSummary function defined outside useEffect
 
-        // Check for cached response first (unless force refresh is requested)
-        if (!forceRefreshCache) {
-          const cachedResponse = getCachedAiResponse(account.accountNo, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
-          if (cachedResponse) {
-            console.log('Using cached AI insights');
-            setIsUsingCache(true);
-            setIsAiLoading(false);
-            setIsAiAvailable(true);
-            setAiError(null);
-
-            if (!isMounted) return;
-            setData(prevData => prevData ? { ...prevData, aiSummary: cachedResponse } : null);
-
-            // Distribute cached AI insights
-            const distributed = distributeAiInsights(cachedResponse);
-            setDistributedAiInsights(distributed);
-            setAiLoadingStates(completeAiAnalysis);
-            return;
-          }
-        }
-
-        // No valid cache found or force refresh requested - fetch from API
-        setIsUsingCache(false);
-        setIsAiLoading(true);
-        setIsAiAvailable(true);
-        setAiError(null);
-        // Start AI loading for all panels
-        setAiLoadingStates(startAiAnalysis);
-
-        const currentMonth = new Date().toISOString().substring(0, 7);
-        // Get the last 14 days of dailyConsumption
-        const recentDailyConsumption = dailyConsumption
-          ? [...dailyConsumption].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
-          : [];
-        const aiResponse = await api.getAiDashboardSummary(monthlyConsumption, rechargeHistory, balanceData, currentMonth, recentDailyConsumption, account.banglaEnabled);
-
-        if (!isMounted) return;
-
-        if (aiResponse.success && aiResponse.data) {
-          // Cache the fresh response
-          cacheAiResponse(account.accountNo, aiResponse.data, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
-
-          // Update cache status
-          setCacheStatus(getCacheStatus(account.accountNo));
-
-          // Distribute AI insights across panels
-          const distributed = distributeAiInsights(aiResponse.data);
-          setDistributedAiInsights(distributed);
-
-          setData(prevData => prevData ? {
-            ...prevData,
-            aiSummary: aiResponse.data,
-            balanceUnavailable: balanceData?.balance === null || balanceData?.balance === undefined,
-            aiError: null
-          } : null);
-
-          // Complete AI loading for all panels
-          setAiLoadingStates(completeAiAnalysis);
-        } else {
-          // Handle AI error
-          setAiError(aiResponse.error || {
-            type: 'unknown',
-            message: 'AI analysis failed',
-            details: 'An unexpected error occurred during AI analysis.',
-            retryable: true
-          });
-          setData(prevData => prevData ? { ...prevData, aiError: aiResponse.error } : { aiError: aiResponse.error });
-          setIsAiAvailable(false);
-          // Fail AI loading for all panels
-          setAiLoadingStates(failAiAnalysis);
-        }
-      } catch (err) {
-        if (!isMounted) return;
-        setAiError({
-          type: 'unknown',
-          message: 'AI analysis failed',
-          details: err.message || 'An unexpected error occurred.',
-          retryable: true
-        });
-        setData(prevData => prevData ? { ...prevData, aiError: {
-          type: 'unknown',
-          message: 'AI analysis failed',
-          details: err.message || 'An unexpected error occurred.',
-          retryable: true
-        }} : { aiError: {
-          type: 'unknown',
-          message: 'AI analysis failed',
-          details: err.message || 'An unexpected error occurred.',
-          retryable: true
-        }});
-        setIsAiAvailable(false);
-        // Fail AI loading for all panels
-        setAiLoadingStates(failAiAnalysis);
-      } finally {
-        if (!isMounted) return;
-        setIsAiLoading(false);
-      }
-    };
     
     fetchEssentialData();
     
@@ -570,7 +569,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         data.dailyConsumption || []
       );
     }
-  }, [data]);
+  }, [data, fetchAiSummary]);
 
   // Add force refresh handler for AI summary
   const forceRefreshAiSummary = useCallback(() => {
@@ -585,7 +584,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         true // Force refresh
       );
     }
-  }, [data, account.accountNo]);
+  }, [data, account.accountNo, fetchAiSummary]);
 
   return {
     processedData,

@@ -107,6 +107,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 isUsingCache={isUsingCache}
                 cacheStatus={cacheStatus}
                 onForceRefreshAi={forceRefreshAiSummary}
+                isAiLoading={isAiLoading}
             />
             {/* As of date display */}
             {data?.balance?.readingTime && (

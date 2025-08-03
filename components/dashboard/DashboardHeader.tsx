@@ -25,9 +25,11 @@ const DashboardHeader: React.FC<{
     isStale: boolean;
     lastFetch: Date | null;
     timeRemaining: number;
+    nextDailyReset: Date;
   };
   onForceRefreshAi?: () => void;
-}> = ({ account, onClose, onDelete, setPortalConfirmation, onOpenApiKeyModal, isUsingCache, cacheStatus, onForceRefreshAi }) => {
+  isAiLoading?: boolean;
+}> = ({ account, onClose, onDelete, setPortalConfirmation, onOpenApiKeyModal, isUsingCache, cacheStatus, onForceRefreshAi, isAiLoading }) => {
   const { t } = useTranslation();
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -37,9 +39,30 @@ const DashboardHeader: React.FC<{
   const [notification, setNotification] = useState<string | null>(null);
   const [isHelpTourOpen, setIsHelpTourOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleShare = () => {
     setIsShareModalOpen(true);
+  };
+
+  const handleForceRefreshAi = () => {
+    if (!onForceRefreshAi || isRefreshing || isAiLoading) return;
+
+    try {
+      setIsRefreshing(true);
+      setNotification(t('refreshingAiInsights', 'Refreshing AI insights...'));
+      onForceRefreshAi();
+
+      // Clear refreshing state after a short delay to show feedback
+      setTimeout(() => {
+        setIsRefreshing(false);
+        setNotification(t('aiInsightsRefreshed', 'AI insights refreshed successfully!'));
+      }, 1000);
+    } catch (error) {
+      console.error('Error refreshing AI insights:', error);
+      setNotification(t('aiRefreshError', 'Failed to refresh AI insights. Please try again.'));
+      setIsRefreshing(false);
+    }
   };
 
   // Calculate menu position when opening
@@ -144,11 +167,24 @@ const DashboardHeader: React.FC<{
 
                 {onForceRefreshAi && (
                   <button
-                    onClick={onForceRefreshAi}
-                    className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-                    title={t('refreshAiInsights')}
+                    onClick={handleForceRefreshAi}
+                    disabled={isRefreshing || isAiLoading}
+                    className={`p-1 transition-colors ${
+                      isRefreshing || isAiLoading
+                        ? 'text-slate-600 cursor-not-allowed'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title={
+                      isRefreshing
+                        ? t('refreshingAiInsights', 'Refreshing AI insights...')
+                        : isAiLoading
+                        ? t('aiInsightsLoading', 'AI insights loading...')
+                        : t('refreshAiInsights', 'Refresh AI insights')
+                    }
                   >
-                    <WandSparklesIcon className="w-4 h-4" />
+                    <WandSparklesIcon className={`w-4 h-4 ${
+                      isRefreshing ? 'animate-spin' : ''
+                    }`} />
                   </button>
                 )}
               </div>
