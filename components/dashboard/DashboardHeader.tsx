@@ -57,11 +57,21 @@ const DashboardHeader: React.FC<{
       setTimeout(() => {
         setIsRefreshing(false);
         setNotification(t('aiInsightsRefreshed', 'AI insights refreshed successfully!'));
+        
+        // Clear the notification after 3 seconds
+        setTimeout(() => {
+          setNotification(null);
+        }, 3000);
       }, 1000);
     } catch (error) {
       console.error('Error refreshing AI insights:', error);
       setNotification(t('aiRefreshError', 'Failed to refresh AI insights. Please try again.'));
       setIsRefreshing(false);
+      
+      // Clear error notification after 3 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
     }
   };
 
