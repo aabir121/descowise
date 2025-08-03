@@ -165,7 +165,7 @@ export function useIntelligentPreloader() {
  */
 export function preloadCriticalResources() {
   // These components are already statically imported, so no need to preload them
-  console.log('Critical resources are already loaded');
+  // Removed console.log for cleaner production experience
 }
 
 /**
@@ -205,18 +205,14 @@ export function addResourceHints() {
  */
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    console.log('Registering service worker...');
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
-          console.log('SW registered: ', registration);
-          console.log('Service worker registration successful');
+          // Service worker registered successfully - only log errors
         })
         .catch(registrationError => {
           console.error('SW registration failed: ', registrationError);
         });
     });
-  } else {
-    console.log('Service workers not supported');
   }
 }

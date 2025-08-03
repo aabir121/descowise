@@ -72,7 +72,6 @@ function shouldPerformDailyReset(): boolean {
  */
 function performDailyReset(): void {
   try {
-    console.log('Performing daily AI cache reset at Bangladesh 11:59 PM');
     clearAllCaches();
 
     // Record the reset time
@@ -131,7 +130,6 @@ export function isCacheValid(accountNo: string): boolean {
 
     // Check if cache has exceeded 12-hour maximum lifetime
     if (now - parsedMetadata.lastFetch > CACHE_DURATION_MS) {
-      console.log('AI cache expired due to 12-hour limit for account:', accountNo);
       return false;
     }
 
@@ -171,7 +169,6 @@ export function getCachedAiResponse(
     // Check if data has changed significantly
     const currentDataHash = generateDataHash(monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
     if (parsed.dataHash !== currentDataHash) {
-      console.log('AI cache invalidated due to data changes for account:', accountNo);
       clearCache(accountNo);
       return null;
     }
@@ -182,7 +179,6 @@ export function getCachedAiResponse(
       return null;
     }
 
-    console.log('Using cached AI insights for account:', accountNo);
     return parsed.data;
   } catch (error) {
     console.warn('Error retrieving cached AI response:', error);
@@ -261,7 +257,7 @@ export function clearAllCaches(): void {
         localStorage.removeItem(key);
       }
     });
-    console.log('All AI caches cleared');
+
   } catch (error) {
     console.warn('Error clearing all AI caches:', error);
   }

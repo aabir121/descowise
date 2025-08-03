@@ -103,7 +103,6 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
       if (!forceRefreshCache) {
         const cachedResponse = getCachedAiResponse(account.accountNo, monthlyConsumption, rechargeHistory, balanceData, dailyConsumption);
         if (cachedResponse) {
-          console.log('Using cached AI insights');
           setIsUsingCache(true);
           setIsAiLoading(false);
           setIsAiAvailable(true);

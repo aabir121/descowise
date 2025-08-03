@@ -105,12 +105,10 @@ class NotificationScheduler {
   start(onScheduledCheck: () => Promise<void>): void {
     // If already running with the same callback, don't restart
     if (this.intervalId && this.onScheduledCheck === onScheduledCheck) {
-      console.log('Notification scheduler already running, skipping restart');
       return;
     }
 
     if (this.intervalId) {
-      console.log('Stopping existing scheduler to restart with new configuration');
       this.stop();
     }
 
@@ -121,8 +119,6 @@ class NotificationScheduler {
     this.intervalId = window.setInterval(() => {
       this.checkAndExecute();
     }, 60000); // 60 seconds
-
-    console.log(`Notification scheduler started. Next check: ${this.getNextScheduledTime()}`);
   }
 
   /**
@@ -132,12 +128,8 @@ class NotificationScheduler {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      this.config.enabled = false;
-      console.log('Notification scheduler stopped');
-    } else {
-      // Already stopped, don't log
-      this.config.enabled = false;
     }
+    this.config.enabled = false;
   }
 
   /**
@@ -155,15 +147,11 @@ class NotificationScheduler {
 
     // Check if we already performed the daily check today
     if (notificationStorageService.wasDailyCheckPerformedToday()) {
-      console.log('Daily notification check already performed today, skipping...');
       return;
     }
 
-    console.log('Executing scheduled notification check at', this.getBangladeshTime().toISOString());
-
     try {
       await this.onScheduledCheck();
-      console.log('Scheduled notification check completed successfully');
     } catch (error) {
       console.error('Error during scheduled notification check:', error);
     }

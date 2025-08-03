@@ -28,12 +28,9 @@ class NotificationService {
    */
   async initialize(accounts: Account[]): Promise<void> {
     if (this.isInitialized) {
-      console.log('Notification system already initialized, updating accounts only');
       this.updateAccounts(accounts);
       return;
     }
-
-    console.log('Initializing notification system...');
 
     this.accounts = accounts;
 
@@ -49,7 +46,6 @@ class NotificationService {
     }
 
     this.isInitialized = true;
-    console.log('Notification system initialized successfully');
   }
 
   /**
@@ -64,51 +60,32 @@ class NotificationService {
    */
   startScheduler(): void {
     if (!notificationPermissionService.areNotificationsEnabled()) {
-      console.log('Cannot start scheduler: notifications not enabled');
       return;
     }
-
-    // Check if scheduler is already running to avoid duplicate logs
-    const wasRunning = notificationScheduler.isRunning();
 
     notificationScheduler.start(async () => {
       await this.performScheduledCheck();
     });
-
-    // Only log if scheduler wasn't already running
-    if (!wasRunning) {
-      console.log('Notification scheduler started');
-    }
   }
 
   /**
    * Stop the notification scheduler
    */
   stopScheduler(): void {
-    const wasRunning = notificationScheduler.isRunning();
     notificationScheduler.stop();
-
-    // Only log if scheduler was actually running
-    if (wasRunning) {
-      console.log('Notification scheduler stopped');
-    }
   }
 
   /**
    * Perform scheduled notification check
    */
   async performScheduledCheck(): Promise<void> {
-    console.log('Performing scheduled notification check...');
-
     try {
       if (this.accounts.length === 0) {
-        console.log('No accounts to check');
         return;
       }
 
       // Check if online
       if (!navigator.onLine) {
-        console.log('Device is offline, skipping scheduled check');
         return;
       }
 
@@ -119,7 +96,6 @@ class NotificationService {
         try {
           // Send notifications for alerts
           await accountMonitoringService.sendNotifications(result.alerts);
-          console.log(`Sent ${result.alerts.length} notifications`);
         } catch (notificationError) {
           // Queue notifications for retry if sending fails
           result.alerts.forEach(alert => {
@@ -132,8 +108,6 @@ class NotificationService {
           });
           notificationErrorHandler.handleError(notificationError, 'network');
         }
-      } else {
-        console.log('No alerts found during scheduled check');
       }
 
       if (result.errors.length > 0) {
