@@ -94,7 +94,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <div className="flex flex-col h-full">
         {/* Fixed Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-700 flex-shrink-0">
+        <div className="flex fixed items-center justify-between p-6 pb-4 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-cyan-500/20 rounded-lg">
               <ShareIcon className="w-6 h-6 text-cyan-400" />
@@ -114,7 +114,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 px-6 pt-4 pb-6">
+        <div className="flex-1 px-6 pt-10 pb-6">
 
         {/* Account Preview */}
         <div className="bg-slate-700/50 rounded-lg p-4 mb-6 border border-slate-600">
