@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
-import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon, BellIcon } from '../common/Icons';
+import { ArrowLeftIcon, TrashIcon, BuildingOfficeIcon, DotsVerticalIcon, ShareIcon, WandSparklesIcon, InformationCircleIcon, BellIcon, RefreshIcon } from '../common/Icons';
 import IconButton from '../common/IconButton';
 
 import ShareModal from '../common/ShareModal';
@@ -166,7 +166,7 @@ const DashboardHeader: React.FC<{
                     isUsingCache ? 'bg-blue-400' : 'bg-slate-500'
                   }`} />
                   <span>
-                    {isUsingCache ? t('cached') : t('fresh')} AI
+                    {isUsingCache ? t('cachedAiInsights') : t('freshAiInsights')}
                   </span>
                   {cacheStatus.isCached && (
                     <span className="text-slate-500">
@@ -192,7 +192,7 @@ const DashboardHeader: React.FC<{
                         : t('refreshAiInsights', 'Refresh AI insights')
                     }
                   >
-                    <WandSparklesIcon className={`w-4 h-4 ${
+                    <RefreshIcon className={`w-4 h-4 ${
                       isRefreshing ? 'animate-spin' : ''
                     }`} />
                   </button>
@@ -246,9 +246,9 @@ const DashboardHeader: React.FC<{
           </div>
         </div>
         <div>
-                    {/* AI Cache Status Indicator */}
+          {/* AI Cache Status Indicator */}
             {cacheStatus && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 lg:hidden">
                 <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
                   isUsingCache
                     ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
@@ -258,7 +258,7 @@ const DashboardHeader: React.FC<{
                     isUsingCache ? 'bg-blue-400' : 'bg-slate-500'
                   }`} />
                   <span>
-                    {isUsingCache ? t('cached') : t('fresh')} AI
+                    {isUsingCache ? t('cachedAiInsights') : t('freshAiInsights')}
                   </span>
                   {cacheStatus.isCached && (
                     <span className="text-slate-500">
@@ -284,7 +284,7 @@ const DashboardHeader: React.FC<{
                         : t('refreshAiInsights', 'Refresh AI insights')
                     }
                   >
-                    <WandSparklesIcon className={`w-4 h-4 ${
+                    <RefreshIcon className={`w-4 h-4 ${
                       isRefreshing ? 'animate-spin' : ''
                     }`} />
                   </button>

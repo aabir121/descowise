@@ -136,7 +136,7 @@ const AiInsightTooltip: React.FC<AiInsightTooltipProps> = ({ insightType, t, cla
         onMouseLeave={handleMouseLeave}
         onFocus={handleMouseEnter}
         onBlur={handleMouseLeave}
-        className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 rounded"
+        className="hidden text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 rounded"
         aria-label={`Information about ${content.title}`}
       >
         <InformationCircleIcon className="w-4 h-4" />
