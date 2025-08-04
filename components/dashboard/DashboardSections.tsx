@@ -383,7 +383,7 @@ const DashboardSections: React.FC<any> = ({
             <Suspense fallback={createSectionLoader('cumulative-consumption', false, t)}>
               <BalanceRunway
                 gaugeData={processedData?.gaugeData}
-                aiSummary={processedData?.aiSummary}
+                aiSummary={data?.aiSummary}
                 consumptionChartData={processedData?.consumptionChartData}
                 dailyConsumption={data?.dailyConsumption}
                 monthlyConsumption={data?.monthlyConsumption}

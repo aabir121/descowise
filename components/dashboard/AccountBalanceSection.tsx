@@ -168,7 +168,7 @@ const AccountBalanceSection = ({
                 <span className="text-xs text-red-400">AI: {aiError}</span>
               )}
               {aiInsight && !isAiBalanceLoading && !aiError && (
-                <span className="text-xs text-purple-400 flex items-center gap-1"><span className="font-semibold bg-purple-100 text-purple-600 px-1 rounded">AI</span> {aiInsight}</span>
+                <span className="text-xs text-purple-400 flex items-center gap-1"><span className="font-semibold bg-purple-100 text-purple-600 px-1 rounded">AI</span> {String(aiInsight)}</span>
               )}
             </div>
           </div>

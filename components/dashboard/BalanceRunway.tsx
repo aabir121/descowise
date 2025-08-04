@@ -50,31 +50,6 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
   showInfoIcon,
   onInfoClick
 }) => {
-  // Use unified balance calculation system with same data as main calculation
-  const unifiedBalanceCalculation = useMemo(() => {
-    if (!gaugeData) return null;
-
-    try {
-      // Use the same data source as the main gauge calculation for consistency
-      const result = BalanceCalculator.calculateRemainingDays(
-        gaugeData.currentBalance,
-        monthlyConsumption || [],
-        dailyConsumption || [],
-        {
-          preferredMethod: BalanceCalculator.getRecommendedMethod(monthlyConsumption || [], dailyConsumption || []),
-          seasonalAdjustment: true,
-          dataPointsLimit: 60,
-          fallbackToBasic: true
-        }
-      );
-
-      return result;
-    } catch (error) {
-      console.warn('Unified balance calculation failed in BalanceRunway:', error);
-      return null;
-    }
-  }, [gaugeData, dailyConsumption, monthlyConsumption]);
-
   // Calculate runway insights with unified calculation system
   const runwayInsights = useMemo(() => {
     if (!gaugeData) return null;
@@ -92,19 +67,17 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
       finalDaysRemaining = aiSummary.estimatedDaysRemaining;
       dataSource = 'ai';
       confidence = 0.9;
-      additionalInfo = aiSummary.balanceDepletionForecast || '';
-    } else if (unifiedBalanceCalculation) {
-      // Use unified calculation system
-      finalDaysRemaining = unifiedBalanceCalculation.daysRemaining;
-      dataSource = unifiedBalanceCalculation.calculationMethod;
-      confidence = unifiedBalanceCalculation.confidence;
-      additionalInfo = unifiedBalanceCalculation.details;
+      additionalInfo = String(aiSummary.balanceDepletionForecast || ''); // Ensure it's a string
+    } else {
+      // Fallback to gaugeData's daysRemaining (which comes from BalanceCalculator in useDashboardData)
+      finalDaysRemaining = daysRemaining;
+      dataSource = gaugeData.calculationMethod || 'basic'; // Use method from gaugeData if available
+      confidence = gaugeData.confidence || 0.7;
+      additionalInfo = String(gaugeData.details || ''); // Ensure it's a string
     }
 
-    // Calculate daily average cost using unified system
-    const dailyAverageCost = unifiedBalanceCalculation
-      ? unifiedBalanceCalculation.dailyAverageCost
-      : averageMonthlyCost / 30;
+    // Calculate daily average cost using gaugeData's averageMonthlyCost
+    const dailyAverageCost = averageMonthlyCost / 30;
 
     // Determine runway status
     let status = 'good';
@@ -152,7 +125,7 @@ const BalanceRunway: React.FC<BalanceRunwayProps> = ({
       confidence,
       additionalInfo
     };
-  }, [gaugeData, aiSummary, unifiedBalanceCalculation]);
+  }, [gaugeData, aiSummary]);
 
   if (!gaugeData || !runwayInsights) return null;
 
