@@ -165,14 +165,27 @@ const DashboardSections: React.FC<any> = ({
   }, [shouldShowSection]);
 
   // Section info data
-  const getSectionInfo = useCallback((sectionId: string) => {
+    const getSectionInfo = useCallback((sectionId: string, t: (key: string) => string) => {
     const infoKey = `${sectionId}Info`;
     const translationData = i18n.getDataByLanguage(language)?.translation;
     const translationInfo = translationData?.[infoKey];
-    return typeof translationInfo === 'object' ? translationInfo : {
-      title: sectionId,
-      description: 'Information about this section',
-      benefits: ['Provides useful insights', 'Helps with analysis', 'Improves understanding']
+
+    // Use translated title if available, otherwise fallback to a default
+    const title = t(`${infoKey}.title`, sectionId);
+
+    return typeof translationInfo === 'object' ? {
+      ...translationInfo,
+      title: t(`${infoKey}.title`, title), // Ensure title is translated
+      description: t(`${infoKey}.description`, 'Information about this section'),
+      benefits: Array.isArray(translationInfo.benefits) 
+        ? translationInfo.benefits.map((benefit: string, index: number) => 
+            t(`${infoKey}.benefits.${index}`, benefit)
+          ) 
+        : [t('info.defaultBenefit1'), t('info.defaultBenefit2'), t('info.defaultBenefit3')]
+    } : {
+      title,
+      description: t('info.defaultDescription'),
+      benefits: [t('info.defaultBenefit1'), t('info.defaultBenefit2'), t('info.defaultBenefit3')]
     };
   }, [language]);
 
@@ -440,11 +453,11 @@ const DashboardSections: React.FC<any> = ({
 
       
       {/* Section Info Modal */}
-      {infoModalOpen && (
+            {infoModalOpen && (
         <SectionInfoModal
           isOpen={!!infoModalOpen}
           onClose={handleModalClose}
-          sectionInfo={getSectionInfo(infoModalOpen)}
+          sectionInfo={getSectionInfo(infoModalOpen, t)}
           t={t}
         />
       )}
