@@ -375,13 +375,24 @@ const App: React.FC = () => {
     const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
-    const { trackAction, preloadForRoute } = useIntelligentPreloader();
+const { trackAction, preloadForRoute } = useIntelligentPreloader();
+    const [showPwaUpdateNotification, setShowPwaUpdateNotification] = useState(false);
 
     // Initialize performance optimizations and service worker
     useEffect(() => {
         preloadCriticalResources();
         addResourceHints();
         registerServiceWorker();
+
+        const handlePwaUpdate = () => {
+            setShowPwaUpdateNotification(true);
+        };
+
+        window.addEventListener('pwaUpdateAvailable', handlePwaUpdate);
+
+        return () => {
+            window.removeEventListener('pwaUpdateAvailable', handlePwaUpdate);
+        };
     }, []);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; accountNo: string | null; accountName: string }>({
         isOpen: false,
@@ -394,6 +405,7 @@ const App: React.FC = () => {
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
+    const [apiKeyConfiguredStatus, setApiKeyConfiguredStatus] = useState<any>(null); // Add this line
     
     // Global balance warning modal state
     const { isOpen: isBalanceWarningOpen, close: closeBalanceWarning } = useBalanceWarning();
@@ -720,6 +732,7 @@ const App: React.FC = () => {
                           setIsHelpModalOpen={setIsHelpModalOpen}
                           isNotificationSettingsOpen={isNotificationSettingsOpen}
                           setIsNotificationSettingsOpen={setIsNotificationSettingsOpen}
+                          apiKeyConfiguredStatus={apiKeyConfiguredStatus}
                         />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />
@@ -752,6 +765,18 @@ const App: React.FC = () => {
                 onClose={closeBalanceWarning}
             />
             
+            {/* PWA Update Notification */}
+            {showPwaUpdateNotification && (
+                <Notification
+                    message={t('pwaUpdateAvailable', 'A new version is available. Please refresh to update.')}
+                    type="info"
+                    onClose={() => {
+                        setShowPwaUpdateNotification(false);
+                        window.location.reload(); // Force reload when user dismisses notification
+                    }}
+                />
+            )}
+
             {/* Global Floating Info Button */}
             <FloatingInfoButton />
             

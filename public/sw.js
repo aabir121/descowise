@@ -1,4 +1,4 @@
-const CACHE_NAME = 'desco-wise-cache-v1';
+const CACHE_NAME = 'desco-wise-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,6 +16,7 @@ self.addEventListener('install', (event) => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting()) // Force immediate activation
   );
 });
 
@@ -42,7 +43,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => clients.claim()) // Take control of all clients immediately
   );
 });
 

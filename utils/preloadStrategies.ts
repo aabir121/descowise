@@ -208,7 +208,23 @@ export function registerServiceWorker() {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
-          // Service worker registered successfully - only log errors
+          console.log('Service Worker registered with scope:', registration.scope);
+
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New content is available, but the old Service Worker is still controlling the page.
+                  // You can prompt the user to refresh here.
+                  console.log('New content available! Please refresh.');
+                  // Example: Dispatch a custom event or use a global state management to show a notification
+                  const event = new CustomEvent('pwaUpdateAvailable', { detail: { newWorker } });
+                  window.dispatchEvent(event);
+                }
+              });
+            }
+          });
         })
         .catch(registrationError => {
           console.error('SW registration failed: ', registrationError);
