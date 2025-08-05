@@ -8,7 +8,7 @@ interface AiCacheStatusIndicatorProps {
     isCached: boolean;
     isStale: boolean;
     lastFetch: Date | null;
-    timeRemaining: number;
+    lastRefreshTimeAgo: string;
     nextDailyReset: Date;
   };
   onForceRefreshAi?: () => void;
@@ -42,7 +42,7 @@ const AiCacheStatusIndicator: React.FC<AiCacheStatusIndicatorProps> = ({
         </span>
         {cacheStatus.isCached && (
           <span className="text-slate-500">
-            ({cacheStatus.timeRemaining}m)
+            ({cacheStatus.lastRefreshTimeAgo})
           </span>
         )}
       </div>

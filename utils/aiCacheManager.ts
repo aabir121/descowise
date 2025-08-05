@@ -264,13 +264,33 @@ export function clearAllCaches(): void {
 }
 
 /**
+ * Formats a duration in milliseconds into a human-readable string (e.g., "5m ago", "2h ago").
+ */
+function formatDurationAgo(milliseconds: number): string {
+  const seconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d ago`;
+  } else if (hours > 0) {
+    return `${hours}h ago`;
+  } else if (minutes > 0) {
+    return `${minutes}m ago`;
+  } else {
+    return `just now`;
+  }
+}
+
+/**
  * Get cache status for UI display
  */
 export function getCacheStatus(accountNo: string): {
   isCached: boolean;
   isStale: boolean;
   lastFetch: Date | null;
-  timeRemaining: number; // minutes
+  lastRefreshTimeAgo: string; // e.g., "5m ago", "2h ago"
   nextDailyReset: Date; // when the next daily reset will occur
 } {
   try {
@@ -284,7 +304,7 @@ export function getCacheStatus(accountNo: string): {
         isCached: false,
         isStale: false,
         lastFetch: null,
-        timeRemaining: 0,
+        lastRefreshTimeAgo: 'N/A',
         nextDailyReset: new Date(nextResetTime)
       };
     }
@@ -292,17 +312,12 @@ export function getCacheStatus(accountNo: string): {
     const parsed: CacheMetadata = JSON.parse(metadata);
     const now = Date.now();
     const elapsed = now - parsed.lastFetch;
-    const remaining = Math.max(0, CACHE_DURATION_MS - elapsed);
-
-    // Check if daily reset should happen before 12-hour expiry
-    const timeUntilDailyReset = nextResetTime - now;
-    const effectiveTimeRemaining = Math.min(remaining, Math.max(0, timeUntilDailyReset));
 
     return {
       isCached: true,
       isStale: elapsed > CACHE_DURATION_MS || shouldPerformDailyReset(),
       lastFetch: new Date(parsed.lastFetch),
-      timeRemaining: Math.ceil(effectiveTimeRemaining / (60 * 1000)), // Convert to minutes
+      lastRefreshTimeAgo: formatDurationAgo(elapsed),
       nextDailyReset: new Date(nextResetTime)
     };
   } catch (error) {
@@ -311,7 +326,7 @@ export function getCacheStatus(accountNo: string): {
       isCached: false,
       isStale: false,
       lastFetch: null,
-      timeRemaining: 0,
+      lastRefreshTimeAgo: 'N/A',
       nextDailyReset: new Date(getNextDailyResetTime())
     };
   }
