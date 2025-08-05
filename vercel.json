@@ -11,9 +11,7 @@
           "value": "application/javascript"
         }
       ]
-    }
-  ],
-  "headers": [
+    },
     {
       "source": "/sw.js",
       "headers": [
