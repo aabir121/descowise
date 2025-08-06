@@ -23,14 +23,37 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
-      // Try to get the response from the cache
+      const url = new URL(event.request.url);
+
+      // Strategy for index.html and root path: Network-First
+      // This ensures the latest version of the main page is always attempted first.
+      if (url.pathname === '/' || url.pathname === '/index.html') {
+        try {
+          const networkResponse = await fetch(event.request);
+          // If network fetch is successful, update the cache with the new version
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        } catch (error) {
+          // Network request failed (e.g., offline), try to get it from the cache
+          console.log('Network fetch failed for index.html, falling back to cache.');
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // If no network and no cache, return a fallback response or throw
+          return new Response('Application is offline and no cached version of index.html is available.', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+        }
+      }
+
+      // For other assets: Cache-First with Network Fallback (existing strategy)
+      // This is suitable for static assets that are versioned or less critical for immediate updates.
       const cachedResponse = await caches.match(event.request);
       if (cachedResponse) {
         return cachedResponse;
       }
 
       // If not in cache, try to use the navigation preload response if available
-      // This is useful for faster initial loads and updates
       if (event.request.mode === 'navigate' && event.preloadResponse) {
         console.log('Using navigation preload response for:', event.request.url);
         return await event.preloadResponse;
