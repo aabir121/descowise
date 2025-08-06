@@ -1,4 +1,4 @@
-const CACHE_NAME = 'desco-wise-cache-v2';
+const CACHE_NAME = 'desco-wise-cache-__CACHE_KEY_PLACEHOLDER__';
 const urlsToCache = [
   '/',
   '/index.html',
