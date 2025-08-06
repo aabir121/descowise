@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
+import { Analytics } from "@vercel/analytics/next"
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,6 +16,7 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
+      <Analytics />
     </BrowserRouter>
   </React.StrictMode>
 );

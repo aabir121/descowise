@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node scripts/inject-cache-key.js && npm run build",
+  "buildCommand": "node scripts/inject-cache-key.cjs && npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "headers": [
