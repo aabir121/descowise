@@ -22,13 +22,23 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
+    (async () => {
+      // Try to get the response from the cache
+      const cachedResponse = await caches.match(event.request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // If not in cache, try to use the navigation preload response if available
+      // This is useful for faster initial loads and updates
+      if (event.request.mode === 'navigate' && event.preloadResponse) {
+        console.log('Using navigation preload response for:', event.request.url);
+        return await event.preloadResponse;
+      }
+
+      // Otherwise, fetch from the network
+      return fetch(event.request);
+    })()
   );
 });
 
@@ -39,11 +49,20 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log(`Deleting old cache: ${cacheName}`);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => clients.claim()) // Take control of all clients immediately
+    }).then(() => {
+      console.log('Service Worker activated. Claiming clients.');
+      // Enable navigation preload if supported
+      if (self.registration.navigationPreload) {
+        console.log('Navigation preload is supported. Enabling it.');
+        return self.registration.navigationPreload.enable();
+      }
+      return clients.claim(); // Take control of all clients immediately
+    })
   );
 });
 

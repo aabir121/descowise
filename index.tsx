@@ -27,6 +27,24 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {
         console.log('SW registered: ', registration);
+
+        registration.addEventListener('updatefound', () => {
+          const installingWorker = registration.installing;
+          if (installingWorker) {
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  // New update available
+                  console.log('New content available, please refresh.');
+                  window.dispatchEvent(new Event('pwaUpdateAvailable'));
+                } else {
+                  // Content is cached for offline use
+                  console.log('Content is now available offline!');
+                }
+              }
+            });
+          }
+        });
       })
       .catch(registrationError => {
         console.log('SW registration failed: ', registrationError);
