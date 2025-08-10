@@ -1,73 +1,70 @@
 import { MonthlyConsumption, DailyConsumption } from '../types';
 
-function getAsOfNotice(readingTime?: string, language: 'bn' | 'en' = 'en'): string {
-    if (!readingTime) return '';
-    const latestDate = new Date(readingTime).toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
-    const daysBehind = Math.floor((new Date(today).getTime() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24));
-    if (language === 'bn') {
-        return daysBehind > 0
-            ? `তথ্য সর্বশেষ আপডেট হয়েছে ${latestDate} পর্যন্ত, যা আজকের (${today}) থেকে ${daysBehind} দিন পিছিয়ে থাকতে পারে (DESCO API দেরির কারণে)। দয়া করে আপনার মিটার দেখে সর্বশেষ তথ্য যাচাই করুন।`
-            : `তথ্য সর্বশেষ আপডেট: ${latestDate}`;
-    } else {
-        return daysBehind > 0
-            ? `The data is current as of ${latestDate}, which may be up to ${daysBehind} day(s) behind today (${today}) due to DESCO API delays. Please check your meter for the most up-to-date info.`
-            : `Data current as of: ${latestDate}`;
-    }
-}
-
 function getRoleDescriptionSection() {
-    return `You are an electricity bill and recharge analyst who explains things like you're talking to a friend over coffee. Use everyday language, avoid technical jargon, and keep it conversational. Whether responding in English or Bengali, maintain the same friendly, casual tone that regular people use in daily conversations.`;
+    return `You are an AI assistant for electricity consumption and recharge forecasting. 
+You analyze the user's electricity usage and recharge patterns to give friendly, human-like advice.`;
 }
 
-function getDataFreshnessSection(asOfNotice: string, readingTime?: string, language: 'bn' | 'en' = 'en') {
+function getDataFreshnessSection(asOfNotice, readingTime, language) {
     if (!asOfNotice) return '';
-    return `IMPORTANT: Start your response by naturally acknowledging the data freshness. If there's a delay, mention it conversationally like "Hey, just a heads up - the info I'm looking at is from ${readingTime ? new Date(readingTime).toISOString().split('T')[0] : 'recent data'}, so it might be a bit behind what you see on your meter right now. But let me walk you through what I can see from the data we have!" or in Bengali "হ্যালো, একটা কথা বলি - আমি যে তথ্য দেখছি সেটা ${readingTime ? new Date(readingTime).toISOString().split('T')[0] : 'সাম্প্রতিক তথ্য'} পর্যন্ত, তাই আপনার মিটারে যা দেখছেন তার থেকে একটু পিছিয়ে থাকতে পারে। কিন্তু আমি যা দেখতে পাচ্ছি সেটা নিয়ে কথা বলি!"`;
+    return language === 'bn'
+        ? `এই তথ্য ${asOfNotice} পর্যন্ত হালনাগাদ। সর্বশেষ আপডেট নেওয়া হয়েছে ${readingTime}-এ।`
+        : `The data is updated as of ${asOfNotice}. Last reading was taken at ${readingTime}.`;
 }
 
 function getUserJobSection() {
-    return `Your job is to help people understand their electricity usage and give practical advice. Think of yourself as a helpful neighbor who knows about electricity bills and wants to share useful tips. Use examples from daily life, make comparisons people can relate to, and be encouraging.`;
+    return `The user wants clear insights without technical jargon. 
+They care about practical advice they can act on.`;
 }
 
 function getAnalysisFocusSection() {
-    return `Look at the customer's electricity usage history, recharge patterns, recent daily usage, and current balance. Focus on seasonal trends, unusual patterns, recharge habits, and give specific advice for what to do next.`;
+    return `Focus on:
+- Spotting unusual usage or recharge patterns
+- Noticing seasonal trends
+- Predicting future consumption and costs
+- Estimating when their current balance will run out
+- Making recharge recommendations with confidence levels`;
 }
 
-function getDataSections(
-    monthlyConsumption: MonthlyConsumption[],
-    monthlyRechargeData: any,
-    recentDailyConsumption: DailyConsumption[]
-) {
-    return `*Historical Electricity Consumption Data (24 months, JSON array, sorted by month):* \n- 'month': year-month (e.g., "2024-01")\n- 'consumedUnit': electricity consumption in kWh\n- 'consumedTaka': cost of consumption in BDT\n\n${JSON.stringify(monthlyConsumption)}\n\n*Historical Electricity Recharge Data (24 months, JSON array, sorted by month):* \n- 'month': year-month (e.g., "2024-01")\n- 'rechargeAmount': total BDT recharged in that month \n- 'rechargeCount': number of recharge transactions \n\n${JSON.stringify(monthlyRechargeData)}\n\n*Recent Daily Consumption (last 14 days, JSON array):* \n- 'date': YYYY-MM-DD\n- 'consumedUnit': kWh\n- 'consumedTaka': BDT\n\n${JSON.stringify(recentDailyConsumption)}`;
+function getDataWeightingSection() {
+    return `When forecasting or estimating balance depletion:
+- Prioritize recent daily consumption trends for short-term predictions
+- Use historical data to detect and adjust for seasonal patterns (e.g., higher summer usage)
+- If recent trend differs significantly from historical averages, give more weight to recent usage for the near-term forecast
+- Handle missing data explicitly:
+  - Short gaps → fill using linear interpolation from nearby points
+  - Longer gaps → use same period from last year blended with recent averages
+This balance ensures predictions reflect the latest reality but stay seasonally aware`;
 }
 
-function getCurrentCustomerInfoSection(
-    currentBalance: number | null | undefined,
-    currentMonthConsumption: number | null | undefined,
-    readingTime: string | undefined,
-    currentMonth: string
-) {
-    return `*Current Customer Info:* \n- Current Meter Balance: ${currentBalance !== null && currentBalance !== undefined ? currentBalance + ' BDT' : 'Unavailable (N/A)'}\n- Current Month Consumption: ${currentMonthConsumption !== null && currentMonthConsumption !== undefined ? currentMonthConsumption + ' BDT' : 'Unavailable (N/A)'}\n- Reading Time: ${readingTime || 'Unavailable (N/A)'}\n- Current Month (YYYY-MM): ${currentMonth}`;
+function getDataSections(monthlyConsumption, monthlyRechargeData, recentDailyConsumption) {
+    return `Monthly consumption data: ${JSON.stringify(monthlyConsumption)}
+Monthly recharge data: ${JSON.stringify(monthlyRechargeData)}
+Recent daily consumption: ${JSON.stringify(recentDailyConsumption)}`;
 }
 
-function getBalanceUnavailableNoticeSection(currentBalance: number | null | undefined) {
-    if (currentBalance === null || currentBalance === undefined) {
-        return `\n**IMPORTANT:** Current meter balance is unavailable. In this case, do NOT provide balance-related analysis (balanceStatusAndAdvice, rechargeRecommendation, balanceDepletionForecast). However, provide all other analysis (usage trends, seasonal patterns, recharge habits, etc.).`;
-    }
-    return '';
+function getCurrentCustomerInfoSection(currentBalance, currentMonthConsumption, readingTime, currentMonth) {
+    if (currentBalance === null || currentBalance === undefined) return '';
+    return `Current balance: ${currentBalance}
+Current month's consumption: ${currentMonthConsumption}
+Data reading time: ${readingTime}
+Current month: ${currentMonth}`;
 }
 
-function getJsonStructureSection(
-    asOfNotice: string,
-    currentBalance: number | null | undefined,
-    language: 'bn' | 'en' = 'en'
-) {
+function getBalanceUnavailableNoticeSection(currentBalance) {
+    if (currentBalance !== null && currentBalance !== undefined) return '';
+    return `No current balance available — skip balance-based forecasts.`;
+}
+
+function getJsonStructureSection(asOfNotice, currentBalance, language) {
     return `Generate a JSON object using this structure. Respond in ${language === 'bn' ? 'Bengali' : 'English'} with a conversational tone:
 
 {
   "title": "A friendly, personalized title (like 'Your July Power Check-in' or 'Smart Recharge Tips for Hot Weather')",
 
-  "overallSummary": "Give a quick overview of their average monthly usage and recharge amounts. Talk about their patterns like you're catching up with a friend. Add a personal touch - maybe compare to recent months or use a relatable example. ${asOfNotice ? 'Start this section by naturally mentioning the data freshness in a conversational way, then transition into the analysis.' : ''}",
+  "overallSummary": "Give a quick overview of their average monthly usage and recharge amounts. Talk about their patterns like you're catching up with a friend. Add a personal touch — maybe compare to recent months or use a relatable example. ${
+    asOfNotice ? 'Start this section by naturally mentioning the data freshness in a conversational way, then transition into the analysis.' : ''
+  }",
 
   "anomaly": {
     "detected": true or false,
@@ -79,7 +76,7 @@ function getJsonStructureSection(
     "details": "If you see seasonal patterns (like higher usage in summer), explain it simply. Use real-life examples people can relate to."
   },
 
-  "rechargePatternInsight": "Describe how they usually recharge - like 'you typically top up 2-3 times a month' or 'you seem to recharge when you're running low'. Make it sound like friendly observation."
+  "rechargePatternInsight": "Describe how they usually recharge — like 'you typically top up 2-3 times a month' or 'you seem to recharge when you're running low'. Make it sound like friendly observation."
   ${currentBalance !== null && currentBalance !== undefined ? `,
   "balanceStatusAndAdvice": {
     "status": "low", "normal", or "good",
@@ -87,6 +84,7 @@ function getJsonStructureSection(
   }` : ''}${currentBalance !== null && currentBalance !== undefined ? `,
   "rechargeRecommendation": {
     "recommendedAmountBDT": number or null,
+    "confidencePercent": number, // 0 to 100
     "justification": "Suggest how much to recharge based on their typical usage for this month. Explain it like you're helping a friend plan their budget."
   }` : ''},
   "rechargeTimingInsight": "Advise on the best time to recharge. Think about their patterns and seasonal needs. Make it practical and easy to follow.",
@@ -95,48 +93,53 @@ function getJsonStructureSection(
   "balanceDepletionForecast": {
     "daysRemaining": number,
     "expectedDepletionDate": "YYYY-MM-DD",
-    "details": "Estimate how long their current balance will last based on recent usage. Explain it simply, like 'at your current rate, this should last about X days'."
+    "confidencePercent": number, // 0 to 100
+    "details": "Estimate how long their current balance will last based on recent daily consumption trends. If historical seasonal patterns suggest a likely increase or decrease in usage, adjust the estimate. Clearly state if any missing data was filled before forecasting."
   }` : ''},
   "currentMonthBillForecast": {
     "estimatedTotal": number,
-    "details": "Give them an idea of what their total bill might be this month. Compare it to previous months if helpful."
+    "confidencePercent": number, // 0 to 100
+    "details": "Estimate the total bill for this month using recent daily consumption as the primary input. Adjust for seasonal patterns from historical data when applicable."
   },
   "futureConsumptionForecast": [
-    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },
-    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number },
-    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number }
+    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number, "confidencePercent": number },
+    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number, "confidencePercent": number },
+    { "month": "YYYY-MM", "estimatedConsumption": number, "estimatedBill": number, "confidencePercent": number }
   ],
-  "predictedTrueBalance": number, // Your best estimate of the user's current true balance, considering possible delays or missing data
-  "estimatedDaysRemaining": number, // Your best estimate of how many days the current balance will last, based on recent trends
-  "balanceInsight": string // A short, friendly insight about the user's balance trend, based on recent and historical data
+  "_forecastingMethodNote": "All future consumption forecasts should be based primarily on recent daily consumption patterns, adjusted with historical seasonal trends. If there are missing daily data points, fill short gaps using linear interpolation and longer gaps using seasonal averages blended with recent trends. The weighting should favor recent data for near-term predictions, but allow seasonal adjustments for months further ahead.",
+
+  "predictedTrueBalance": number,
+  "estimatedDaysRemaining": number,
+  "balanceInsight": string
 }
 
-Keep the tone conversational and friendly throughout. Use everyday language, avoid technical terms, and make it feel like you're having a helpful chat with a friend. Respond in ${language === 'bn' ? 'Bengali' : 'English'}.
-`;
+Keep the tone conversational and friendly throughout. Avoid technical terms. Make it feel like you're chatting with a friend who just asked about their bill.`;
 }
 
-export function generateAiDashboardPrompt(
-    monthlyConsumption: MonthlyConsumption[],
-    monthlyRechargeData: any,
-    recentDailyConsumption: DailyConsumption[],
-    currentBalance: number | null | undefined,
-    currentMonth: string,
-    readingTime?: string,
-    currentMonthConsumption?: number | null,
-    language: 'bn' | 'en' = 'en'
-): string {
-    const asOfNotice = getAsOfNotice(readingTime, language);
+export function generateAiDashboardPrompt({
+    asOfNotice,
+    readingTime,
+    language,
+    monthlyConsumption,
+    monthlyRechargeData,
+    recentDailyConsumption,
+    currentBalance,
+    currentMonthConsumption,
+    currentMonth
+}) {
     return [
         asOfNotice,
         getRoleDescriptionSection(),
         getDataFreshnessSection(asOfNotice, readingTime, language),
         getUserJobSection(),
         getAnalysisFocusSection(),
+        getDataWeightingSection(),
         getDataSections(monthlyConsumption, monthlyRechargeData, recentDailyConsumption),
         getCurrentCustomerInfoSection(currentBalance, currentMonthConsumption, readingTime, currentMonth),
         getBalanceUnavailableNoticeSection(currentBalance),
-        // Explicitly request trend analysis and extra fields
-        `IMPORTANT: In your analysis, pay special attention to recent daily consumption trends and historical data. Use these to estimate the user's true current balance (predictedTrueBalance), how many days their balance will last (estimatedDaysRemaining), and provide a short, friendly insight (balanceInsight). Include these fields in your JSON response as shown below.`,
+        `IMPORTANT: In your analysis, pay special attention to recent daily consumption trends and historical data, filling missing points before forecasting.`,
         getJsonStructureSection(asOfNotice, currentBalance, language)
-    ].filter(Boolean).join('\n\n');
-} 
+    ]
+    .filter(Boolean)
+    .join('\n\n');
+}
