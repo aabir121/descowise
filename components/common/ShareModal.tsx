@@ -171,7 +171,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
           </label>
           <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
             <div className="font-medium text-slate-200 mb-1">{currentFormat.title}</div>
-            <div className="text-sm text-slate-400 mb-3">{currentFormat.description}</div>
+            <div className="text-sm text-slate-400 mb-3 whitespace-pre-wrap">{currentFormat.description}</div>
             <div className="text-xs text-cyan-400 font-mono break-all">{currentFormat.url}</div>
           </div>
         </div>
@@ -223,19 +223,19 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
                 onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(currentFormat.title + '\n\n' + currentFormat.description + '\n\n' + currentFormat.url)}`, '_blank')}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
               >
-                WhatsApp
+                {t('whatsapp')}
               </button>
               <button
                 onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent(currentFormat.url)}&text=${encodeURIComponent(currentFormat.title)}`, '_blank')}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
               >
-                Telegram
+                {t('telegram')}
               </button>
               <button
                 onClick={() => window.open(`mailto:?subject=${encodeURIComponent(currentFormat.title)}&body=${encodeURIComponent(currentFormat.description + '\n\n' + currentFormat.url)}`, '_blank')}
                 className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
               >
-                Email
+                {t('email')}
               </button>
             </div>
           </div>
