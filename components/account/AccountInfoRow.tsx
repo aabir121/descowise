@@ -17,7 +17,7 @@ const AccountInfoRow: React.FC<AccountInfoRowProps> = ({ label, value, valueClas
       {onCopy && (
         <button
           type="button"
-          onClick={onCopy}
+          onClick={(event) => { event.stopPropagation(); onCopy?.(); }}
           className="p-1 rounded hover:bg-slate-700 focus:outline-none"
           title={copyStatus === 'copied' ? t('accountNumberCopied', { accountNo: value }) : t('copyAccountNo')}
           aria-label={copyStatus === 'copied' ? t('copied') : t('copyAccountNumber')}
