@@ -23,21 +23,13 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
   const shareFormats = {
     simple: {
       url: `${window.location.origin}/dashboard/${account.accountNo}?shared=1&ref=simple&sid=${shareId}`,
-      title: `Check out my DESCO electricity account`,
-      description: `View my electricity usage dashboard for account ${account.accountNo}`
+      title: t('shareSimpleTitle'),
+      description: t('shareSimpleDescription', { accountNo: account.accountNo })
     },
     detailed: {
       url: `${window.location.origin}/dashboard/${account.accountNo}?shared=1&ref=detailed&name=${accountName}&sid=${shareId}&utm_source=descowise&utm_medium=share&utm_campaign=dashboard_share`,
-      title: `🔌 ${account.displayName || account.customerName || 'My DESCO Account'} - Electricity Dashboard`,
-      description: `📊 View real-time electricity usage, balance, and AI-powered insights for DESCO account ${account.accountNo}.
-
-⚡ Features:
-• Real-time balance monitoring
-• AI-powered consumption analysis
-• Smart recharge recommendations
-• Historical usage trends
-
-🔗 Powered by DescoWise - Your smart electricity companion`
+      title: t('shareDetailedTitle', { accountName: account.displayName || account.customerName || t('myDescoAccount') }),
+      description: t('shareDetailedDescription', { accountNo: account.accountNo })
     }
   };
 
@@ -125,10 +117,10 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
             </span>
           </div>
           <div className="text-sm text-slate-400 space-y-1">
-            <div>Account: {account.accountNo}</div>
-            {account.customerName && <div>Customer: {account.customerName}</div>}
+            <div>{t('account')}: {account.accountNo}</div>
+            {account.customerName && <div>{t('customerName')}: {account.customerName}</div>}
             {account.installationAddress && (
-              <div className="truncate">Address: {account.installationAddress}</div>
+              <div className="truncate">{t('installationAddress')}: {account.installationAddress}</div>
             )}
           </div>
         </div>
@@ -204,7 +196,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
               <span className="text-sm">{t('copyWithDescription')}</span>
             </button>
 
-            {navigator.share && (
+            {typeof navigator.share === 'function' && (
               <button
                 onClick={handleNativeShare}
                 className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-4 rounded-lg transition-colors"
