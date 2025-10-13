@@ -64,6 +64,7 @@
   "displayName": "দেখানোর নাম",
   "addressNotAvailable": "ঠিকানা পাওয়া যায়নি",
   "quickActions": "দ্রুত কাজ",
+  "copyAccountNo": "অ্যাকাউন্ট নম্বর কপি করুন",
   "accountNumberCopied": "অ্যাকাউন্ট নম্বর কপি করা হয়েছে: {{accountNo}}",
   "failedToCopyAccountNumber": "অ্যাকাউন্ট নম্বর কপি করা যায়নি",
   "accountNo": "অ্যাকাউন্ট নম্বর",

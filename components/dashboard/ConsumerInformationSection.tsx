@@ -2,7 +2,7 @@ import React from 'react';
 import { Account, CustomerLocation } from '../../types';
 import Section from '../common/Section';
 import { DetailItem } from '../common/Section';
-import { UserIcon, MapPinIcon, BuildingOfficeIcon, HomeIcon, CopyIcon } from '../common/Icons';
+import { MapPinIcon, HomeIcon, CopyIcon } from '../common/Icons';
 
 interface ConsumerInformationSectionProps {
     account: Account;

@@ -5,7 +5,6 @@ import { TrashIcon, PencilIcon, ExclamationTriangleIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
-import { formatCurrency, sanitizeCurrency } from './common/format';
 import { hasStoredApiKey } from '../utils/apiKeyStorage';
 
 interface AccountCardProps {
@@ -31,6 +30,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [editDisplayName, setEditDisplayName] = useState(displayName);
     const [hasApiKey, setHasApiKey] = useState(false);
+    const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
     // Check API key status
     useEffect(() => {
@@ -71,6 +71,17 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
             onSelect(account.accountNo);
         }
     }, [onSelect, account.accountNo]);
+
+    const handleCopyAccountNo = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(account.accountNo);
+            setCopyStatus('copied');
+            setTimeout(() => setCopyStatus('idle'), 2000);
+        } catch (err) {
+            console.error('Failed to copy account number: ', err);
+        }
+    }, [account.accountNo]);
 
     return (
         <>
@@ -167,9 +178,15 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
                 </div>
             </div>
             <div className="space-y-2 text-sm">
-                <AccountInfoRow label={`${t('accountNo')}:`} value={account.accountNo} />
-                <AccountInfoRow label={`${t('customerName')}:`} value={account.customerName} valueClassName="truncate max-w-[150px]" />
-                <AccountInfoRow label={`${t('meterNo')}:`} value={account.meterNo} />
+                <AccountInfoRow
+                    label={`${t('accountNo')}:`}
+                    value={account.accountNo}
+                    onCopy={handleCopyAccountNo}
+                    copyStatus={copyStatus}
+                    t={t}
+                />
+                <AccountInfoRow label={`${t('customerName')}:`} value={account.customerName} valueClassName="truncate max-w-[150px]" t={t} />
+                <AccountInfoRow label={`${t('meterNo')}:`} value={account.meterNo} t={t} />
                 <div className="flex justify-between items-start pt-2 min-h-[50px]">
                     <span className="font-medium text-slate-400 text-base">{t('balance')}:</span>
                     {/* Make N/A more mobile friendly by adjusting BalanceDisplay props/styles if balance is unavailable */}
