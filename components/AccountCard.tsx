@@ -1,8 +1,9 @@
 import React, { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../types';
-import { TrashIcon, PencilIcon, ExclamationTriangleIcon } from './common/Icons';
+import { TrashIcon, PencilIcon, ExclamationTriangleIcon, ShareIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
+import ShareModal from './common/ShareModal';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
 import { hasStoredApiKey } from '../utils/apiKeyStorage';
@@ -31,6 +32,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
     const [editDisplayName, setEditDisplayName] = useState(displayName);
     const [hasApiKey, setHasApiKey] = useState(false);
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     // Check API key status
     useEffect(() => {
@@ -72,8 +74,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
         }
     }, [onSelect, account.accountNo]);
 
-    const handleCopyAccountNo = useCallback(async (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleCopyAccountNo = useCallback(async () => {
         try {
             await navigator.clipboard.writeText(account.accountNo);
             setCopyStatus('copied');
@@ -82,6 +83,11 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
             console.error('Failed to copy account number: ', err);
         }
     }, [account.accountNo]);
+
+    const handleShare = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsShareModalOpen(true);
+    }, []);
 
     return (
         <>
@@ -96,6 +102,16 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
             <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-xl text-slate-100 truncate pr-4 max-w-[70%]">{displayName}</h3>
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        className="p-1 rounded hover:bg-slate-700 focus:outline-none"
+                        title={t('shareAccount')}
+                        onClick={handleShare}
+                        tabIndex={-1}
+                        aria-label={t('shareAccount')}
+                    >
+                        <ShareIcon className="w-5 h-5 text-cyan-400" />
+                    </button>
                     <button
                         type="button"
                         className="p-1 rounded hover:bg-slate-700 focus:outline-none"
@@ -223,6 +239,12 @@ const AccountCard: React.FC<AccountCardProps> = memo(({ account, onSelect, onDel
                 </div>
             </div>
         )}
+
+        <ShareModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            account={account}
+        />
         </>
     );
 });

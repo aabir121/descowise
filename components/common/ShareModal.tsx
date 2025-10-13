@@ -14,7 +14,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
   const { t } = useTranslation();
   const Modal = useModal();
   const [copied, setCopied] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<'simple' | 'detailed'>('detailed');
+  const [selectedFormat, setSelectedFormat] = useState<'simple' | 'detailed'>('simple');
 
   // Generate different types of share URLs with enhanced parameters
   const accountName = encodeURIComponent(account.displayName || account.customerName || 'DESCO Account');
@@ -94,7 +94,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <div className="flex flex-col h-full">
         {/* Fixed Header */}
-        <div className="flex fixed items-center justify-between p-6 pb-4 border-b border-slate-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-cyan-500/20 rounded-lg">
               <ShareIcon className="w-6 h-6 text-cyan-400" />
