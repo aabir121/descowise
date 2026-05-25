@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, Suspense, lazy, createContext, useContext } from 'react';
+import React, { useState, useCallback, useEffect, useRef, Suspense, lazy, createContext, useContext, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
@@ -9,7 +9,7 @@ import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon } from './components/common/Icons';
+import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon, CloseIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingInfoButton from './components/FloatingInfoButton';
 import Footer from './components/common/Footer';
@@ -194,10 +194,9 @@ const AccountListPage: React.FC<{
   accounts: Account[];
   loadingBalances: Set<string>;
   updateAccount: (accountNo: string, data: Partial<Account>) => void;
+  moveAccount: (fromIndex: number, toIndex: number) => void;
   handleDeleteAccount: (accountNo: string) => void;
   setAddAccountModalOpen: (open: boolean) => void;
-  addAccountModalOpen: boolean;
-  handleAccountAdded: (newAccount: Account) => void;
   notification: { message: string; type: 'info' | 'warning' | 'error' } | null;
   showDataNotice: boolean | null;
   handleDismissDataNotice: () => void;
@@ -212,15 +211,13 @@ const AccountListPage: React.FC<{
   setIsHelpModalOpen: (open: boolean) => void;
   isNotificationSettingsOpen: boolean;
   setIsNotificationSettingsOpen: (open: boolean) => void;
-  apiKeyConfiguredStatus: any;
 }> = ({
   accounts,
   loadingBalances,
   updateAccount,
+  moveAccount,
   handleDeleteAccount,
   setAddAccountModalOpen,
-  addAccountModalOpen,
-  handleAccountAdded,
   notification,
   showDataNotice,
   handleDismissDataNotice,
@@ -234,13 +231,126 @@ const AccountListPage: React.FC<{
   isHelpModalOpen,
   setIsHelpModalOpen,
   isNotificationSettingsOpen,
-  setIsNotificationSettingsOpen,
-  apiKeyConfiguredStatus
+  setIsNotificationSettingsOpen
 }) => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isArrangeMode, setIsArrangeMode] = useState(false);
+  const [draggedAccountNo, setDraggedAccountNo] = useState<string | null>(null);
   const handleSelectAccount = useCallback((accountNo: string) => {
     navigate(`/dashboard/${accountNo}`);
   }, [navigate]);
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+  const filteredAccounts = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return accounts;
+    }
+
+    return accounts.filter((account) => {
+      const visibleDisplayName = (account.displayName?.trim() || `${t('account')} ${account.accountNo}`).toLowerCase();
+      const savedDisplayName = (account.displayName || '').toLowerCase();
+      const meterNo = (account.meterNo || '').toLowerCase();
+
+      return (
+        visibleDisplayName.includes(normalizedSearchQuery) ||
+        savedDisplayName.includes(normalizedSearchQuery) ||
+        meterNo.includes(normalizedSearchQuery)
+      );
+    });
+  }, [accounts, normalizedSearchQuery, t]);
+
+  useEffect(() => {
+    if (normalizedSearchQuery && isArrangeMode) {
+      setIsArrangeMode(false);
+      setDraggedAccountNo(null);
+    }
+  }, [normalizedSearchQuery, isArrangeMode]);
+
+  const getAccountIndex = useCallback((accountNo: string) => {
+    return accounts.findIndex((account) => account.accountNo === accountNo);
+  }, [accounts]);
+
+  const reorderByAccountNo = useCallback((fromAccountNo: string, toAccountNo: string) => {
+    if (fromAccountNo === toAccountNo) {
+      return;
+    }
+
+    const fromIndex = getAccountIndex(fromAccountNo);
+    const toIndex = getAccountIndex(toAccountNo);
+
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+      return;
+    }
+
+    moveAccount(fromIndex, toIndex);
+  }, [getAccountIndex, moveAccount]);
+
+  const handleDragStart = useCallback((accountNo: string) => {
+    if (!isArrangeMode) {
+      return;
+    }
+    setDraggedAccountNo(accountNo);
+  }, [isArrangeMode]);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!isArrangeMode) {
+      return;
+    }
+    e.preventDefault();
+  }, [isArrangeMode]);
+
+  const handleDropOnCard = useCallback((targetAccountNo: string) => {
+    if (!isArrangeMode || !draggedAccountNo) {
+      return;
+    }
+
+    reorderByAccountNo(draggedAccountNo, targetAccountNo);
+    setDraggedAccountNo(targetAccountNo);
+  }, [draggedAccountNo, isArrangeMode, reorderByAccountNo]);
+
+  const handleTouchStart = useCallback((accountNo: string) => {
+    if (!isArrangeMode) {
+      return;
+    }
+    setDraggedAccountNo(accountNo);
+  }, [isArrangeMode]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isArrangeMode || !draggedAccountNo) {
+      return;
+    }
+
+    e.preventDefault();
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetCard = element?.closest('[data-account-card]') as HTMLElement | null;
+    const targetAccountNo = targetCard?.dataset.accountCard;
+
+    if (targetAccountNo && targetAccountNo !== draggedAccountNo) {
+      reorderByAccountNo(draggedAccountNo, targetAccountNo);
+      setDraggedAccountNo(targetAccountNo);
+    }
+  }, [draggedAccountNo, isArrangeMode, reorderByAccountNo]);
+
+  const handleTouchEnd = useCallback(() => {
+    setDraggedAccountNo(null);
+  }, []);
+
+  const handleMoveUp = useCallback((accountNo: string) => {
+    const index = getAccountIndex(accountNo);
+    if (index > 0) {
+      moveAccount(index, index - 1);
+    }
+  }, [getAccountIndex, moveAccount]);
+
+  const handleMoveDown = useCallback((accountNo: string) => {
+    const index = getAccountIndex(accountNo);
+    if (index !== -1 && index < accounts.length - 1) {
+      moveAccount(index, index + 1);
+    }
+  }, [accounts.length, getAccountIndex, moveAccount]);
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
       {showDataNotice === true && (
@@ -340,22 +450,107 @@ const AccountListPage: React.FC<{
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-              {accounts.map(account => (
-                <AccountCard
+            <>
+              <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex-1">
+                  <label htmlFor="account-search" className="mb-2 block text-sm font-medium text-slate-300">
+                    {t('searchAccountsLabel', 'Search accounts')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="account-search"
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t('searchAccountsPlaceholder', 'Search by meter no or display name')}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-slate-100 outline-none transition focus:border-cyan-400"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100"
+                        aria-label={t('clearSearch', 'Clear search')}
+                      >
+                        <CloseIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400">
+                    {normalizedSearchQuery
+                      ? t('searchResultsCount', '{{count}} account cards found', { count: filteredAccounts.length })
+                      : t('searchAccountsHelp', 'Search matches meter numbers and display names.')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 sm:pl-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsArrangeMode((current) => !current)}
+                    disabled={!!normalizedSearchQuery}
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+                      normalizedSearchQuery
+                        ? 'cursor-not-allowed border-slate-800 bg-slate-800 text-slate-500'
+                        : isArrangeMode
+                          ? 'border-cyan-400/50 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/20'
+                          : 'border-slate-700 bg-slate-800 text-slate-100 hover:border-cyan-500/40 hover:text-cyan-100'
+                    }`}
+                  >
+                    {isArrangeMode ? t('doneArranging', 'Done arranging') : t('startArranging', 'Arrange cards')}
+                  </button>
+                </div>
+              </div>
+
+              {isArrangeMode && (
+                <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                  {t('arrangeCardsDescription', 'Drag cards to reorder them. Opening account dashboards is disabled until you exit Arrange mode.')}
+                </div>
+              )}
+
+              {normalizedSearchQuery && (
+                <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
+                  {t('searchDisablesArrangeMode', 'Arrange mode is unavailable while search is active.')}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-3">
+              {filteredAccounts.map(account => {
+                const accountIndex = getAccountIndex(account.accountNo);
+                return (
+                <div
                   key={account.accountNo}
-                  account={account}
-                  onSelect={handleSelectAccount}
-                  onDelete={handleDeleteAccount}
-                  isBalanceLoading={loadingBalances.has(account.accountNo)}
-                  onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
-                  onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
-                  onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
-                  onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
-                />
-              ))}
+                  data-account-card={account.accountNo}
+                  draggable={isArrangeMode}
+                  onDragStart={() => handleDragStart(account.accountNo)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDropOnCard(account.accountNo)}
+                  onDragEnd={() => setDraggedAccountNo(null)}
+                  onTouchStart={() => handleTouchStart(account.accountNo)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  className={`transition-transform ${isArrangeMode ? 'touch-none select-none' : ''} ${
+                    draggedAccountNo === account.accountNo ? 'scale-[1.02]' : ''
+                  }`}
+                >
+                  <AccountCard
+                    account={account}
+                    onSelect={handleSelectAccount}
+                    onDelete={handleDeleteAccount}
+                    isBalanceLoading={loadingBalances.has(account.accountNo)}
+                    onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
+                    onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
+                    onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
+                    onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+                    isArrangeMode={isArrangeMode}
+                    onMoveUp={() => handleMoveUp(account.accountNo)}
+                    onMoveDown={() => handleMoveDown(account.accountNo)}
+                    canMoveUp={accountIndex > 0}
+                    canMoveDown={accountIndex < accounts.length - 1}
+                  />
+                </div>
+              )})}
               <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
-            </div>
+              </div>
+            </>
           )}
         </main>
       </div>
@@ -372,7 +567,7 @@ const AccountListPage: React.FC<{
 const App: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { accounts, addAccount, deleteAccount, updateAccount } = useAccounts();
+    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
 const { trackAction, preloadForRoute } = useIntelligentPreloader();
@@ -405,7 +600,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
-    const [apiKeyConfiguredStatus, setApiKeyConfiguredStatus] = useState<any>(null); // Add this line
     
     // Global balance warning modal state
     const { isOpen: isBalanceWarningOpen, close: closeBalanceWarning } = useBalanceWarning();
@@ -714,10 +908,9 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                           accounts={accounts}
                           loadingBalances={loadingBalances}
                           updateAccount={updateAccount}
+                          moveAccount={moveAccount}
                           handleDeleteAccount={handleDeleteAccount}
                           setAddAccountModalOpen={setAddAccountModalOpen}
-                          addAccountModalOpen={addAccountModalOpen}
-                          handleAccountAdded={handleAccountAdded}
                           notification={notification}
                           showDataNotice={showDataNotice}
                           handleDismissDataNotice={handleDismissDataNotice}
@@ -732,7 +925,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                           setIsHelpModalOpen={setIsHelpModalOpen}
                           isNotificationSettingsOpen={isNotificationSettingsOpen}
                           setIsNotificationSettingsOpen={setIsNotificationSettingsOpen}
-                          apiKeyConfiguredStatus={apiKeyConfiguredStatus}
                         />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />

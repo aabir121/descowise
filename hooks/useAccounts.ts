@@ -48,5 +48,24 @@ export const useAccounts = () => {
         );
     }, []);
 
-    return { accounts, addAccount, deleteAccount, updateAccount };
+    const moveAccount = useCallback((fromIndex: number, toIndex: number) => {
+        setAccounts(prevAccounts => {
+            if (
+                fromIndex < 0 ||
+                toIndex < 0 ||
+                fromIndex >= prevAccounts.length ||
+                toIndex >= prevAccounts.length ||
+                fromIndex === toIndex
+            ) {
+                return prevAccounts;
+            }
+
+            const nextAccounts = [...prevAccounts];
+            const [movedAccount] = nextAccounts.splice(fromIndex, 1);
+            nextAccounts.splice(toIndex, 0, movedAccount);
+            return nextAccounts;
+        });
+    }, []);
+
+    return { accounts, addAccount, deleteAccount, updateAccount, moveAccount };
 };
