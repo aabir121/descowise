@@ -149,11 +149,13 @@ export const DeleteButton: React.FC<{
     className?: string;
     children: React.ReactNode;
     noPadding?: boolean;
-}> = ({ onClick, title = 'Delete', className = '', children, noPadding = false }) => (
+    disabled?: boolean;
+}> = ({ onClick, title = 'Delete', className = '', children, noPadding = false, disabled = false }) => (
     <button
         onClick={onClick}
         title={title}
-        className={`${noPadding ? '' : 'p-2 '}text-slate-500 hover:text-white hover:bg-red-500/80 rounded-full transition-colors duration-200 z-10 ${className}`.trim()}
+        disabled={disabled}
+        className={`${noPadding ? '' : 'p-2 '}text-slate-500 rounded-full transition-colors duration-200 z-10 ${disabled ? 'cursor-not-allowed opacity-40' : 'hover:text-white hover:bg-red-500/80'} ${className}`.trim()}
     >
         {children}
     </button>
