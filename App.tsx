@@ -609,7 +609,7 @@ const AccountListPage: React.FC<{
               <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                   <label htmlFor="account-search" className="mb-2 block text-sm font-medium text-slate-300">
-                    {t('searchAccountsLabel', 'Search accounts')}
+                    {t('searchAccountsLabel')}
                   </label>
                   <div className="relative">
                     <input
@@ -617,7 +617,7 @@ const AccountListPage: React.FC<{
                       type="search"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={t('searchAccountsPlaceholder', 'Search by meter no or display name')}
+                      placeholder={t('searchAccountsPlaceholder')}
                       className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-slate-100 outline-none transition focus:border-cyan-400"
                     />
                     {searchQuery && (
@@ -625,7 +625,7 @@ const AccountListPage: React.FC<{
                         type="button"
                         onClick={() => setSearchQuery('')}
                         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100"
-                        aria-label={t('clearSearch', 'Clear search')}
+                        aria-label={t('clearSearch')}
                       >
                         <CloseIcon className="h-4 w-4" />
                       </button>
@@ -633,8 +633,8 @@ const AccountListPage: React.FC<{
                   </div>
                   <p className="mt-2 text-xs text-slate-400">
                     {normalizedSearchQuery
-                      ? t('searchResultsCount', '{{count}} account cards found', { count: filteredAccounts.length })
-                      : t('searchAccountsHelp', 'Search matches meter numbers and display names.')}
+                      ? t('searchResultsCount', { count: filteredAccounts.length })
+                      : t('searchAccountsHelp')}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 sm:pl-4">
@@ -657,13 +657,13 @@ const AccountListPage: React.FC<{
 
               {isArrangeMode && (
                 <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
-                  {t('arrangeCardsDescription', 'Drag cards to reorder them. Opening account dashboards is disabled until you exit Arrange mode.')}
+                  {t('arrangeCardsDescription')}
                 </div>
               )}
 
               {normalizedSearchQuery && (
                 <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
-                  {t('searchDisablesArrangeMode', 'Arrange mode is unavailable while search is active.')}
+                  {t('searchDisablesArrangeMode')}
                 </div>
               )}
 
