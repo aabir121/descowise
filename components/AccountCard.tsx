@@ -165,7 +165,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
 
                 {isArrangeMode && (
                     <div className="mb-4 flex items-center justify-between rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
-                        <span>{t('arrangeModeHint', 'Drag cards or use the move buttons to reorder')}</span>
+                        <span>{t('arrangeModeHint')}</span>
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
@@ -175,9 +175,9 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                                 }}
                                 disabled={!canMoveUp}
                                 className="rounded-md border border-cyan-400/40 px-2 py-1 text-cyan-100 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label={t('moveCardUp', 'Move card up')}
+                                aria-label={t('moveCardUp')}
                             >
-                                Up
+                                {t('moveCardUpButton')}
                             </button>
                             <button
                                 type="button"
@@ -187,9 +187,9 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                                 }}
                                 disabled={!canMoveDown}
                                 className="rounded-md border border-cyan-400/40 px-2 py-1 text-cyan-100 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label={t('moveCardDown', 'Move card down')}
+                                aria-label={t('moveCardDown')}
                             >
-                                Down
+                                {t('moveCardDownButton')}
                             </button>
                         </div>
                     </div>

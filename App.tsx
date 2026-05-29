@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy, createContext, useContext, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { DndContext, DragEndEvent, DragOverlay, DragOverEvent, DragStartEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance, verifyAccount } from './services/descoService';
@@ -108,6 +111,143 @@ export const useModal = () => {
 
 // Lazy load the heavy dashboard component
 const AccountDashboardView = lazy(() => import('./components/AccountDashboardView'));
+
+type DraggedCardSize = {
+  width: number;
+  height: number;
+};
+
+const SortableAccountCard: React.FC<{
+  account: Account;
+  accountIndex: number;
+  isArrangeMode: boolean;
+  isActive: boolean;
+  isOver: boolean;
+  onSelect: (accountNo: string) => void;
+  onDelete: (accountNo: string) => void;
+  isBalanceLoading: boolean;
+  onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
+  onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
+  onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void;
+  onOpenApiKeyModal?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+}> = ({
+  account,
+  accountIndex,
+  isArrangeMode,
+  isActive,
+  isOver,
+  onSelect,
+  onDelete,
+  isBalanceLoading,
+  onUpdateDisplayName,
+  onUpdateAiInsightsEnabled,
+  onUpdateBanglaEnabled,
+  onOpenApiKeyModal,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({
+    id: account.accountNo,
+    disabled: !isArrangeMode
+  });
+
+  const wrapperStyle: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 40 : 'auto',
+    touchAction: isArrangeMode ? 'none' : undefined
+  };
+
+  const showDropTarget = isArrangeMode && isOver && !isActive;
+
+  return (
+    <div ref={setNodeRef} style={wrapperStyle} className="relative">
+      <div
+        {...attributes}
+        {...listeners}
+        className={isArrangeMode ? 'cursor-grab active:cursor-grabbing' : undefined}
+      >
+        <div className={showDropTarget ? 'relative rounded-2xl ring-2 ring-cyan-400/60 ring-offset-2 ring-offset-slate-900' : 'relative'}>
+          <div className={isArrangeMode && isActive ? 'opacity-50' : undefined}>
+            <AccountCard
+              account={account}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              isBalanceLoading={isBalanceLoading}
+              onUpdateDisplayName={onUpdateDisplayName}
+              onUpdateAiInsightsEnabled={onUpdateAiInsightsEnabled}
+              onUpdateBanglaEnabled={onUpdateBanglaEnabled}
+              onOpenApiKeyModal={onOpenApiKeyModal}
+              isArrangeMode={isArrangeMode}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
+              canMoveUp={canMoveUp}
+              canMoveDown={canMoveDown}
+            />
+          </div>
+          {showDropTarget && (
+            <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-cyan-400/80 bg-cyan-400/10">
+              <div className="absolute left-4 top-4 rounded-full border border-cyan-300/70 bg-slate-950/90 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-100">
+                Drop here
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DragPreview: React.FC<{
+  account: Account;
+  onSelect: (accountNo: string) => void;
+  onDelete: (accountNo: string) => void;
+  isBalanceLoading: boolean;
+  onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
+  onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
+  onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void;
+  onOpenApiKeyModal?: () => void;
+}> = ({
+  account,
+  onSelect,
+  onDelete,
+  isBalanceLoading,
+  onUpdateDisplayName,
+  onUpdateAiInsightsEnabled,
+  onUpdateBanglaEnabled,
+  onOpenApiKeyModal
+}) => {
+  return (
+    <div className="pointer-events-none w-[min(92vw,28rem)] shadow-2xl shadow-cyan-500/20">
+      <AccountCard
+        account={account}
+        onSelect={onSelect}
+        onDelete={onDelete}
+        isBalanceLoading={isBalanceLoading}
+        onUpdateDisplayName={onUpdateDisplayName}
+        onUpdateAiInsightsEnabled={onUpdateAiInsightsEnabled}
+        onUpdateBanglaEnabled={onUpdateBanglaEnabled}
+        onOpenApiKeyModal={onOpenApiKeyModal}
+        isArrangeMode={true}
+        canMoveUp={false}
+        canMoveDown={false}
+      />
+    </div>
+  );
+};
 
 const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete, sharedViewerMode }) => {
     const { accountNo } = useParams<{ accountNo: string }>();
@@ -236,10 +376,29 @@ const AccountListPage: React.FC<{
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isArrangeMode, setIsArrangeMode] = useState(false);
-  const [draggedAccountNo, setDraggedAccountNo] = useState<string | null>(null);
+  const [activeAccountNo, setActiveAccountNo] = useState<string | null>(null);
+  const [overAccountNo, setOverAccountNo] = useState<string | null>(null);
+  const [activeCardSize, setActiveCardSize] = useState<DraggedCardSize | null>(null);
   const handleSelectAccount = useCallback((accountNo: string) => {
     navigate(`/dashboard/${accountNo}`);
   }, [navigate]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8
+      }
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 8
+      }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates
+    })
+  );
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
@@ -264,7 +423,9 @@ const AccountListPage: React.FC<{
   useEffect(() => {
     if (normalizedSearchQuery && isArrangeMode) {
       setIsArrangeMode(false);
-      setDraggedAccountNo(null);
+      setActiveAccountNo(null);
+      setOverAccountNo(null);
+      setActiveCardSize(null);
     }
   }, [normalizedSearchQuery, isArrangeMode]);
 
@@ -272,71 +433,65 @@ const AccountListPage: React.FC<{
     return accounts.findIndex((account) => account.accountNo === accountNo);
   }, [accounts]);
 
-  const reorderByAccountNo = useCallback((fromAccountNo: string, toAccountNo: string) => {
-    if (fromAccountNo === toAccountNo) {
-      return;
-    }
+  const activeAccount = activeAccountNo ? accounts.find((account) => account.accountNo === activeAccountNo) ?? null : null;
 
-    const fromIndex = getAccountIndex(fromAccountNo);
-    const toIndex = getAccountIndex(toAccountNo);
-
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-      return;
-    }
-
-    moveAccount(fromIndex, toIndex);
-  }, [getAccountIndex, moveAccount]);
-
-  const handleDragStart = useCallback((accountNo: string) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     if (!isArrangeMode) {
       return;
     }
-    setDraggedAccountNo(accountNo);
+
+    const accountNo = String(event.active.id);
+    setActiveAccountNo(accountNo);
+    setOverAccountNo(accountNo);
+
+    const rect = event.active.rect.current.initial ?? event.active.rect.current.translated;
+    if (rect) {
+      setActiveCardSize({ width: rect.width, height: rect.height });
+    } else {
+      setActiveCardSize(null);
+    }
   }, [isArrangeMode]);
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((event: DragOverEvent) => {
     if (!isArrangeMode) {
       return;
     }
-    e.preventDefault();
+
+    if (!event.over) {
+      setOverAccountNo(null);
+      return;
+    }
+
+    setOverAccountNo(String(event.over.id));
   }, [isArrangeMode]);
 
-  const handleDropOnCard = useCallback((targetAccountNo: string) => {
-    if (!isArrangeMode || !draggedAccountNo) {
-      return;
-    }
-
-    reorderByAccountNo(draggedAccountNo, targetAccountNo);
-    setDraggedAccountNo(targetAccountNo);
-  }, [draggedAccountNo, isArrangeMode, reorderByAccountNo]);
-
-  const handleTouchStart = useCallback((accountNo: string) => {
-    if (!isArrangeMode) {
-      return;
-    }
-    setDraggedAccountNo(accountNo);
-  }, [isArrangeMode]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isArrangeMode || !draggedAccountNo) {
-      return;
-    }
-
-    e.preventDefault();
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    const targetCard = element?.closest('[data-account-card]') as HTMLElement | null;
-    const targetAccountNo = targetCard?.dataset.accountCard;
-
-    if (targetAccountNo && targetAccountNo !== draggedAccountNo) {
-      reorderByAccountNo(draggedAccountNo, targetAccountNo);
-      setDraggedAccountNo(targetAccountNo);
-    }
-  }, [draggedAccountNo, isArrangeMode, reorderByAccountNo]);
-
-  const handleTouchEnd = useCallback(() => {
-    setDraggedAccountNo(null);
+  const handleDragCancel = useCallback(() => {
+    setActiveAccountNo(null);
+    setOverAccountNo(null);
+    setActiveCardSize(null);
   }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    if (!isArrangeMode) {
+      handleDragCancel();
+      return;
+    }
+
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      handleDragCancel();
+      return;
+    }
+
+    const fromIndex = getAccountIndex(String(active.id));
+    const toIndex = getAccountIndex(String(over.id));
+
+    if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+      moveAccount(fromIndex, toIndex);
+    }
+
+    handleDragCancel();
+  }, [getAccountIndex, handleDragCancel, isArrangeMode, moveAccount]);
 
   const handleMoveUp = useCallback((accountNo: string) => {
     const index = getAccountIndex(accountNo);
@@ -454,7 +609,7 @@ const AccountListPage: React.FC<{
               <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                   <label htmlFor="account-search" className="mb-2 block text-sm font-medium text-slate-300">
-                    {t('searchAccountsLabel', 'Search accounts')}
+                    {t('searchAccountsLabel')}
                   </label>
                   <div className="relative">
                     <input
@@ -462,7 +617,7 @@ const AccountListPage: React.FC<{
                       type="search"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={t('searchAccountsPlaceholder', 'Search by meter no or display name')}
+                      placeholder={t('searchAccountsPlaceholder')}
                       className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-slate-100 outline-none transition focus:border-cyan-400"
                     />
                     {searchQuery && (
@@ -470,7 +625,7 @@ const AccountListPage: React.FC<{
                         type="button"
                         onClick={() => setSearchQuery('')}
                         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100"
-                        aria-label={t('clearSearch', 'Clear search')}
+                        aria-label={t('clearSearch')}
                       >
                         <CloseIcon className="h-4 w-4" />
                       </button>
@@ -478,8 +633,8 @@ const AccountListPage: React.FC<{
                   </div>
                   <p className="mt-2 text-xs text-slate-400">
                     {normalizedSearchQuery
-                      ? t('searchResultsCount', '{{count}} account cards found', { count: filteredAccounts.length })
-                      : t('searchAccountsHelp', 'Search matches meter numbers and display names.')}
+                      ? t('searchResultsCount', { count: filteredAccounts.length })
+                      : t('searchAccountsHelp')}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 sm:pl-4">
@@ -502,54 +657,79 @@ const AccountListPage: React.FC<{
 
               {isArrangeMode && (
                 <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
-                  {t('arrangeCardsDescription', 'Drag cards to reorder them. Opening account dashboards is disabled until you exit Arrange mode.')}
+                  {t('arrangeCardsDescription')}
                 </div>
               )}
 
               {normalizedSearchQuery && (
                 <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
-                  {t('searchDisablesArrangeMode', 'Arrange mode is unavailable while search is active.')}
+                  {t('searchDisablesArrangeMode')}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {filteredAccounts.map(account => {
-                const accountIndex = getAccountIndex(account.accountNo);
-                return (
-                <div
-                  key={account.accountNo}
-                  data-account-card={account.accountNo}
-                  draggable={isArrangeMode}
-                  onDragStart={() => handleDragStart(account.accountNo)}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDropOnCard(account.accountNo)}
-                  onDragEnd={() => setDraggedAccountNo(null)}
-                  onTouchStart={() => handleTouchStart(account.accountNo)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  className={`transition-transform ${isArrangeMode ? 'touch-none select-none' : ''} ${
-                    draggedAccountNo === account.accountNo ? 'scale-[1.02]' : ''
-                  }`}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <SortableContext
+                  items={filteredAccounts.map((account) => account.accountNo)}
+                  strategy={rectSortingStrategy}
                 >
-                  <AccountCard
-                    account={account}
-                    onSelect={handleSelectAccount}
-                    onDelete={handleDeleteAccount}
-                    isBalanceLoading={loadingBalances.has(account.accountNo)}
-                    onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
-                    onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
-                    onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
-                    onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
-                    isArrangeMode={isArrangeMode}
-                    onMoveUp={() => handleMoveUp(account.accountNo)}
-                    onMoveDown={() => handleMoveDown(account.accountNo)}
-                    canMoveUp={accountIndex > 0}
-                    canMoveDown={accountIndex < accounts.length - 1}
-                  />
-                </div>
-              )})}
-              <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
-              </div>
+                  <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredAccounts.map((account) => {
+                      const accountIndex = getAccountIndex(account.accountNo);
+                      return (
+                        <SortableAccountCard
+                          key={account.accountNo}
+                          account={account}
+                          accountIndex={accountIndex}
+                          isArrangeMode={isArrangeMode}
+                          isActive={activeAccountNo === account.accountNo}
+                          isOver={overAccountNo === account.accountNo}
+                          onSelect={handleSelectAccount}
+                          onDelete={handleDeleteAccount}
+                          isBalanceLoading={loadingBalances.has(account.accountNo)}
+                          onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
+                          onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
+                          onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
+                          onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+                          onMoveUp={() => handleMoveUp(account.accountNo)}
+                          onMoveDown={() => handleMoveDown(account.accountNo)}
+                          canMoveUp={accountIndex > 0}
+                          canMoveDown={accountIndex < accounts.length - 1}
+                        />
+                      );
+                    })}
+                    <AddAccountCard onClick={() => setAddAccountModalOpen(true)} />
+                  </div>
+                </SortableContext>
+
+                <DragOverlay adjustScale={false}>
+                  {activeAccount && isArrangeMode ? (
+                    <div
+                      style={{
+                        width: activeCardSize?.width,
+                        height: activeCardSize?.height
+                      }}
+                    >
+                      <DragPreview
+                        account={activeAccount}
+                        onSelect={handleSelectAccount}
+                        onDelete={handleDeleteAccount}
+                        isBalanceLoading={loadingBalances.has(activeAccount.accountNo)}
+                        onUpdateDisplayName={(accountNo, newDisplayName) => updateAccount(accountNo, { displayName: newDisplayName })}
+                        onUpdateAiInsightsEnabled={(accountNo, enabled) => updateAccount(accountNo, { aiInsightsEnabled: enabled })}
+                        onUpdateBanglaEnabled={(accountNo, enabled) => updateAccount(accountNo, { banglaEnabled: enabled })}
+                        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </>
           )}
         </main>
