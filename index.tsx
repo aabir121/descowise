@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from "@vercel/analytics/react"
+import { refreshPushSubscription, syncChangedPushSubscription } from './services/pushNotificationService';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -23,6 +24,9 @@ root.render(
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'PUSH_SUBSCRIPTION_CHANGED') void syncChangedPushSubscription(event.data.subscription).catch(() => undefined);
+  });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {
@@ -49,5 +53,7 @@ if ('serviceWorker' in navigator) {
       .catch(registrationError => {
         console.log('SW registration failed: ', registrationError);
       });
+    // Subscription refresh is recovery only; it does not schedule or deliver notifications.
+    void refreshPushSubscription().catch(() => undefined);
   });
 }

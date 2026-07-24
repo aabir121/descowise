@@ -8,9 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "bash scripts/deploy.sh",
-    "deploy:win": "scripts\\deploy.bat"
+    "deploy:win": "scripts\\deploy.bat",
+    "test": "vitest run services/pushNotificationService.test.ts workers/notifications/src/schedule.test.ts",
+    "worker:dev": "wrangler dev --config workers/notifications/wrangler.toml --local",
+    "worker:deploy": "wrangler deploy --config workers/notifications/wrangler.toml",
+    "worker:migrate:local": "wrangler d1 migrations apply descowise-notifications --local --config workers/notifications/wrangler.toml",
+    "worker:migrate": "wrangler d1 migrations apply descowise-notifications --remote --config workers/notifications/wrangler.toml"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^1.0.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -18,6 +24,7 @@
     "@vercel/analytics": "^1.5.0",
     "d3-shape": "3.2.0",
     "i18next": "^25.3.2",
+    "luxon": "^3.6.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^15.6.0",
@@ -26,6 +33,8 @@
     "recharts": "^3.0.2"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260724.1",
+    "@types/luxon": "^3.7.2",
     "@types/node": "^22.14.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -35,6 +44,8 @@
     "tailwindcss": "^3.4.0",
     "terser": "^5.43.1",
     "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.114.0"
   }
 }

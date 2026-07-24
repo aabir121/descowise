@@ -1,33 +1,12 @@
 #!/bin/bash
 
-# Deploy DescoWise Script
-# This script deploys DescoWise with user-provided API key configuration
+# Cloudflare Pages deployment. The ignored legacy ./functions directory contains
+# dependencies from the prior host; deploy from a clean temporary cwd so Pages
+# uploads only the Vite output.
+set -euo pipefail
 
-echo "🚀 Deploying DescoWise..."
-
-# Deploy to Vercel
-echo "📦 Building and deploying to Vercel..."
-
-# Check if project exists, if not create it
-PROJECT_NAME="${PROJECT_NAME:-descowise}"
-
-vercel --prod \
-    --name "$PROJECT_NAME" \
-    --env GEMINI_MODEL="${GEMINI_MODEL:-gemini-2.5-flash}" \
-    --env GEMINI_TEMPERATURE="${GEMINI_TEMPERATURE:-0.3}"
-
-if [ $? -eq 0 ]; then
-    echo "🎉 Deployment successful!"
-    echo ""
-    echo "📋 Deployment Summary:"
-    echo "   • AI Features: Users configure their own Gemini API key"
-    echo "   • API Key: User-configured during onboarding"
-    echo "   • Model: ${GEMINI_MODEL:-gemini-2.5-flash}"
-    echo "   • Temperature: ${GEMINI_TEMPERATURE:-0.3}"
-    echo ""
-    echo "🔗 Your deployment is now live!"
-    echo "💡 Users will be prompted to configure their Gemini API key for AI features."
-else
-    echo "❌ Deployment failed. Please check the error messages above."
-    exit 1
-fi
+npm run build
+deploy_root="$(mktemp -d /private/tmp/descowise-pages.XXXXXX)"
+trap 'rm -rf "$deploy_root"' EXIT
+cp -R dist "$deploy_root/dist"
+npx wrangler --cwd "$deploy_root" pages deploy dist --project-name descowise --branch main --commit-dirty=true

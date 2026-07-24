@@ -1,254 +1,75 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { CloseIcon, BellIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
-import { notificationPermissionService, NotificationPermissionStatus } from '../services/notificationPermissionService';
-import { notificationScheduler } from '../services/notificationScheduler';
-import { notificationStorageService } from '../services/notificationStorageService';
+import React, { useEffect, useState } from 'react';
+import { BellIcon, CloseIcon, ExclamationTriangleIcon, InformationCircleIcon } from './common/Icons';
 import Spinner from './common/Spinner';
-import { useTranslation } from 'react-i18next';
+import { Account } from '../types';
+import {
+  disablePushNotifications, enablePushNotifications, getNotificationState, sendTestNotification,
+  syncAccountWatches, syncReminderSchedule, type NotificationPermissionState,
+} from '../services/pushNotificationService';
 
-interface NotificationSettingsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+interface NotificationSettingsModalProps { isOpen: boolean; onClose: () => void; }
+type Watch = { enabled: boolean; threshold?: number };
+const REMINDER_ID_KEY = 'descowise_push_reminder_id';
+const WATCHES_KEY = 'descowise_account_watches';
+
+function savedAccounts(): Account[] { try { return JSON.parse(localStorage.getItem('desco_accounts') || '[]') as Account[]; } catch { return []; } }
+function savedWatches(): Record<string, Watch> { try { return JSON.parse(localStorage.getItem(WATCHES_KEY) || '{}') as Record<string, Watch>; } catch { return {}; } }
+
+const initialState: NotificationPermissionState = { supported: true, permission: 'default', subscribed: false };
 
 const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ isOpen, onClose }) => {
-  const { t } = useTranslation();
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('default');
-  const [localSettings, setLocalSettings] = useState(notificationPermissionService.getSettings());
-  const [isLoading, setIsLoading] = useState(false);
-  const [testNotificationSent, setTestNotificationSent] = useState(false);
-  const [monitoringStats, setMonitoringStats] = useState(notificationStorageService.getTodaysSummary());
-  const [schedulerStatus, setSchedulerStatus] = useState({
-    isRunning: false,
-    nextScheduledTime: '',
-    timeUntilNext: '',
-  });
+  const [state, setState] = useState(initialState);
+  const [time, setTime] = useState(localStorage.getItem('descowise_push_time') || '15:00');
+  const [globalThreshold, setGlobalThreshold] = useState(() => Number(localStorage.getItem('descowise_global_threshold') || 500));
+  const [watches, setWatches] = useState<Record<string, Watch>>(savedWatches);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [editingTime, setEditingTime] = useState(false);
+  const [editingAccounts, setEditingAccounts] = useState(false);
+  const accounts = savedAccounts();
 
-  const updateSchedulerStatus = useCallback(() => {
-    setSchedulerStatus({
-      isRunning: notificationScheduler.isRunning(),
-      nextScheduledTime: notificationScheduler.getNextScheduledTime(),
-      timeUntilNext: notificationScheduler.getTimeUntilNext(),
-    });
-  }, []);
+  const refresh = async () => setState(await getNotificationState());
+  useEffect(() => { if (isOpen) { void refresh(); document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = ''; }; } }, [isOpen]);
+  const enabled = state.permission === 'granted' && state.subscribed;
+  const monitoredCount = accounts.filter(account => watches[account.accountNo]?.enabled).length;
+  const status = !state.supported ? 'Unsupported' : state.requiresInstall ? 'Install required' : state.permission === 'denied' ? 'Permission denied' : enabled ? 'Enabled' : state.backendUnavailable ? 'Backend unavailable' : 'Not enabled';
 
-  useEffect(() => {
-    if (isOpen) {
-      const unsubscribe = notificationPermissionService.subscribe(setPermissionStatus);
-      setLocalSettings(notificationPermissionService.getSettings());
-      updateSchedulerStatus();
-      setMonitoringStats(notificationStorageService.getTodaysSummary());
-      
-      const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
-      };
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        unsubscribe();
-        document.removeEventListener('keydown', handleEscape);
-        document.body.style.overflow = 'unset';
-      };
-    }
-  }, [isOpen, onClose, updateSchedulerStatus]);
-
-  const handleSettingsChange = (updates: Partial<typeof localSettings>) => {
-    setLocalSettings(prev => ({ ...prev, ...updates }));
+  const watchPayload = () => accounts.map(account => ({ accountNo: account.accountNo, label: account.displayName || account.customerName, enabled: watches[account.accountNo]?.enabled ?? false, thresholdBdt: watches[account.accountNo]?.threshold }));
+  const persist = async () => {
+    await syncAccountWatches(globalThreshold, watchPayload());
+    const reminder = await syncReminderSchedule({ id: localStorage.getItem(REMINDER_ID_KEY) || undefined, title: 'Daily DESCO check-in', body: 'Open DescoWise to review your daily account update.', localTime: time, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, targetUrl: '/', enabled: true });
+    localStorage.setItem(REMINDER_ID_KEY, reminder.id); localStorage.setItem('descowise_push_time', time);
+    localStorage.setItem('descowise_global_threshold', String(globalThreshold)); localStorage.setItem(WATCHES_KEY, JSON.stringify(watches));
   };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    const originalSettings = notificationPermissionService.getSettings();
-
-    try {
-      if (localSettings.enabled && !originalSettings.enabled) {
-        const success = await notificationPermissionService.enableNotifications();
-        if (success) {
-          notificationPermissionService.updateSettings(localSettings);
-        } else {
-          alert('Failed to enable notifications. Please check your browser settings.');
-          setIsLoading(false);
-          return;
-        }
-      } else if (!localSettings.enabled && originalSettings.enabled) {
-        notificationPermissionService.disableNotifications();
-      } else {
-        notificationPermissionService.updateSettings(localSettings);
-      }
-      onClose();
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      alert(`Error saving settings: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleShowExampleNotification = async () => {
-    setIsLoading(true);
-    try {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(t('exampleNotificationTitle'), {
-          body: t('exampleNotificationBody'),
-          icon: '/icon-192x192.png',
-          badge: '/favicon.svg',
-        });
-        setTestNotificationSent(true);
-        setTimeout(() => setTestNotificationSent(false), 3000);
-      } else {
-        alert(t('notificationsNotGranted'));
-      }
-    } catch (error) {
-      alert(`${t('errorShowingExampleNotification')}: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const statusInfo = {
-    text: permissionStatus.charAt(0).toUpperCase() + permissionStatus.slice(1),
-    color: permissionStatus === 'granted' ? 'text-green-400' : permissionStatus === 'denied' ? 'text-red-400' : 'text-yellow-400',
-  };
+  const run = async (action: () => Promise<void>, success: string) => { setBusy(true); setMessage(null); try { await action(); await refresh(); setMessage(success); } catch (error) { setMessage(error instanceof Error ? error.message : 'Something went wrong'); } finally { setBusy(false); } };
+  const enable = () => run(async () => { await enablePushNotifications(); await persist(); }, 'Notifications enabled.');
 
   if (!isOpen) return null;
+  return <div className="fixed inset-0 z-[200] flex flex-col bg-slate-950 text-slate-100 sm:inset-4 sm:mx-auto sm:max-w-lg sm:overflow-hidden sm:rounded-3xl sm:border sm:border-slate-700 sm:shadow-2xl">
+    <header className="flex shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-5 py-4 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-4">
+      <div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15"><BellIcon className="h-5 w-5 text-blue-300" /></span><h1 className="text-lg font-semibold text-white">Notifications</h1></div>
+      <button onClick={onClose} aria-label="Close notification settings" className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"><CloseIcon className="h-6 w-6" /></button>
+    </header>
 
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg w-full max-w-md mx-auto border border-slate-700 shadow-xl max-h-[70vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 sm:p-6 pb-4 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <BellIcon className="w-6 h-6 text-blue-400" />
-            <h2 className="text-xl font-semibold text-slate-100">{t('notificationSettings')}</h2>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><CloseIcon className="w-6 h-6" /></button>
-        </div>
+    <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-32">
+      <div className={`mb-5 flex items-center justify-between rounded-xl border px-4 py-3 ${enabled ? 'border-emerald-400/20 bg-emerald-400/10' : 'border-slate-800 bg-slate-900'}`}><span className={`text-sm font-semibold ${enabled ? 'text-emerald-300' : 'text-slate-200'}`}>{status}</span><span className={`h-2.5 w-2.5 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-500'}`} /></div>
+      {state.requiresInstall && <p className="mb-5 rounded-xl border border-blue-400/20 bg-blue-500/10 p-3 text-sm leading-6 text-blue-100"><InformationCircleIcon className="mr-1 inline h-4 w-4" />Add DescoWise to your Home Screen from Safari, then open it there to enable notifications.</p>}
+      {state.permission === 'denied' && <p className="mb-5 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm leading-6 text-rose-100"><ExclamationTriangleIcon className="mr-1 inline h-4 w-4" />Re-enable notifications in browser or device settings.</p>}
 
-        <div className="px-4 sm:px-6 pb-0 overflow-y-auto flex-1 space-y-6">
-          {/* Section: Notification Status */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-100">{t('notificationStatus')}</h3>
-            <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-2">{t('permissionStatus')}</h4>
-              <div className={`text-sm font-medium ${statusInfo.color}`}>{t(permissionStatus)}</div>
-            </div>
+      {enabled && <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+        <button onClick={() => { setEditingTime(value => !value); setEditingAccounts(false); }} className="flex w-full items-center justify-between px-4 py-4 text-left"><span><span className="block font-medium text-white">Daily reminder</span><span className="mt-1 block text-sm text-slate-400">When to check your accounts</span></span><span className="text-sm font-semibold text-blue-300">{new Date(`1970-01-01T${time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ›</span></button>
+        {editingTime && <div className="border-t border-slate-800 px-4 py-4"><input type="time" value={time} onChange={event => setTime(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-3 text-base font-medium text-white" /><p className="mt-2 text-xs text-slate-500">{Intl.DateTimeFormat().resolvedOptions().timeZone}</p></div>}
+        <button onClick={() => { setEditingAccounts(value => !value); setEditingTime(false); }} className="flex w-full items-center justify-between border-t border-slate-800 px-4 py-4 text-left"><span><span className="block font-medium text-white">Monitored accounts</span><span className="mt-1 block text-sm text-slate-400">{monitoredCount ? `${monitoredCount} selected` : 'None selected'}</span></span><span className="text-sm font-semibold text-blue-300">Manage ›</span></button>
+        {editingAccounts && <div className="border-t border-slate-800 px-4 py-4"><label className="mb-4 flex items-center justify-between text-sm text-slate-300">Default threshold <span className="flex items-center gap-1">৳<input type="number" min="0" value={globalThreshold} onChange={event => setGlobalThreshold(Number(event.target.value))} className="w-24 rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-right text-white" /></span></label><div className="space-y-2">{accounts.map(account => { const rule = watches[account.accountNo] || { enabled: false }; return <div key={account.accountNo} className="rounded-lg bg-slate-950/70 p-3"><div className="flex items-center gap-3"><input type="checkbox" checked={rule.enabled} onChange={event => setWatches(current => ({ ...current, [account.accountNo]: { ...rule, enabled: event.target.checked } }))} className="h-5 w-5 accent-blue-500" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{account.displayName || account.customerName || account.accountNo}</p><p className="text-xs text-slate-500">{account.accountNo}</p></div></div>{rule.enabled && <label className="mt-3 flex items-center justify-between text-xs text-slate-400">Alert below <span>৳ <input type="number" min="0" placeholder={String(globalThreshold)} value={rule.threshold ?? ''} onChange={event => { const value = event.target.value; setWatches(current => ({ ...current, [account.accountNo]: { ...rule, threshold: value ? Number(value) : undefined } })); }} className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-white" /></span></label>}</div>; })}</div></div>}
+        <button onClick={() => void run(() => sendTestNotification(), 'Test notification sent.')} disabled={busy} className="flex w-full items-center justify-between border-t border-slate-800 px-4 py-4 text-left"><span><span className="block font-medium text-white">Test notification</span><span className="mt-1 block text-sm text-slate-400">Send a background-push test now</span></span><span className="text-sm font-semibold text-blue-300">Send ›</span></button>
+      </div>}
+      {message && <p className={`mt-4 rounded-lg px-3 py-2.5 text-sm ${message.toLowerCase().includes('wrong') || message.toLowerCase().includes('failed') ? 'bg-rose-500/10 text-rose-100' : 'bg-emerald-500/10 text-emerald-100'}`}>{message}</p>}
+    </main>
 
-            <div className="bg-blue-600/20 border border-blue-600/30 rounded-lg p-3 flex items-start gap-2">
-              <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-blue-400 font-medium">{t('localNotificationDisclaimer')}</p>
-              </div>
-            </div>
-
-            {permissionStatus === 'denied' && (
-              <div className="bg-red-600/20 border border-red-600/30 rounded-lg p-3 flex items-start gap-2">
-                <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-red-400 font-medium">{t('notificationsBlocked')}</p>
-                  <p className="text-xs text-red-300 mt-1">{t('enableNotificationsInBrowser')}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Section: Notification Preferences */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-100">{t('notificationPreferences')}</h3>
-            <div className="bg-slate-700 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-slate-300">{t('dailyNotifications')}</h4>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={localSettings.enabled}
-                    onChange={(e) => handleSettingsChange({ enabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              <p className="text-xs text-slate-400">{t('notificationDescription')}</p>
-            </div>
-
-            {localSettings.enabled && (
-              <>
-                <div className="bg-slate-700 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">{t('lowBalanceThreshold')}</h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-400">৳</span>
-                    <input
-                      type="number"
-                      value={localSettings.lowBalanceThreshold}
-                      onChange={(e) => handleSettingsChange({ lowBalanceThreshold: Number(e.target.value) })}
-                      className="flex-1 bg-slate-600 text-slate-100 px-3 py-2 rounded text-sm w-full"
-                      min="0" max="10000" step="10"
-                      pattern="[0-9]*"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-slate-700 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">{t('notificationTime')}</h4>
-                  <input
-                    type="time"
-                    value={localSettings.notificationTime}
-                    onChange={(e) => handleSettingsChange({ notificationTime: e.target.value })}
-                    className="w-full bg-slate-600 text-slate-100 px-3 py-2 rounded text-sm"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Section: Testing & Activity */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-100">{t('testingAndActivity')}</h3>
-            <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-3">{t('schedulerStatus')}</h4>
-              <div className="space-y-1 text-xs text-slate-400">
-                <div>{t('status')}: <span className={schedulerStatus.isRunning ? 'text-green-400' : 'text-red-400'}>{schedulerStatus.isRunning ? t('running') : t('stopped')}</span></div>
-                {schedulerStatus.isRunning && (
-                  <>
-                    <div>{t('nextCheck')}: {schedulerStatus.nextScheduledTime}</div>
-                    <div>{t('timeUntilNext')}: {schedulerStatus.timeUntilNext}</div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {monitoringStats && (
-              <div className="bg-slate-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-slate-300 mb-3">{t('todaysActivity')}</h4>
-                <div className="space-y-1 text-xs text-slate-400">
-                  <div>{t('notificationsSent')}: {monitoringStats.notifications.length}</div>
-                  {monitoringStats.lastCheckTime && (
-                    <div>{t('lastCheck')}: {new Date(monitoringStats.lastCheckTime).toLocaleTimeString()}</div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3 mb-4">
-              <button onClick={handleShowExampleNotification} disabled={isLoading || permissionStatus !== 'granted'} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                {isLoading ? <Spinner size="sm" /> : t('showExampleNotification')}
-              </button>
-            </div>
-
-            {testNotificationSent && <div className="bg-green-600/20 text-green-400 text-sm p-3 rounded-lg">{t('testNotificationSent')}</div>}
-          </div>
-        </div>
-
-        <div className="flex-shrink-0 p-4 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-md text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 transition-colors">
-            {t('cancel')}
-          </button>
-          <button onClick={handleSave} disabled={isLoading} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
-            {isLoading && <Spinner size="sm" />} {t('save')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    <footer className="shrink-0 border-t border-slate-800 bg-slate-950 px-5 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:pb-3">
+      {enabled ? <div className="flex items-center gap-3"><button onClick={() => void run(() => disablePushNotifications(), 'Notifications disabled.')} disabled={busy} className="px-1 text-sm font-medium text-slate-400 hover:text-rose-300">Disable</button><button onClick={() => void run(persist, 'Reminder settings saved.')} disabled={busy} className="ml-auto flex min-h-12 flex-1 items-center justify-center rounded-xl bg-blue-600 px-4 font-semibold text-white hover:bg-blue-500 disabled:opacity-50">{busy ? <Spinner size="sm" /> : 'Save changes'}</button></div> : <button onClick={enable} disabled={busy || !state.supported || state.permission === 'denied' || state.requiresInstall} className="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 font-semibold text-white hover:bg-blue-500 disabled:opacity-50">{busy ? <Spinner size="sm" /> : 'Enable notifications'}</button>}
+    </footer>
+  </div>;
 };
 
 export default NotificationSettingsModal;

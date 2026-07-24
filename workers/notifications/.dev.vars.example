@@ -1,0 +1,2 @@
+# Never commit .dev.vars. Generate a VAPID key pair for this environment.
+VAPID_PRIVATE_KEY="base64url-private-key"

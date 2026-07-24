@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
 import { getAccountBalance, verifyAccount } from './services/descoService';
-import { useIntelligentPreloader, preloadCriticalResources, addResourceHints, registerServiceWorker } from './utils/preloadStrategies';
+import { useIntelligentPreloader, preloadCriticalResources, addResourceHints } from './utils/preloadStrategies';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
@@ -26,7 +26,6 @@ import HelpModal from './components/common/HelpModal';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
-import { notificationService } from './services/notificationService';
 
 // Global Modal Component - moved here to stay on top of everything
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -525,12 +524,31 @@ const AccountListPage: React.FC<{
       {notification && (
         <Notification message={notification.message} type={notification.type} />
       )}
-      <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <header className="mb-6 sm:mb-12 animate-fade-in">
+      <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-12">
+        <header className="mb-5 sm:mb-12 animate-fade-in">
           {/* Header design with consistent branding */}
           <div className="flex flex-col gap-4 sm:gap-6">
+            {/* Mobile app bar: one clear context plus compact utility actions. */}
+            <div className="flex items-center justify-between sm:hidden">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 ring-1 ring-cyan-400/20">
+                  <BoltIcon className="h-5 w-5 text-cyan-300" />
+                </span>
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-bold tracking-tight text-white">{t('appTitle')}</h1>
+                  <p className="text-xs text-slate-400">{accounts.length ? `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'}` : t('appSubtitle')}</p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <ApiKeyStatusIndicator variant="button" size="sm" onClick={() => setIsApiKeyModalOpen(true)} showTooltip={true} showLabel={false} className="!min-h-10 !min-w-10 !justify-center !rounded-xl" />
+                <button onClick={() => setIsNotificationSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-slate-800 hover:text-white" aria-label={t('notificationSettings')}>
+                  <BellIcon className="h-5 w-5" />
+                </button>
+                <LanguageSwitcher />
+              </div>
+            </div>
             {/* Controls bar - always at top */}
-            <div className="flex justify-around py-1">
+            <div className="hidden justify-around py-1 sm:flex">
               <div className="flex items-center flex-wrap justify-center gap-2 sm:gap-3">
                 <ApiKeyStatusIndicator
                   variant="button"
@@ -569,7 +587,7 @@ const AccountListPage: React.FC<{
             </div>
 
             {/* Main branding section - always visible and centered */}
-            <div className="text-center">
+            <div className="hidden text-center sm:block">
               <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-cyan-400/10 border border-cyan-400/20">
                   <BoltIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-cyan-400"/>
@@ -757,8 +775,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     useEffect(() => {
         preloadCriticalResources();
         addResourceHints();
-        registerServiceWorker();
-
         const handlePwaUpdate = () => {
             setShowPwaUpdateNotification(true);
         };
@@ -821,20 +837,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         // localStorage.removeItem('onboardingCompleted');
     }, []);
 
-    // Initialize notification service once on mount
-    useEffect(() => {
-        notificationService.initialize(accounts);
-        return () => {
-            // Cleanup on unmount
-            notificationService.stopScheduler();
-        };
-    }, []); // Remove accounts dependency to prevent re-initialization
-
-    // Update accounts in notification service when accounts change
-    useEffect(() => {
-        // Always update accounts, even if empty (for proper cleanup)
-        notificationService.updateAccounts(accounts);
-    }, [accounts]);
 
     useEffect(() => {
         // Check if the notice was dismissed within the last 6 hours
