@@ -105,6 +105,10 @@ export interface RechargeHistoryItem {
     orderStatus: string;
     chargeItems: ChargeItem[];
     VAT: number;
+    token?: string | number | null;
+    name?: string | null;
+    sequence?: string | number | null;
+    rebate?: number | null;
 }
 
 export interface MonthlyConsumption {
