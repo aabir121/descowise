@@ -14,4 +14,12 @@ describe('settledValue', () => {
             expect(settledValue(monthlyResult, [])).toEqual([]);
         });
     });
+
+    it('uses the fallback for a successful response with no value', () => {
+        const result = Promise.resolve(undefined);
+
+        return result.then(value => {
+            expect(settledValue({ status: 'fulfilled', value }, [])).toEqual([]);
+        });
+    });
 });

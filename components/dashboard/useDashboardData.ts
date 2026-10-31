@@ -15,6 +15,7 @@ import { shouldEnableAiFeatures } from '../../utils/deploymentConfig';
 import { getUserApiKey } from '../../utils/apiKeyStorage';
 import { BalanceCalculator } from '../../utils/balanceCalculations';
 import { settledValue } from '../../utils/settledValue';
+import { DashboardDataIssue, getDashboardDataIssues } from '../../utils/dashboardData';
 import {
   getCachedAiResponse,
   cacheAiResponse,
@@ -62,6 +63,9 @@ type UseDashboardDataReturn = {
     lastFetch: Date | null;
     timeRemaining: number;
   };
+  dataIssues: DashboardDataIssue[];
+  lastFetchedAt: Date | null;
+  retryData: () => void;
 };
 
 const useDashboardData = (account: Account): UseDashboardDataReturn => {
@@ -92,6 +96,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     lastFetch: Date | null;
     timeRemaining: number;
   }>({ isCached: false, isStale: false, lastFetch: null, timeRemaining: 0 });
+  const [dataIssues, setDataIssues] = useState<DashboardDataIssue[]>([]);
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   // Move fetchAiSummary outside useEffect so it can be accessed by other functions
   const fetchAiSummary = useCallback(async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[], forceRefreshCache: boolean = false) => {
@@ -204,6 +211,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsLoading(true);
         setIsDataProcessing(true);
         setError(null);
+        setDataIssues([]);
 
         // Calculate date range for consistent 24-month period across all data sources
         const today = new Date();
@@ -225,6 +233,14 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getAccountBalance(account.accountNo)
         ]);
 
+        const issues = getDashboardDataIssues({
+          location: locationResult,
+          monthlyConsumption: monthlyConsumptionResult,
+          rechargeHistory: rechargeHistoryResult,
+          dailyConsumption: dailyConsumptionResult,
+          balance: balanceResultResult,
+        });
+
         // DESCO occasionally returns HTTP 500 for one of the optional history
         // endpoints. Keep the dashboard usable with the data that did load.
         const location = settledValue(locationResult, null);
@@ -237,6 +253,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         });
 
         if (!isMounted) return;
+
+        setDataIssues(issues);
+        setLastFetchedAt(new Date());
 
         // Set data immediately but keep processing state active
         setData({
@@ -298,7 +317,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     return () => {
       isMounted = false;
     };
-  }, [account.accountNo, account.meterNo]);
+  }, [account.accountNo, account.meterNo, reloadVersion]);
 
   useEffect(() => {
     if (notification) {
@@ -597,6 +616,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     }
   }, [data, account.accountNo, fetchAiSummary]);
 
+  const retryData = useCallback(() => {
+    setReloadVersion(version => version + 1);
+  }, []);
+
   return {
     processedData,
     isLoading: isLoading || isDataProcessing, // Include data processing in loading state
@@ -629,6 +652,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     // AI Cache information
     isUsingCache,
     cacheStatus,
+    dataIssues,
+    lastFetchedAt,
+    retryData,
   };
 };
 

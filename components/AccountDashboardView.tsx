@@ -67,6 +67,9 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         // AI Cache information
         isUsingCache,
         cacheStatus,
+        dataIssues,
+        lastFetchedAt,
+        retryData,
     } = useDashboardData(account);
 
     // Add notification state for dashboard view
@@ -155,6 +158,28 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                 ? 'opacity-0 transform translate-y-4 pointer-events-none'
                                 : 'opacity-100 transform translate-y-0'
                         }`}>
+                            {dataIssues.length > 0 && (
+                                <div className="mb-4 flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between" role="status">
+                                    <div>
+                                        <p className="font-semibold">{t('partialDataLoaded', 'Some DESCO data is unavailable')}</p>
+                                        <p className="mt-1 text-xs text-amber-200/80">
+                                            {dataIssues.map(issue => issue.label).join(', ')}. Other sections remain available.
+                                        </p>
+                                        {lastFetchedAt && (
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                {t('lastChecked', 'Last checked')}: {lastFetchedAt.toLocaleTimeString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={retryData}
+                                        className="shrink-0 rounded-lg border border-amber-300/40 px-3 py-2 text-xs font-semibold text-amber-100 transition hover:bg-amber-300/10"
+                                    >
+                                        {t('retryUnavailableData', 'Retry unavailable data')}
+                                    </button>
+                                </div>
+                            )}
                             <DashboardSections
                                 processedData={processedData}
                                 data={data}
@@ -176,6 +201,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                 distributedAiInsights={distributedAiInsights}
                                 aiLoadingStates={aiLoadingStates}
                                 onSetupApiKey={() => setIsApiKeyModalOpen(true)}
+                                dataIssues={dataIssues}
                             />
                         </div>
                     )}
