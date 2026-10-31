@@ -71,7 +71,7 @@ While DESCO already provides excellent official Android and iOS apps, as well as
 - **Mobile-Optimized Charts**: Touch-friendly charts optimized for mobile devices
 
 ### 🔔 **Smart Notification System**
-- **Daily Balance Monitoring**: Automated daily checks at 3:00 PM Bangladesh Time
+- **Daily Balance Monitoring**: Automated daily checks at 6:00 AM Bangladesh Time
 - **Low Balance Alerts**: Customizable threshold-based notifications
 - **Data Availability Alerts**: Notifications when account data is unavailable
 - **Browser Push Notifications**: Native browser notifications with service worker support

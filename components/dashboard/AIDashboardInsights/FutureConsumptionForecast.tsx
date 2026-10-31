@@ -19,7 +19,7 @@ const FutureConsumptionForecast: React.FC<FutureConsumptionForecastProps> = ({ f
       <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0" />
       <div>
         <h4 className="font-semibold text-cyan-400 mb-1">{t('next3Months')}</h4>
-        <table className="min-w-full text-sm text-cyan-200 mt-2">
+        <table className="mt-2 hidden min-w-full text-sm text-cyan-200 sm:table">
           <thead>
             <tr>
               <th className="pr-4 text-left">{t('month')}</th>
@@ -37,6 +37,14 @@ const FutureConsumptionForecast: React.FC<FutureConsumptionForecastProps> = ({ f
             ))}
           </tbody>
         </table>
+        <div className="mt-3 space-y-2 sm:hidden">
+          {forecast.map((f, idx) => (
+            <div key={f.month || idx} className="rounded-lg border border-cyan-400/15 bg-slate-950/25 p-3">
+              <div className="flex items-center justify-between"><span className="font-medium text-cyan-100">{f.month}</span><span className="font-semibold text-cyan-100">{formatCurrency(sanitizeCurrency(f.estimatedBill))}</span></div>
+              <p className="mt-1 text-xs text-cyan-200/70">{t('estConsumption')}: {f.estimatedConsumption !== null ? f.estimatedConsumption.toLocaleString() : '-'}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   </div>

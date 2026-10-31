@@ -14,6 +14,7 @@ import {
 import { shouldEnableAiFeatures } from '../../utils/deploymentConfig';
 import { getUserApiKey } from '../../utils/apiKeyStorage';
 import { BalanceCalculator } from '../../utils/balanceCalculations';
+import { settledValue } from '../../utils/settledValue';
 import {
   getCachedAiResponse,
   cacheAiResponse,
@@ -216,13 +217,24 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
 
 
 
-        const [location, monthlyConsumption, rechargeHistory, dailyConsumption, balanceResult] = await Promise.all([
+        const [locationResult, monthlyConsumptionResult, rechargeHistoryResult, dailyConsumptionResult, balanceResultResult] = await Promise.allSettled([
           api.getCustomerLocation(account.accountNo),
           api.getCustomerMonthlyConsumption(account.accountNo, account.meterNo, 24),
           api.getRechargeHistory(account.accountNo, account.meterNo, rechargeFromDate, rechargeToDate),
           api.getCustomerDailyConsumption(account.accountNo, account.meterNo, 90), // Increased to 90 days to ensure we have enough recent data
           api.getAccountBalance(account.accountNo)
         ]);
+
+        // DESCO occasionally returns HTTP 500 for one of the optional history
+        // endpoints. Keep the dashboard usable with the data that did load.
+        const location = settledValue(locationResult, null);
+        const monthlyConsumption = settledValue(monthlyConsumptionResult, []);
+        const rechargeHistory = settledValue(rechargeHistoryResult, []);
+        const dailyConsumption = settledValue(dailyConsumptionResult, []);
+        const balanceResult = settledValue(balanceResultResult, {
+          success: false,
+          message: 'Could not fetch account balance.'
+        });
 
         if (!isMounted) return;
 

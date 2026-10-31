@@ -12,10 +12,23 @@ database_id = "1785e6ea-b72d-4233-87cb-dd6237405414"
 migrations_dir = "migrations"
 
 [vars]
-# Set this to the deployed frontend origin, without a trailing slash.
-ALLOWED_ORIGIN = "https://descowise.pages.dev"
+# Comma-separated frontend origins, without trailing slashes. Add the local Vite
+# origin when testing against the deployed Worker.
+ALLOWED_ORIGIN = "https://descowise.pages.dev,http://localhost:5173"
 VAPID_PUBLIC_KEY = "BNN76KIY1Sa8cc3fHyrK5sXZbC4Y6Dc47hPt_cIlzyT-wCBc5IEMZRIcrY8-l_W5fEE9beSPpxypMC_KnhXmxRc"
 VAPID_SUBJECT = "mailto:operations@example.com"
 
 [triggers]
-crons = ["*/15 * * * *"]
+# 00:00 UTC = 06:00 Asia/Dhaka.
+crons = ["0 0 * * *"]
+
+[[queues.producers]]
+binding = "BALANCE_CHECKS"
+queue = "descowise-balance-checks"
+
+[[queues.consumers]]
+queue = "descowise-balance-checks"
+max_batch_size = 1
+max_batch_timeout = 1
+max_retries = 3
+max_concurrency = 1

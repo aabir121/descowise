@@ -10,10 +10,11 @@ This project does not use `vite-plugin-pwa` or Workbox. It uses one custom servi
 
 ## Configuration
 
-1. Create a D1 database, update `workers/notifications/wrangler.toml` with its ID and your frontend `ALLOWED_ORIGIN`.
+1. Create a D1 database, update `workers/notifications/wrangler.toml` with its ID and frontend `ALLOWED_ORIGIN` values. This is a comma-separated list of exact origins; include production, preview, or local Vite origins that will call the Worker.
 2. Generate VAPID keys with a trusted Web Push key generator. Put the public key in `VAPID_PUBLIC_KEY`; do not put the private key in a frontend env file.
 3. Set the private key: `npx wrangler secret put VAPID_PRIVATE_KEY --config workers/notifications/wrangler.toml`.
-4. Copy `.env.example` to `.env.local`, setting `VITE_PUSH_API_BASE_URL` to the deployed Worker (or proxy `/api` through the frontend origin). Set `VITE_VAPID_PUBLIC_KEY` only if you do not use `/api/push/config`.
+4. Set an admin-panel password: `npx wrangler secret put ADMIN_PASSWORD --config workers/notifications/wrangler.toml`. This password is requested at `/admin` and is never included in the frontend build.
+5. Copy `.env.example` to `.env.local`, setting `VITE_PUSH_API_BASE_URL` to the deployed Worker (or proxy `/api` through the frontend origin). Set `VITE_VAPID_PUBLIC_KEY` only if you do not use `/api/push/config`.
 
 ## Local development
 
@@ -35,6 +36,7 @@ npm run dev
 npm run build
 npm run worker:migrate
 npx wrangler secret put VAPID_PRIVATE_KEY --config workers/notifications/wrangler.toml
+npx wrangler secret put ADMIN_PASSWORD --config workers/notifications/wrangler.toml
 npm run worker:deploy
 ```
 
@@ -46,7 +48,7 @@ Deploy the Vite build to Cloudflare Pages (or another HTTPS host) and set `VITE_
 2. Open Notifications, click **Enable notifications**, and allow permission.
 3. Confirm `push_subscriptions` and the `daily-reminder` row in D1.
 4. Click **Send test notification**, close the tab/PWA, and repeat the test from a permitted administrative workflow or curl with the device secret only for development.
-5. Set a time a few minutes away, close the app, and wait for the 15-minute cron window.
+5. Scheduled reminders run daily at 6:00 AM Bangladesh time; close the app and verify delivery after the cron window.
 6. Click the notification and confirm it opens `/` (or its configured same-origin target).
 7. Click **Disable notifications**; the subscription and its cascading reminders are removed.
 

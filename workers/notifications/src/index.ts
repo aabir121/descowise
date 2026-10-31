@@ -1,13 +1,16 @@
 import { buildPushPayload, type PushSubscription } from '@block65/webcrypto-web-push';
-import { nextSendAt, retryAt, validLocalTime, validTimezone } from './schedule';
+import { nextSendAt, validTimezone } from './schedule';
 
 interface Env {
   DB: D1Database;
+  BALANCE_CHECKS: Queue<BalanceCheckMessage>;
   ALLOWED_ORIGIN: string;
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
+  ADMIN_PASSWORD: string;
 }
+interface BalanceCheckMessage { accountNo: string; checkDate: string; }
 
 interface SubscriptionInput {
   subscription: PushSubscription;
@@ -29,14 +32,8 @@ interface ReminderInput {
   enabled: boolean;
 }
 interface AccountWatchInput { accountNo: string; label?: string; enabled: boolean; thresholdBdt?: number; }
-type AccountWatch = { account_no: string; label: string | null; threshold_bdt: number; };
-
-type StoredReminder = {
-  id: string; device_id: string; subscription_id: string; title: string; body: string;
-  target_url: string; icon_url: string | null; badge_url: string | null;
-  scheduled_local_time: string; timezone: string; enabled: number; next_send_at: string;
-  attempt_count: number;
-};
+const DESCO_CHECK_TIME = '06:00';
+const DESCO_CHECK_TIMEZONE = 'Asia/Dhaka';
 
 const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', ...headers },
@@ -49,19 +46,26 @@ function log(event: string, fields: Record<string, unknown> = {}) {
   console.log(JSON.stringify({ event, ...fields }));
 }
 
-function cors(request: Request, env: Env): HeadersInit {
+function allowedOrigin(request: Request, env: Env): string | null {
   const origin = request.headers.get('Origin');
-  return origin === env.ALLOWED_ORIGIN ? {
-    'access-control-allow-origin': env.ALLOWED_ORIGIN,
+  if (!origin) return null;
+  const allowed = env.ALLOWED_ORIGIN.split(',').map((value) => value.trim()).filter(Boolean);
+  return allowed.includes(origin) ? origin : null;
+}
+
+function cors(request: Request, env: Env): HeadersInit {
+  const origin = allowedOrigin(request, env);
+  return origin ? {
+    'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
-    'access-control-allow-headers': 'content-type,x-device-secret',
+    'access-control-allow-headers': 'content-type,x-admin-password,x-device-secret',
     'vary': 'Origin',
   } : {};
 }
 
 function requestAllowed(request: Request, env: Env): boolean {
   const origin = request.headers.get('Origin');
-  return !origin || origin === env.ALLOWED_ORIGIN;
+  return !origin || allowedOrigin(request, env) !== null;
 }
 
 async function body<T>(request: Request): Promise<T> {
@@ -103,6 +107,81 @@ async function requireDevice(request: Request, env: Env, deviceId: string) {
   return stored && (await hash(secret)) === stored.device_secret_hash ? stored : null;
 }
 
+async function requireAdmin(request: Request, env: Env): Promise<boolean> {
+  const password = request.headers.get('x-admin-password') ?? '';
+  if (!password || !env.ADMIN_PASSWORD) return false;
+  // Hashing both values keeps a direct string comparison out of the request path.
+  return (await hash(password)) === (await hash(env.ADMIN_PASSWORD));
+}
+
+interface AdminNotificationAccount {
+  accountNo: string;
+  label: string | null;
+  thresholdBdt: number;
+  lastBalance: number | null;
+  lastCheckedAt: string | null;
+  lastNotifiedDate: string | null;
+  deviceId: string;
+  subscriptionId: string;
+  timezone: string;
+  locale: string | null;
+  subscriptionUpdatedAt: string;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  failureCount: number;
+  lastAttemptAt: string | null;
+  lastAttemptOutcome: string | null;
+  lastAttemptStatus: number | null;
+}
+
+async function adminNotificationAccounts(request: Request, env: Env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'Unauthorized' }, 401);
+  const [accounts, totals] = await Promise.all([
+    env.DB.prepare(`SELECT ar.account_no AS accountNo, ar.label, ar.threshold_bdt AS thresholdBdt,
+      ar.last_balance AS lastBalance, ar.last_checked_at AS lastCheckedAt, ar.last_notified_date AS lastNotifiedDate,
+      ps.device_id AS deviceId, ps.id AS subscriptionId, ps.timezone, ps.locale, ps.updated_at AS subscriptionUpdatedAt,
+      ps.last_success_at AS lastSuccessAt, ps.last_failure_at AS lastFailureAt, ps.failure_count AS failureCount,
+      (SELECT na.created_at FROM notification_attempts na WHERE na.account_no = ar.account_no AND na.device_id = ar.device_id AND na.subscription_id = ps.id ORDER BY na.created_at DESC LIMIT 1) AS lastAttemptAt,
+      (SELECT na.outcome FROM notification_attempts na WHERE na.account_no = ar.account_no AND na.device_id = ar.device_id AND na.subscription_id = ps.id ORDER BY na.created_at DESC LIMIT 1) AS lastAttemptOutcome,
+      (SELECT na.provider_status FROM notification_attempts na WHERE na.account_no = ar.account_no AND na.device_id = ar.device_id AND na.subscription_id = ps.id ORDER BY na.created_at DESC LIMIT 1) AS lastAttemptStatus
+      FROM account_watch_rules ar
+      JOIN push_subscriptions ps ON ps.device_id = ar.device_id AND ps.enabled = 1
+      WHERE ar.enabled = 1
+        AND EXISTS (SELECT 1 FROM reminders r WHERE r.device_id = ar.device_id AND r.enabled = 1)
+      ORDER BY ar.last_checked_at DESC, ar.account_no ASC`).all<AdminNotificationAccount>(),
+    env.DB.prepare(`SELECT
+      (SELECT COUNT(*) FROM push_subscriptions WHERE enabled = 1) AS activeDevices,
+      (SELECT COUNT(*) FROM account_watch_rules ar JOIN push_subscriptions ps ON ps.device_id = ar.device_id AND ps.enabled = 1
+        WHERE ar.enabled = 1 AND EXISTS (SELECT 1 FROM reminders r WHERE r.device_id = ar.device_id AND r.enabled = 1)) AS monitoredRules,
+      (SELECT COUNT(DISTINCT ar.account_no) FROM account_watch_rules ar JOIN push_subscriptions ps ON ps.device_id = ar.device_id AND ps.enabled = 1
+        WHERE ar.enabled = 1 AND EXISTS (SELECT 1 FROM reminders r WHERE r.device_id = ar.device_id AND r.enabled = 1)) AS uniqueAccounts,
+      (SELECT COUNT(*) FROM push_subscriptions WHERE enabled = 1 AND failure_count > 0) AS devicesWithFailures`).first<{
+        activeDevices: number; monitoredRules: number; uniqueAccounts: number; devicesWithFailures: number;
+      }>(),
+  ]);
+  log('admin_notification_accounts_listed', { count: accounts.results.length });
+  return json({
+    summary: totals ?? { activeDevices: 0, monitoredRules: 0, uniqueAccounts: 0, devicesWithFailures: 0 },
+    accounts: accounts.results,
+  }, 200, { 'cache-control': 'no-store' });
+}
+
+async function adminRunAccountCheck(request: Request, env: Env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'Unauthorized' }, 401);
+  const input = await body<{ accountNo?: string; subscriptionId?: string; thresholdOverrideBdt?: number }>(request);
+  if (!input.accountNo || !/^\d{5,30}$/.test(input.accountNo) || !input.subscriptionId || !/^[\w-]{1,128}$/.test(input.subscriptionId)) return json({ error: 'Select a monitored account and subscribed device' }, 400);
+  if (input.thresholdOverrideBdt !== undefined && (!Number.isFinite(input.thresholdOverrideBdt) || input.thresholdOverrideBdt < 0 || input.thresholdOverrideBdt > 1_000_000)) return json({ error: 'Invalid threshold override' }, 400);
+  if (!(await limited(env, `admin-check:${input.subscriptionId}`, 10))) return json({ error: 'Too many forced checks for this device' }, 429);
+  const results = await processBalanceCheck({ accountNo: input.accountNo, checkDate: bangladeshDate() }, env, {
+    subscriptionId: input.subscriptionId,
+    thresholdOverrideBdt: input.thresholdOverrideBdt,
+    force: true,
+  });
+  if (!results.length) return json({ error: 'Account is no longer monitored by this device' }, 404);
+  log('admin_account_check_finished', { accountNo: input.accountNo, subscriptionId: input.subscriptionId, outcome: results[0].outcome });
+  return json(results[0]);
+}
+
 async function subscribe(request: Request, env: Env) {
   const input = await body<SubscriptionInput>(request);
   if (!validSubscription(input.subscription) || !validTimezone(input.timezone) || typeof input.deviceId !== 'string' || !/^[\w-]{16,128}$/.test(input.deviceId)
@@ -127,7 +206,7 @@ async function subscribe(request: Request, env: Env) {
 
 function parseReminder(input: ReminderInput): string | null {
   if (typeof input.title !== 'string' || !input.title.trim() || input.title.length > 120 || typeof input.body !== 'string' || input.body.length > 500
-    || !validLocalTime(input.localTime) || !validTimezone(input.timezone) || typeof input.enabled !== 'boolean'
+    || typeof input.enabled !== 'boolean'
     || (input.targetUrl !== undefined && !validTargetUrl(input.targetUrl))) return 'Invalid reminder';
   return null;
 }
@@ -141,15 +220,17 @@ async function saveReminder(request: Request, env: Env, reminderId?: string) {
   if (!subscription) return json({ error: 'No active subscription' }, 409);
   const timestamp = nowIso(); const reminder = reminderId ?? input.id ?? id();
   if (!/^[\w-]{1,128}$/.test(reminder)) return json({ error: 'Invalid reminder id' }, 400);
-  const next = input.enabled ? nextSendAt(input.localTime, input.timezone) : '9999-12-31T00:00:00.000Z';
+  // DESCO publishes its daily data at midnight Bangladesh time. This is deliberately
+  // not user-configurable: every device checks at 06:00 Asia/Dhaka after that refresh.
+  const next = input.enabled ? nextSendAt(DESCO_CHECK_TIME, DESCO_CHECK_TIMEZONE) : '9999-12-31T00:00:00.000Z';
   if (reminderId) {
     const changed = await env.DB.prepare(`UPDATE reminders SET title=?, body=?, target_url=?, icon_url=?, badge_url=?, scheduled_local_time=?, timezone=?, enabled=?, next_send_at=?, attempt_count=0, processing_token=NULL, processing_started_at=NULL, updated_at=? WHERE id=? AND device_id=?`).bind(
-      input.title.trim(), input.body.trim(), input.targetUrl ?? '/', input.iconUrl ?? null, input.badgeUrl ?? null, input.localTime, input.timezone, Number(input.enabled), next, timestamp, reminder, input.deviceId).run();
+      input.title.trim(), input.body.trim(), input.targetUrl ?? '/', input.iconUrl ?? null, input.badgeUrl ?? null, DESCO_CHECK_TIME, DESCO_CHECK_TIMEZONE, Number(input.enabled), next, timestamp, reminder, input.deviceId).run();
     if (!changed.meta.changes) return json({ error: 'Reminder not found' }, 404);
     log('reminder_updated', { reminderId: reminder, deviceId: input.deviceId });
   } else {
     await env.DB.prepare(`INSERT INTO reminders (id, device_id, subscription_id, title, body, target_url, icon_url, badge_url, scheduled_local_time, timezone, enabled, next_send_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(reminder, input.deviceId, subscription.id, input.title.trim(), input.body.trim(), input.targetUrl ?? '/', input.iconUrl ?? null, input.badgeUrl ?? null, input.localTime, input.timezone, Number(input.enabled), next, timestamp, timestamp).run();
+      .bind(reminder, input.deviceId, subscription.id, input.title.trim(), input.body.trim(), input.targetUrl ?? '/', input.iconUrl ?? null, input.badgeUrl ?? null, DESCO_CHECK_TIME, DESCO_CHECK_TIMEZONE, Number(input.enabled), next, timestamp, timestamp).run();
     log('reminder_created', { reminderId: reminder, deviceId: input.deviceId });
   }
   return json({ id: reminder, nextSendAt: next }, reminderId ? 200 : 201);
@@ -186,24 +267,6 @@ async function saveAccountWatches(request: Request, env: Env) {
   return json({ accountCount: accounts.size });
 }
 
-async function belowThresholdAccounts(env: Env, deviceId: string, cache: Map<string, Promise<number | null>>): Promise<AccountWatch[]> {
-  const rules = await env.DB.prepare('SELECT account_no, label, threshold_bdt FROM account_watch_rules WHERE device_id=? AND enabled=1').bind(deviceId).all<AccountWatch>();
-  const low: AccountWatch[] = [];
-  for (const rule of rules.results) {
-    let balance = cache.get(rule.account_no);
-    if (!balance) {
-      balance = fetch(`https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${encodeURIComponent(rule.account_no)}`, { headers: { accept: 'application/json' } })
-        .then(async response => { const data = await response.json() as { code?: number; data?: { balance?: unknown } }; const value = Number(data.data?.balance); return response.ok && data.code === 200 && Number.isFinite(value) ? value : null; })
-        .catch(() => null);
-      cache.set(rule.account_no, balance);
-    }
-    const value = await balance;
-    await env.DB.prepare('UPDATE account_watch_rules SET last_balance=?, last_checked_at=?, updated_at=? WHERE device_id=? AND account_no=?').bind(value, nowIso(), nowIso(), deviceId, rule.account_no).run();
-    if (value !== null && value < rule.threshold_bdt) low.push(rule);
-  }
-  return low;
-}
-
 async function testPush(request: Request, env: Env) {
   const input = await body<{ deviceId: string }>(request);
   const auth = await requireDevice(request, env, input.deviceId); if (!auth) return json({ error: 'Unauthorized device' }, 401);
@@ -237,41 +300,102 @@ async function removeSubscription(env: Env, subscriptionId: string, status: numb
   log('subscription_expired', { subscriptionId, status });
 }
 
-async function runCron(env: Env) {
-  const now = nowIso(); log('cron_started');
-  await env.DB.prepare("UPDATE reminders SET processing_token=NULL, processing_started_at=NULL WHERE processing_started_at < datetime('now', '-15 minutes')").run();
-  const due = await env.DB.prepare('SELECT * FROM reminders WHERE enabled = 1 AND next_send_at <= ? AND processing_token IS NULL LIMIT 100').bind(now).all<StoredReminder>();
-  log('due_reminder_count', { count: due.results.length });
-  const balanceCache = new Map<string, Promise<number | null>>();
-  for (const reminder of due.results) {
-    const token = id();
-    const claim = await env.DB.prepare('UPDATE reminders SET processing_token=?, processing_started_at=? WHERE id=? AND processing_token IS NULL AND enabled=1 AND next_send_at <= ?').bind(token, now, reminder.id, now).run();
-    if (!claim.meta.changes) continue;
-    const sub = await env.DB.prepare('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE id=? AND enabled=1').bind(reminder.subscription_id).first<{ id: string; endpoint: string; p256dh: string; auth: string }>();
-    if (!sub) { await env.DB.prepare('UPDATE reminders SET enabled=0, processing_token=NULL, processing_started_at=NULL, updated_at=? WHERE id=? AND processing_token=?').bind(nowIso(), reminder.id, token).run(); continue; }
-    try {
-      const lowAccounts = await belowThresholdAccounts(env, reminder.device_id, balanceCache);
-      const next = nextSendAt(reminder.scheduled_local_time, reminder.timezone);
-      if (lowAccounts.length === 0) {
-        await env.DB.prepare('UPDATE reminders SET last_sent_at=?, next_send_at=?, attempt_count=0, processing_token=NULL, processing_started_at=NULL, updated_at=? WHERE id=? AND processing_token=?').bind(nowIso(), next, nowIso(), reminder.id, token).run();
-        log('reminder_rescheduled', { reminderId: reminder.id, nextSendAt: next, notificationSent: false });
-        continue;
-      }
-      const body = lowAccounts.length === 1 ? 'One monitored account is below its balance threshold.' : `${lowAccounts.length} monitored accounts are below their balance thresholds.`;
-      const result = await sendPush(env, sub, { title: 'Low DESCO balance', body, targetUrl: reminder.target_url, iconUrl: reminder.icon_url, badgeUrl: reminder.badge_url, reminderId: reminder.id });
-      if (result.invalid) { await removeSubscription(env, sub.id, result.status); continue; }
-      if (!result.ok) throw new Error(`Push provider status ${result.status}`);
-      await env.DB.prepare('UPDATE reminders SET last_sent_at=?, next_send_at=?, attempt_count=0, processing_token=NULL, processing_started_at=NULL, updated_at=? WHERE id=? AND processing_token=?').bind(nowIso(), next, nowIso(), reminder.id, token).run();
-      await env.DB.prepare('UPDATE push_subscriptions SET last_success_at=?, failure_count=0 WHERE id=?').bind(nowIso(), sub.id).run();
-      log('push_sent', { reminderId: reminder.id, subscriptionId: sub.id }); log('reminder_rescheduled', { reminderId: reminder.id, nextSendAt: next });
-    } catch (error) {
-      const attempts = reminder.attempt_count + 1;
-      const next = attempts >= 3 ? nextSendAt(reminder.scheduled_local_time, reminder.timezone) : retryAt(attempts);
-      await env.DB.prepare('UPDATE reminders SET next_send_at=?, attempt_count=?, processing_token=NULL, processing_started_at=NULL, updated_at=? WHERE id=? AND processing_token=?').bind(next, attempts, nowIso(), reminder.id, token).run();
-      await env.DB.prepare('UPDATE push_subscriptions SET last_failure_at=?, failure_count=failure_count+1 WHERE id=?').bind(nowIso(), sub.id).run();
-      log('push_failed', { reminderId: reminder.id, subscriptionId: sub.id, attemptCount: attempts, reason: error instanceof Error ? error.message : 'unknown' });
+function bangladeshDate(): string { return new Intl.DateTimeFormat('en-CA', { timeZone: DESCO_CHECK_TIMEZONE }).format(new Date()); }
+
+type BalanceWatchRule = {
+  account_no: string; label: string | null; device_id: string; threshold_bdt: number; last_notified_date: string | null;
+  id: string; endpoint: string; p256dh: string; auth: string;
+};
+type BalanceCheckOptions = { subscriptionId?: string; thresholdOverrideBdt?: number; force?: boolean };
+type BalanceCheckResult = { accountNo: string; balance: number | null; thresholdBdt: number; outcome: 'sent' | 'failed' | 'expired_subscription' | 'skipped_above_threshold' | 'balance_check_failed'; providerStatus: number | null };
+
+async function recordNotificationAttempt(env: Env, rule: BalanceWatchRule, checkDate: string, outcome: string, balance: number | null, providerStatus: number | null = null) {
+  await env.DB.prepare(`INSERT INTO notification_attempts
+    (id, account_no, device_id, subscription_id, check_date, balance, threshold_bdt, outcome, provider_status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id(), rule.account_no, rule.device_id, rule.id, checkDate, balance, rule.threshold_bdt, outcome, providerStatus, nowIso()).run();
+}
+
+function bdt(value: number): string {
+  return `৳${new Intl.NumberFormat('en-BD', { maximumFractionDigits: 2 }).format(value)}`;
+}
+
+function lowBalanceNotification(rule: BalanceWatchRule, balance: number) {
+  const account = rule.label?.trim() || `Account ${rule.account_no}`;
+  const deficit = rule.threshold_bdt - balance;
+  return {
+    title: `Low balance: ${account}`,
+    body: `${account} has ${bdt(balance)} remaining — ${bdt(deficit)} below its ${bdt(rule.threshold_bdt)} threshold.`,
+  };
+}
+
+async function enqueueDailyChecks(env: Env) {
+  const checkDate = bangladeshDate();
+  log('cron_started', { checkDate });
+  const accounts = await env.DB.prepare('SELECT DISTINCT account_no FROM account_watch_rules WHERE enabled = 1').all<{ account_no: string }>();
+  // Cloudflare Queue sendBatch accepts at most 100 messages. Chunking keeps the
+  // once-daily fan-out safe even as the registered account set grows.
+  for (let index = 0; index < accounts.results.length; index += 100) {
+    await env.BALANCE_CHECKS.sendBatch(
+      accounts.results.slice(index, index + 100).map(({ account_no }) => ({ body: { accountNo: account_no, checkDate } })),
+    );
+  }
+  log('balance_checks_queued', { uniqueAccountCount: accounts.results.length });
+}
+
+async function processBalanceCheck(message: BalanceCheckMessage, env: Env, options: BalanceCheckOptions = {}): Promise<BalanceCheckResult[]> {
+  const query = `SELECT ar.account_no, ar.label, ar.device_id, ar.threshold_bdt, ar.last_notified_date, ps.id, ps.endpoint, ps.p256dh, ps.auth
+    FROM account_watch_rules ar JOIN push_subscriptions ps ON ps.device_id=ar.device_id AND ps.enabled=1
+    WHERE ar.account_no=? AND ar.enabled=1 AND EXISTS (SELECT 1 FROM reminders r WHERE r.device_id=ar.device_id AND r.enabled=1)${options.subscriptionId ? ' AND ps.id=?' : ''}`;
+  const rules = options.subscriptionId
+    ? await env.DB.prepare(query).bind(message.accountNo, options.subscriptionId).all<BalanceWatchRule>()
+    : await env.DB.prepare(query).bind(message.accountNo).all<BalanceWatchRule>();
+  let balance: number;
+  try {
+    const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${encodeURIComponent(message.accountNo)}`, { headers: { accept: 'application/json' } });
+    const result = await response.json() as { code?: number; data?: { balance?: unknown } };
+    balance = Number(result.data?.balance);
+    if (!response.ok || result.code !== 200 || !Number.isFinite(balance)) throw new Error('DESCO balance response unavailable');
+  } catch {
+    await Promise.all(rules.results.map((rule) => recordNotificationAttempt(env, rule, message.checkDate, 'balance_check_failed', null)));
+    throw new Error('DESCO balance response unavailable');
+  }
+  await env.DB.prepare('UPDATE account_watch_rules SET last_balance=?, last_checked_at=?, updated_at=? WHERE account_no=?').bind(balance, nowIso(), nowIso(), message.accountNo).run();
+  const outcomes: BalanceCheckResult[] = [];
+  for (const rule of rules.results) {
+    const effectiveRule = options.thresholdOverrideBdt === undefined ? rule : { ...rule, threshold_bdt: options.thresholdOverrideBdt };
+    if (balance >= effectiveRule.threshold_bdt) {
+      await recordNotificationAttempt(env, effectiveRule, message.checkDate, 'skipped_above_threshold', balance);
+      outcomes.push({ accountNo: message.accountNo, balance, thresholdBdt: effectiveRule.threshold_bdt, outcome: 'skipped_above_threshold', providerStatus: null });
+      continue;
+    }
+    if (!options.force && rule.last_notified_date === message.checkDate) {
+      await recordNotificationAttempt(env, effectiveRule, message.checkDate, 'skipped_already_sent', balance);
+      continue;
+    }
+    const notification = lowBalanceNotification(effectiveRule, balance);
+    const push = await sendPush(env, effectiveRule, { ...notification, targetUrl: '/', reminderId: message.accountNo });
+    if (push.invalid) {
+      await recordNotificationAttempt(env, effectiveRule, message.checkDate, 'expired_subscription', balance, push.status);
+      await removeSubscription(env, rule.id, push.status);
+      outcomes.push({ accountNo: message.accountNo, balance, thresholdBdt: effectiveRule.threshold_bdt, outcome: 'expired_subscription', providerStatus: push.status });
+      continue;
+    }
+    if (push.ok) {
+      if (!options.force) await env.DB.prepare('UPDATE account_watch_rules SET last_notified_date=? WHERE device_id=? AND account_no=?').bind(message.checkDate, rule.device_id, message.accountNo).run();
+      await env.DB.prepare('UPDATE push_subscriptions SET last_success_at=?, failure_count=0 WHERE id=?').bind(nowIso(), rule.id).run();
+      await recordNotificationAttempt(env, effectiveRule, message.checkDate, 'sent', balance, push.status);
+      outcomes.push({ accountNo: message.accountNo, balance, thresholdBdt: effectiveRule.threshold_bdt, outcome: 'sent', providerStatus: push.status });
+      log('push_sent', { subscriptionId: rule.id, accountChecked: true });
+    } else {
+      await env.DB.prepare('UPDATE push_subscriptions SET last_failure_at=?, failure_count=failure_count+1 WHERE id=?').bind(nowIso(), rule.id).run();
+      await recordNotificationAttempt(env, effectiveRule, message.checkDate, 'failed', balance, push.status);
+      outcomes.push({ accountNo: message.accountNo, balance, thresholdBdt: effectiveRule.threshold_bdt, outcome: 'failed', providerStatus: push.status });
+      log('push_failed', { subscriptionId: rule.id, status: push.status });
     }
   }
+  log('balance_checked', { accountChecked: true, matchingRules: rules.results.length });
+  return outcomes;
 }
 
 export default {
@@ -292,6 +416,8 @@ export default {
       }
       if (request.method === 'DELETE' && path === '/api/push/unsubscribe') return respond(await unsubscribe(request, env));
       if (request.method === 'POST' && path === '/api/push/test') return respond(await testPush(request, env));
+      if (request.method === 'GET' && path === '/api/admin/notification-accounts') return respond(await adminNotificationAccounts(request, env));
+      if (request.method === 'POST' && path === '/api/admin/run-account-check') return respond(await adminRunAccountCheck(request, env));
       if (request.method === 'POST' && path === '/api/reminders') return respond(await saveReminder(request, env));
       if (request.method === 'PUT' && path === '/api/account-watches') return respond(await saveAccountWatches(request, env));
       if (request.method === 'GET' && path === '/api/reminders') return respond(await listReminders(request, env));
@@ -304,7 +430,13 @@ export default {
       return json({ error: error instanceof Error ? error.message : 'Bad request' }, 400, headers);
     }
   },
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) { ctx.waitUntil(runCron(env)); },
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) { ctx.waitUntil(enqueueDailyChecks(env)); },
+  async queue(batch: MessageBatch<BalanceCheckMessage>, env: Env) {
+    for (const message of batch.messages) {
+      try { await processBalanceCheck(message.body, env); message.ack(); }
+      catch (error) { log('balance_check_failed', { reason: error instanceof Error ? error.message : 'unknown' }); message.retry(); }
+    }
+  },
 };
 
 export { nextSendAt, validTargetUrl };

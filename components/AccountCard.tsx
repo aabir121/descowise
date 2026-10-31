@@ -7,6 +7,7 @@ import ShareModal from './common/ShareModal';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
 import { hasStoredApiKey } from '../utils/apiKeyStorage';
+import { shouldOpenAiSetupModal } from '../utils/aiFeatureToggle';
 
 interface AccountCardProps {
     account: Account;
@@ -213,7 +214,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                                     if (isArrangeMode) {
                                         return;
                                     }
-                                    if (!hasApiKey && onOpenApiKeyModal) {
+                                    if (shouldOpenAiSetupModal(account.aiInsightsEnabled, hasApiKey) && onOpenApiKeyModal) {
                                         onOpenApiKeyModal();
                                     } else {
                                         onUpdateAiInsightsEnabled?.(account.accountNo, !account.aiInsightsEnabled);

@@ -108,7 +108,7 @@ DescoWise is a modern web application that enhances your DESCO (Dhaka Electric S
 3. **Grant browser permission** when prompted
 4. **Configure settings**:
    - Low balance threshold (default: ৳100)
-   - Notification time (default: 3:00 PM BDT)
+   - Notification time (default: 6:00 AM BDT)
 
 #### Notification Types
 

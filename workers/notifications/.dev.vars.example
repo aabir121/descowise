@@ -1,2 +1,4 @@
 # Never commit .dev.vars. Generate a VAPID key pair for this environment.
 VAPID_PRIVATE_KEY="base64url-private-key"
+# Set a strong local password for the /admin notification panel.
+ADMIN_PASSWORD="replace-with-a-long-random-password"

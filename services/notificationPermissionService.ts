@@ -101,7 +101,7 @@ class NotificationPermissionService {
     return {
       enabled: false,
       lowBalanceThreshold: 100,
-      notificationTime: '15:00', // 3:00 PM BDT
+      notificationTime: '06:00', // 6:00 AM BDT
     };
   }
 

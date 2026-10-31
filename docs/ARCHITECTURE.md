@@ -118,7 +118,7 @@ interface AiSummary {
 
 **Architecture:**
 - **Service Worker**: Background processing
-- **Scheduler**: Daily checks at 3:00 PM BDT
+- **Scheduler**: Daily checks at 6:00 AM BDT
 - **Storage Service**: Notification history tracking
 - **Permission Service**: Browser permission management
 

@@ -18,7 +18,7 @@ class NotificationScheduler {
 
   private constructor() {
     this.config = {
-      targetTime: '15:00', // 3:00 PM
+      targetTime: '06:00', // 6:00 AM BDT
       timezone: 'Asia/Dhaka', // Bangladesh timezone
       enabled: false,
     };

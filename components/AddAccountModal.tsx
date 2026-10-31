@@ -96,21 +96,19 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
         onClose(); // Close the modal after adding the account
     };
 
-    const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
-        <div className="py-2">
-            <span className="text-sm font-medium text-slate-400">{label}</span>
-            <p className="text-base font-semibold text-slate-100">{value || t('na')}</p>
-        </div>
-    );
-
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-h-[70vh]">
-            <div className="p-4 sm:p-5">
-                <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-bold text-white">{step === 'form' ? t('addNewAccount') : t('confirmAccount')}</h2>
+        <Modal isOpen={isOpen} onClose={onClose} mobileFullscreen>
+            <div className="flex min-h-full flex-1 flex-col">
+                <header className="flex items-center justify-between border-b border-slate-700 px-5 py-[max(1rem,env(safe-area-inset-top))] sm:p-5">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">
+                            {step === 'form' ? t('addAccountStepOne', 'Step 1 of 2') : t('addAccountStepTwo', 'Step 2 of 2')}
+                        </p>
+                        <h2 className="mt-1 text-xl font-bold text-white">{step === 'form' ? t('addNewAccount') : t('confirmAccount')}</h2>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-300 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+                        className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800"
                         aria-label={t('closeModal')}
                         type="button"
                     >
@@ -118,21 +116,30 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                             <CloseIcon />
                         </span>
                     </button>
-                </div>
+                </header>
 
-                {message && (
-                    <div className={`p-2 rounded-lg mb-3 text-xs ${message.type === 'success' ? 'bg-green-500/10 text-green-300 border border-green-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'}`}>
-                        {message.text}
-                    </div>
-                )}
+                <main className="flex-1 overflow-y-auto px-5 py-8 sm:p-6">
+                    <div className="mx-auto w-full max-w-md">
+                    {message && (message.type === 'error' || step === 'form') && (
+                        <div className={`mb-5 rounded-xl border px-4 py-3 text-sm ${message.type === 'success' ? 'border-green-500/20 bg-green-500/10 text-green-200' : 'border-red-500/20 bg-red-500/10 text-red-200'}`}>
+                            {message.text}
+                        </div>
+                    )}
 
-                {step === 'form' && (
-                    <form onSubmit={handleVerify}>
-                        <div className="mb-2">
-                            <label htmlFor="accountNo" className="block text-xs font-medium text-slate-300 mb-1">{t('accountNumber')}</label>
+                    {step === 'form' && (
+                    <>
+                        <div className="mb-8">
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('addAccountHeading', 'Add your DESCO account')}</h3>
+                            <p className="mt-3 text-sm leading-6 text-slate-400">{t('addAccountIntro', 'Enter the account number shown on your DESCO bill. We will verify it before adding anything.')}</p>
+                        </div>
+                        <form onSubmit={handleVerify} className="space-y-5">
+                            <div>
+                                <label htmlFor="accountNo" className="mb-2 block text-sm font-semibold text-slate-200">{t('accountNumber')}</label>
                             <input
                                 type="text"
                                 id="accountNo"
+                                inputMode="numeric"
+                                autoFocus
                                 value={accountNumber}
                                 onChange={(e) => {
                                     setAccountNumber(e.target.value);
@@ -141,94 +148,70 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                                     }
                                 }}
                                 placeholder={t('enterAccountNumberPlaceholder')}
-                                className="w-full px-3 py-2 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400 text-sm"
+                                className="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-4 text-base text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
                                 aria-required="true"
                                 aria-invalid={message?.type === 'error'}
                                 aria-describedby={message ? "form-message" : undefined}
                             />
+                            <p className="mt-2 text-xs leading-5 text-slate-500">{t('addAccountHelp', 'You can find this number on your bill or DESCO account statement.')}</p>
                         </div>
                         {message && <p id="form-message" role="alert" className="sr-only">{message.text}</p>}
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none text-sm">
+                        <button type="submit" disabled={isLoading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-4 text-base font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50">
                             {isLoading ? <><Spinner /> {t('verifying')}...</> : t('verifyAccount')}
                         </button>
                     </form>
+                    </>
                 )}
 
                 {step === 'details' && verifiedData && (
-                    <div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 max-h-48 overflow-y-auto pr-1">
-                            <DetailItem label={t('accountNumber')} value={verifiedData.accountNo} />
-                            <DetailItem label={t('customerName')} value={verifiedData.customerName} />
-                            <DetailItem label={t('contactNumber')} value={verifiedData.contactNo} />
-                            <DetailItem label={t('feederName')} value={verifiedData.feederName} />
-                            <DetailItem label={t('meterNumber')} value={verifiedData.meterNo} />
-                            <DetailItem label={t('tariffSolution')} value={verifiedData.tariffSolution} />
-                            <DetailItem label={t('sanctionLoad')} value={verifiedData.sanctionLoad} />
-                            <div className="sm:col-span-2">
-                                <DetailItem label={t('installationAddress')} value={verifiedData.installationAddress} />
-                            </div>
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('accountFound', 'Account found')}</h3>
+                            <p className="mt-2 text-sm leading-6 text-slate-400">{t('accountFoundIntro', 'Check the account below, then save it to your dashboard.')}</p>
                         </div>
-                        <div className="mt-3">
-                            <label htmlFor="displayName" className="block text-xs font-medium text-slate-300 mb-1">{t('displayNameOptional')}</label>
+                        <section className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
+                            <p className="text-sm font-semibold text-slate-100">{verifiedData.customerName || t('na')}</p>
+                            <p className="mt-1 text-sm text-slate-400">{t('accountNumber')}: {verifiedData.accountNo}</p>
+                            {verifiedData.meterNo && <p className="mt-1 text-sm text-slate-400">{t('meterNumber')}: {verifiedData.meterNo}</p>}
+                        </section>
+                        <div>
+                            <label htmlFor="displayName" className="mb-2 block text-sm font-semibold text-slate-200">{t('displayNameOptional')}</label>
                             <input
                                 type="text"
                                 id="displayName"
                                 value={displayName}
                                 onChange={(e) => setDisplayName(e.target.value)}
                                 placeholder={t('displayNamePlaceholder')}
-                                className="w-full px-3 py-2 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400 text-sm"
+                                className="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-4 text-base text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
                             />
+                            <p className="mt-2 text-xs text-slate-500">{t('displayNameHint', 'For example: Home, Office, or Parents') }</p>
                         </div>
-                        {/* AI Insights and Bangla Language Toggles Side by Side */}
-                        <div className="flex flex-col items-center gap-2 my-2">
-                            <div className="flex flex-row items-center gap-4">
-                                {/* AI Insights Toggle */}
-                                <div className="flex flex-col items-center gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-slate-200 font-medium text-xs">{t('enableAiInsights')}</span>
-                                        <button
-                                            type="button"
-                                            className={`relative inline-flex h-5 w-8 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                                            aria-pressed={aiInsightsEnabled}
-                                            onClick={() => setAiInsightsEnabled(v => !v)}
-                                            style={{ minWidth: '32px' }}
-                                        >
-                                            <span
-                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${aiInsightsEnabled ? 'translate-x-3' : 'translate-x-0.5'}`}
-                                            />
-                                            <span className="sr-only">{t('toggleAiInsights')}</span>
-                                        </button>
+                        <details className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-300">
+                            <summary className="cursor-pointer font-semibold text-slate-200">{t('accountDetails', 'Account details')}</summary>
+                            <dl className="mt-4 space-y-3 text-sm">
+                                {[
+                                    [t('contactNumber'), verifiedData.contactNo],
+                                    [t('feederName'), verifiedData.feederName],
+                                    [t('tariffSolution'), verifiedData.tariffSolution],
+                                    [t('sanctionLoad'), verifiedData.sanctionLoad],
+                                    [t('installationAddress'), verifiedData.installationAddress]
+                                ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                                    <div key={String(label)}>
+                                        <dt className="text-xs font-medium text-slate-500">{label}</dt>
+                                        <dd className="mt-0.5 text-slate-200">{value}</dd>
                                     </div>
-                                    <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">{t('aiInsightsDescription')}</span>
-                                </div>
-                                {/* Bangla Language Toggle */}
-                                <div className="flex flex-col items-center gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-slate-200 font-medium text-xs">{t('enableBanglaLanguage')}</span>
-                                        <button
-                                            type="button"
-                                            className={`relative inline-flex h-5 w-8 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${banglaEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                                            aria-pressed={banglaEnabled}
-                                            onClick={() => setBanglaEnabled(v => !v)}
-                                            style={{ minWidth: '32px' }}
-                                        >
-                                            <span
-                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${banglaEnabled ? 'translate-x-3' : 'translate-x-0.5'}`}
-                                            />
-                                            <span className="sr-only">{t('toggleBanglaLanguage')}</span>
-                                        </button>
-                                    </div>
-                                    <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">{t('banglaLanguageDescription')}</span>
-                                </div>
-                            </div>
-                            <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">{t('settingsCanBeChangedLater')}</span>
-                        </div>
-                        <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                            <button onClick={resetState} className="w-full bg-slate-600 text-slate-200 font-bold py-2 px-3 rounded-lg hover:bg-slate-500 transition text-sm">{t('cancel')}</button>
-                            <button onClick={handleConfirmAdd} className="w-full bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-transform transform hover:-translate-y-0.5 text-sm">{t('addAccount')}</button>
+                                ))}
+                            </dl>
+                        </details>
+                        <p className="text-xs leading-5 text-slate-500">{t('accountPreferencesLater', 'AI and language preferences can be changed later from the account settings.')}</p>
+                        <div className="grid grid-cols-2 gap-3 pb-4">
+                            <button onClick={() => { setStep('form'); setMessage(null); }} className="rounded-2xl border border-slate-600 px-4 py-3.5 text-sm font-bold text-slate-200 transition hover:bg-slate-700">{t('back', 'Back')}</button>
+                            <button onClick={handleConfirmAdd} className="rounded-2xl bg-cyan-400 px-4 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">{t('addAccount')}</button>
                         </div>
                     </div>
                 )}
+                </div>
+                </main>
             </div>
         </Modal>
     );

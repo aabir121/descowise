@@ -24,6 +24,7 @@ import ApiKeyManagementModal from './components/ApiKeyManagementModal';
 import ApiKeyStatusIndicator from './components/common/ApiKeyStatusIndicator';
 import HelpModal from './components/common/HelpModal';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
+import AdminNotificationPanel from './components/AdminNotificationPanel';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 
@@ -33,9 +34,10 @@ interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  mobileFullscreen?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = '', ...props }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = '', mobileFullscreen = false, ...props }) => {
   // Handle escape key and prevent zoom issues
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -80,15 +82,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = ''
   // Render modal at document root level using portal
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
+      className={`fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm ${mobileFullscreen ? 'p-0 sm:flex sm:items-center sm:justify-center sm:p-6' : 'flex items-center justify-center p-4 sm:p-6'}`}
       onClick={onClose}
     >
       <div
-        className={`bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[70vh] mx-4 sm:mx-auto my-8 text-slate-100 relative transform flex flex-col ${className}`}
+        className={`bg-slate-800 shadow-2xl w-full text-slate-100 relative transform flex flex-col ${mobileFullscreen ? 'min-h-[100dvh] max-h-[100dvh] rounded-none sm:min-h-0 sm:max-h-[86vh] sm:max-w-md sm:rounded-2xl sm:mx-auto sm:my-8' : 'max-w-md max-h-[70vh] rounded-xl mx-4 sm:mx-auto my-8'} ${className}`}
         onClick={e => e.stopPropagation()}
         {...props}
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className={mobileFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex-1 overflow-y-auto'}>
           {children}
         </div>
       </div>
@@ -375,12 +377,24 @@ const AccountListPage: React.FC<{
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isArrangeMode, setIsArrangeMode] = useState(false);
+  const [isMobileUtilityMenuOpen, setIsMobileUtilityMenuOpen] = useState(false);
   const [activeAccountNo, setActiveAccountNo] = useState<string | null>(null);
   const [overAccountNo, setOverAccountNo] = useState<string | null>(null);
   const [activeCardSize, setActiveCardSize] = useState<DraggedCardSize | null>(null);
   const handleSelectAccount = useCallback((accountNo: string) => {
     navigate(`/dashboard/${accountNo}`);
   }, [navigate]);
+
+  const toggleArrangeMode = useCallback(() => {
+    setIsArrangeMode((current) => {
+      if (!current) {
+        // Search is a focused finding task; arrangement is an editing task.
+        // Starting one should not leave the other in a conflicting state.
+        setSearchQuery('');
+      }
+      return !current;
+    });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -528,23 +542,57 @@ const AccountListPage: React.FC<{
         <header className="mb-5 sm:mb-12 animate-fade-in">
           {/* Header design with consistent branding */}
           <div className="flex flex-col gap-4 sm:gap-6">
-            {/* Mobile app bar: one clear context plus compact utility actions. */}
+            {/* Mobile app bar: account work is primary; utility controls live behind an overflow menu. */}
             <div className="flex items-center justify-between sm:hidden">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 ring-1 ring-cyan-400/20">
                   <BoltIcon className="h-5 w-5 text-cyan-300" />
                 </span>
                 <div className="min-w-0">
-                  <h1 className="truncate text-lg font-bold tracking-tight text-white">{t('appTitle')}</h1>
-                  <p className="text-xs text-slate-400">{accounts.length ? `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'}` : t('appSubtitle')}</p>
+                  <h1 className="truncate text-lg font-bold tracking-tight text-white">{t('yourAccounts', 'Your accounts')}</h1>
+                  <p className="text-xs text-slate-400">{accounts.length} {accounts.length === 1 ? t('account') : t('accounts', 'accounts')}</p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <ApiKeyStatusIndicator variant="button" size="sm" onClick={() => setIsApiKeyModalOpen(true)} showTooltip={true} showLabel={false} className="!min-h-10 !min-w-10 !justify-center !rounded-xl" />
+              <div className="relative flex shrink-0 items-center gap-1">
                 <button onClick={() => setIsNotificationSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-slate-800 hover:text-white" aria-label={t('notificationSettings')}>
                   <BellIcon className="h-5 w-5" />
                 </button>
-                <LanguageSwitcher />
+                <button
+                  type="button"
+                  onClick={() => setIsMobileUtilityMenuOpen((open) => !open)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                  aria-label={t('moreOptions', 'More options')}
+                  aria-expanded={isMobileUtilityMenuOpen}
+                >
+                  <span className="mb-2 text-xl leading-none">•••</span>
+                </button>
+                {isMobileUtilityMenuOpen && (
+                  <div className="absolute right-0 top-12 z-40 w-44 rounded-2xl border border-slate-700 bg-slate-800 p-1.5 shadow-2xl shadow-slate-950/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsApiKeyModalOpen(true);
+                        setIsMobileUtilityMenuOpen(false);
+                      }}
+                      className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-slate-700"
+                    >
+                      {t('aiSettings', 'AI settings')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsHelpModalOpen(true);
+                        setIsMobileUtilityMenuOpen(false);
+                      }}
+                      className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-slate-700"
+                    >
+                      {t('help', 'Help')}
+                    </button>
+                    <div className="border-t border-slate-700 px-1 pt-1.5">
+                      <LanguageSwitcher />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {/* Controls bar - always at top */}
@@ -624,7 +672,58 @@ const AccountListPage: React.FC<{
             </div>
           ) : (
             <>
-              <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-4 sm:hidden">
+                <div className="flex gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <input
+                      id="account-search-mobile"
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t('searchAccountsPlaceholder')}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3.5 pr-10 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100"
+                        aria-label={t('clearSearch')}
+                      >
+                        <CloseIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAddAccountModalOpen(true)}
+                    className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/10 transition hover:bg-cyan-300"
+                    aria-label={t('addNewAccount')}
+                  >
+                    <PlusIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-200">
+                    {normalizedSearchQuery
+                      ? t('searchResultsCount', { count: filteredAccounts.length })
+                      : `${accounts.length} ${accounts.length === 1 ? t('account') : t('accounts', 'accounts')}`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={toggleArrangeMode}
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                      isArrangeMode
+                        ? 'bg-cyan-400 text-slate-950'
+                        : 'text-cyan-300 hover:bg-cyan-400/10 hover:text-cyan-200'
+                    }`}
+                  >
+                    {isArrangeMode ? t('done', 'Done') : t('editOrder', 'Edit order')}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-6 hidden flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                   <label htmlFor="account-search" className="mb-2 block text-sm font-medium text-slate-300">
                     {t('searchAccountsLabel')}
@@ -658,7 +757,7 @@ const AccountListPage: React.FC<{
                 <div className="flex items-center gap-3 sm:pl-4">
                   <button
                     type="button"
-                    onClick={() => setIsArrangeMode((current) => !current)}
+                    onClick={toggleArrangeMode}
                     disabled={!!normalizedSearchQuery}
                     className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
                       normalizedSearchQuery
@@ -674,13 +773,13 @@ const AccountListPage: React.FC<{
               </div>
 
               {isArrangeMode && (
-                <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                <div className="mb-4 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100 sm:mb-6">
                   {t('arrangeCardsDescription')}
                 </div>
               )}
 
               {normalizedSearchQuery && (
-                <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
+                <div className="mb-4 hidden rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300 sm:mb-6 sm:block">
                   {t('searchDisablesArrangeMode')}
                 </div>
               )}
@@ -813,6 +912,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     }, []);
 
     const location = useLocation();
+    const isAdminRoute = location.pathname === '/admin';
     const [sharedPrompt, setSharedPrompt] = useState<{ isOpen: boolean; accountNo: string | null }>({ isOpen: false, accountNo: null });
     const [sharedLoading, setSharedLoading] = useState(false);
     const [sharedError, setSharedError] = useState<string | null>(null);
@@ -1057,6 +1157,10 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     }, [i18n]);
 
     const handleCloseOnboarding = useCallback(() => {
+        // Dismissing the welcome flow is an intentional choice. Persist it here,
+        // rather than only from the final onboarding button, so the close button
+        // does not cause the dialog to return every time the installed PWA opens.
+        localStorage.setItem('onboardingCompleted', 'true');
         setShowOnboarding(false);
 
         // If there's a pending shared link, show the confirmation modal
@@ -1077,6 +1181,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         <ModalContext.Provider value={Modal}>
             <ErrorBoundary>
                 <Routes>
+                    <Route path="/admin" element={<AdminNotificationPanel />} />
                     <Route path="/dashboard/:accountNo" element={
                         <DashboardWrapper
                             accounts={accounts}
@@ -1112,6 +1217,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </ErrorBoundary>
+            {!isAdminRoute && <>
             <AddAccountModal
                 isOpen={addAccountModalOpen}
                 onClose={() => {
@@ -1170,6 +1276,9 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                 cancelText={t('viewOnly') || 'View only'}
                 confirmButtonClass={sharedLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700'}
                 icon={<BoltIcon />}
+                mobileFullscreen
+                closeOnConfirm={false}
+                confirmDisabled={sharedLoading}
             />
             <ApiKeyManagementModal
                 isOpen={isApiKeyModalOpen}
@@ -1183,6 +1292,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                 isOpen={isNotificationSettingsOpen}
                 onClose={() => setIsNotificationSettingsOpen(false)}
             />
+            </>}
         </ModalContext.Provider>
     );
 };
