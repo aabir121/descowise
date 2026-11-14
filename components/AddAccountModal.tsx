@@ -9,7 +9,7 @@ import { useModal } from '../App';
 interface AddAccountModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAccountAdded: (account: Account) => void;
+    onAccountAdded: (account: Account) => void | Promise<void>;
     existingAccounts: Account[];
     preVerifiedAccount?: { accountNo: string; data: AccountInfo } | null;
 }
@@ -22,6 +22,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
     const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
     const [accountNumber, setAccountNumber] = useState('');
     const [displayName, setDisplayName] = useState('');
+    const [meterNumber, setMeterNumber] = useState('');
     const [verifiedData, setVerifiedData] = useState<AccountInfo | null>(null);
     const [aiInsightsEnabled, setAiInsightsEnabled] = useState(true);
     const [banglaEnabled, setBanglaEnabled] = useState(false);
@@ -33,11 +34,12 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
             setAccountNumber(preVerifiedAccount.accountNo);
             setVerifiedData(preVerifiedAccount.data);
             setDisplayName(preVerifiedAccount.data.customerName || '');
-            setMessage({ text: t('accountVerifiedSuccessfully'), type: 'success' });
+            setMessage(null);
         } else {
             // Normal reset for manual entry
             setStep('form');
             setAccountNumber('');
+            setMeterNumber('');
             setDisplayName('');
             setVerifiedData(null);
             setMessage(null);
@@ -72,18 +74,19 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
         }
         setIsLoading(true);
         setMessage(null);
-        const result = await verifyAccount(trimmedAccountNumber);
+        if (!meterNumber.trim()) { setIsLoading(false); setMessage({text:'Enter the meter number shown on your DESCO bill.',type:'error'}); return; }
+        const result = await verifyAccount(trimmedAccountNumber, meterNumber.trim());
         setIsLoading(false);
         if (!result.success) {
-            setMessage({ text: result.message, type: 'error' });
+            setMessage({ text: result.message || 'Unable to verify account.', type: 'error' });
             return;
         }
         setVerifiedData(result.data);
-        setMessage({ text: t('accountVerifiedSuccessfully'), type: 'success' });
+        setMessage(null);
         setStep('details');
     };
 
-    const handleConfirmAdd = () => {
+    const handleConfirmAdd = async () => {
         if (!verifiedData) return;
         const newAccount: Account = {
             ...verifiedData,
@@ -92,8 +95,10 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
             aiInsightsEnabled, // Add this property to the account object
             banglaEnabled, // Persist Bangla language preference
         } as Account & { aiInsightsEnabled: boolean; banglaEnabled: boolean };
-        onAccountAdded(newAccount);
-        onClose(); // Close the modal after adding the account
+        setIsLoading(true);
+        try { await onAccountAdded(newAccount); onClose(); }
+        catch(error) { setMessage({text:(error as Error).message,type:'error'}); }
+        finally { setIsLoading(false); }
     };
 
     return (
@@ -130,7 +135,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                     <>
                         <div className="mb-8">
                             <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('addAccountHeading', 'Add your DESCO account')}</h3>
-                            <p className="mt-3 text-sm leading-6 text-slate-400">{t('addAccountIntro', 'Enter the account number shown on your DESCO bill. We will verify it before adding anything.')}</p>
+                            <p className="mt-3 text-sm leading-6 text-slate-400">{t('descoLinkIntro', 'Enter the account and meter numbers from your DESCO bill. The link is checked when you save it.')}</p>
                         </div>
                         <form onSubmit={handleVerify} className="space-y-5">
                             <div>
@@ -155,9 +160,11 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                             />
                             <p className="mt-2 text-xs leading-5 text-slate-500">{t('addAccountHelp', 'You can find this number on your bill or DESCO account statement.')}</p>
                         </div>
+                        <label htmlFor="meterNo" className="block text-sm font-semibold text-slate-200">{t('meterNumber')}</label>
+                        <input id="meterNo" value={meterNumber} onChange={e=>setMeterNumber(e.target.value)} required className="w-full rounded-xl border border-slate-600 bg-slate-900 p-4 text-slate-100" />
                         {message && <p id="form-message" role="alert" className="sr-only">{message.text}</p>}
                         <button type="submit" disabled={isLoading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-4 text-base font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50">
-                            {isLoading ? <><Spinner /> {t('verifying')}...</> : t('verifyAccount')}
+                            {isLoading ? <><Spinner /> {t('verifying')}...</> : t('descoContinue', 'Continue')}
                         </button>
                     </form>
                     </>
@@ -166,8 +173,8 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                 {step === 'details' && verifiedData && (
                     <div className="space-y-6">
                         <div>
-                            <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('accountFound', 'Account found')}</h3>
-                            <p className="mt-2 text-sm leading-6 text-slate-400">{t('accountFoundIntro', 'Check the account below, then save it to your dashboard.')}</p>
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('descoReviewAccount', 'Review account')}</h3>
+                            <p className="mt-2 text-sm leading-6 text-slate-400">{t('descoReviewAccountIntro', 'Check the numbers below. Saving will link this account to your DESCO portal login.')}</p>
                         </div>
                         <section className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
                             <p className="text-sm font-semibold text-slate-100">{verifiedData.customerName || t('na')}</p>
@@ -206,7 +213,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAc
                         <p className="text-xs leading-5 text-slate-500">{t('accountPreferencesLater', 'AI and language preferences can be changed later from the account settings.')}</p>
                         <div className="grid grid-cols-2 gap-3 pb-4">
                             <button onClick={() => { setStep('form'); setMessage(null); }} className="rounded-2xl border border-slate-600 px-4 py-3.5 text-sm font-bold text-slate-200 transition hover:bg-slate-700">{t('back', 'Back')}</button>
-                            <button onClick={handleConfirmAdd} className="rounded-2xl bg-cyan-400 px-4 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">{t('addAccount')}</button>
+                            <button onClick={handleConfirmAdd} disabled={isLoading} className="rounded-2xl bg-cyan-400 px-4 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">{t('addAccount')}</button>
                         </div>
                     </div>
                 )}

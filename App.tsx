@@ -1,3 +1,4 @@
+import DescoAuthGate from './components/DescoAuthGate';
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy, createContext, useContext, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragOverlay, DragOverEvent, DragStartEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
@@ -5,7 +6,7 @@ import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useS
 import { CSS } from '@dnd-kit/utilities';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
-import { getAccountBalance, verifyAccount } from './services/descoService';
+import { getAccountBalance } from './services/descoService';
 import { useIntelligentPreloader, preloadCriticalResources, addResourceHints } from './utils/preloadStrategies';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AccountCard from './components/AccountCard';
@@ -250,7 +251,7 @@ const DragPreview: React.FC<{
   );
 };
 
-const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete, sharedViewerMode }) => {
+const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete }) => {
     const { accountNo } = useParams<{ accountNo: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -261,54 +262,7 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
     const isSharedLink = params.get('shared') === '1';
 
     if (!selectedAccount) {
-        // If account not found and it's a shared link in viewer mode, create a temporary account
-        if (isSharedLink && sharedViewerMode && accountNo) {
-            const tempAccount: Account = {
-                accountNo: accountNo,
-                customerName: 'Shared Account',
-                contactNo: '',
-                feederName: '',
-                installationAddress: '',
-                meterNo: '',
-                tariffSolution: '',
-                sanctionLoad: '',
-                dateAdded: new Date().toISOString(),
-                aiInsightsEnabled: false,
-                banglaEnabled: false,
-                displayName: null
-            };
-
-            return (
-                <Suspense fallback={
-                    <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                            <p className="text-slate-300">Loading dashboard...</p>
-                        </div>
-                    </div>
-                }>
-                    <AccountDashboardView
-                        account={tempAccount}
-                        onClose={() => navigate("/", { replace: true })}
-                        onDelete={() => {}} // Disable delete for view-only mode
-                        showNotification={showNotification}
-                    />
-                </Suspense>
-            );
-        }
-
-        // If account not found and it's a shared link but not in viewer mode, show loading
-        if (isSharedLink) {
-            // Return a placeholder or loading state while shared link logic processes
-            return (
-                <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                        <p className="text-slate-300">Processing shared link...</p>
-                    </div>
-                </div>
-            );
-        }
+        if (isSharedLink) return <main className="p-8 text-center text-slate-200">Link this account with its meter number before opening the dashboard.<button onClick={() => navigate('/')} className="ml-3 underline">Go to accounts</button></main>;
         // If account not found and not a shared link, redirect to home
         return <Navigate to="/" replace />;
     }
@@ -861,10 +815,10 @@ const AccountListPage: React.FC<{
   );
 };
 
-const App: React.FC = () => {
+const AuthenticatedApp: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount } = useAccounts();
+    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount, error: accountsError, syncResults, dismissSyncResults, retryMigration } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
 const { trackAction, preloadForRoute } = useIntelligentPreloader();
@@ -914,7 +868,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     const location = useLocation();
     const isAdminRoute = location.pathname === '/admin';
     const [sharedPrompt, setSharedPrompt] = useState<{ isOpen: boolean; accountNo: string | null }>({ isOpen: false, accountNo: null });
-    const [sharedLoading, setSharedLoading] = useState(false);
+    const sharedLoading = false;
     const [sharedError, setSharedError] = useState<string | null>(null);
 
     // Track route changes for intelligent preloading
@@ -1077,37 +1031,14 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         }
     }, [location, accounts, sharedPrompt.isOpen, sharedViewerMode]);
 
-    const handleConfirmSharedAdd = useCallback(async () => {
-        if (!sharedPrompt.accountNo) return;
-        setSharedLoading(true);
-        setSharedError(null);
-        try {
-            const result = await verifyAccount(sharedPrompt.accountNo);
-            if (result.success && result.data) {
-                // Close the shared prompt and open AddAccountModal with pre-verified data
-                setSharedPrompt({ isOpen: false, accountNo: null });
-                setPreVerifiedAccount({ accountNo: sharedPrompt.accountNo, data: result.data });
-                setAddAccountModalOpen(true);
-            } else {
-                setSharedError(result.message || 'Could not fetch account details.');
-            }
-        } catch (e) {
-            setSharedError('Network error. Please try again.');
-        } finally {
-            setSharedLoading(false);
-        }
-    }, [sharedPrompt.accountNo, t]);
-
+    const handleConfirmSharedAdd = useCallback(() => {
+        setSharedPrompt({isOpen:false,accountNo:null});
+        setAddAccountModalOpen(true);
+    }, []);
     const handleDeclineSharedAdd = useCallback(() => {
-        const accountNo = sharedPrompt.accountNo;
-        setSharedPrompt({ isOpen: false, accountNo: null });
-        setSharedViewerMode(true);
-
-        // Navigate to the dashboard in view-only mode
-        if (accountNo) {
-            navigate(`/dashboard/${accountNo}?shared=1`);
-        }
-    }, [sharedPrompt.accountNo, navigate]);
+        setSharedPrompt({isOpen:false,accountNo:null});
+        navigate('/');
+    }, [navigate]);
 
     // Clean up checkedAccounts when accounts are deleted
     useEffect(() => {
@@ -1120,8 +1051,8 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         });
     }, [accounts]);
 
-    const handleAccountAdded = useCallback((newAccount: Account) => {
-        addAccount(newAccount);
+    const handleAccountAdded = useCallback(async (newAccount: Account) => {
+        await addAccount(newAccount);
     }, [addAccount]);
     
     const handleDeleteAccount = useCallback((accountNo: string) => {
@@ -1140,9 +1071,9 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         });
     }, []);
 
-    const handleConfirmDelete = useCallback(() => {
+    const handleConfirmDelete = useCallback(async () => {
         if (deleteConfirmation.accountNo) {
-            deleteAccount(deleteConfirmation.accountNo);
+            try { await deleteAccount(deleteConfirmation.accountNo); } catch(error) { showNotification((error as Error).message, 'error'); return; }
             setDeleteConfirmation({ isOpen: false, accountNo: null, accountName: '' });
         }
     }, [deleteConfirmation.accountNo, deleteAccount]);
@@ -1179,6 +1110,12 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
 
     return (
         <ModalContext.Provider value={Modal}>
+            {accountsError && <div role="alert" className="bg-red-950 p-4 text-red-200">{accountsError}<button onClick={retryMigration} className="ml-4 underline">{t('descoRetrySync')}</button></div>}
+            <Modal isOpen={!!syncResults} onClose={dismissSyncResults}>
+                <div className="space-y-4 p-6"><h2 className="text-xl font-bold">{t('descoSyncResults')}</h2><p className="text-sm text-slate-300">{t('descoSyncIntro')}</p>
+                <ul className="space-y-3">{syncResults?.map(result=><li key={result.accountNo}><strong>{result.accountNo}</strong>: {t(`descoSync_${result.status}`)}{result.message&&<p className="text-sm text-slate-400">{result.message}</p>}</li>)}</ul>
+                <button onClick={retryMigration} className="rounded-lg bg-cyan-500 p-3 text-slate-950">{t('descoRetryUnfinished')}</button><button onClick={dismissSyncResults} className="ml-3 p-3">{t('closeModal')}</button></div>
+            </Modal>
             <ErrorBoundary>
                 <Routes>
                     <Route path="/admin" element={<AdminNotificationPanel />} />
@@ -1273,7 +1210,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                 title={t('sharedAccountTitle') || 'Shared Account'}
                 message={sharedError ? (sharedError) : (t('sharedAccountMessage') || 'This account was shared with you. What would you like to do?')}
                 confirmText={sharedLoading ? (t('adding') || 'Adding...') : (t('addAccount') || 'Add account')}
-                cancelText={t('viewOnly') || 'View only'}
+                cancelText={t('cancel')}
                 confirmButtonClass={sharedLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700'}
                 icon={<BoltIcon />}
                 mobileFullscreen
@@ -1297,4 +1234,5 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     );
 };
 
+const App: React.FC = () => <DescoAuthGate><AuthenticatedApp /></DescoAuthGate>;
 export default App;

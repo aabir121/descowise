@@ -29,6 +29,8 @@ export interface AccountInfo {
 }
 
 export interface Account extends AccountInfo {
+  accountId?: string;
+  sourceSystem?: string;
   displayName?: string | null;
   dateAdded: string;
   aiInsightsEnabled: boolean;

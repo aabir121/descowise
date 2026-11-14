@@ -189,7 +189,7 @@ const ApiKeySettingsSection: React.FC<ApiKeySettingsSectionProps> = ({
             <li>• {t('aiFeatureBenefit4', 'Access smart energy-saving tips tailored to your usage')}</li>
           </ul>
           <div className="mt-3 text-xs text-blue-200">
-            <strong>{t('privacy', 'Privacy'):</strong> {t('apiKeyPrivacyNote', 'Your API key is encrypted and stored locally on your device. It never leaves your browser.')}
+            <strong>{t('privacy', 'Privacy')}:</strong> {t('apiKeyPrivacyNote', 'Your API key is encrypted and stored locally on your device. It never leaves your browser.')}
           </div>
         </div>
       )}
