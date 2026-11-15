@@ -1,5 +1,6 @@
 import { buildPushPayload, type PushSubscription } from '@block65/webcrypto-web-push';
 import { nextSendAt, validTimezone } from './schedule';
+import { createDescoClient, type DescoClient } from './descoClient';
 
 interface Env {
   DB: D1Database;
@@ -9,8 +10,12 @@ interface Env {
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
   ADMIN_PASSWORD: string;
+  WATCH_ASSERTION_KEY: string;
+  DESCO_OWNER_ID: string;
+  DESCO_USER: string;
+  DESCO_PASS: string;
 }
-interface BalanceCheckMessage { accountNo: string; checkDate: string; }
+interface BalanceCheckMessage { ownerId: string; accountId: number; accountNo: string; checkDate: string; }
 
 interface SubscriptionInput {
   subscription: PushSubscription;
@@ -31,7 +36,7 @@ interface ReminderInput {
   badgeUrl?: string;
   enabled: boolean;
 }
-interface AccountWatchInput { accountNo: string; label?: string; enabled: boolean; thresholdBdt?: number; }
+interface AccountWatchInput { accountNo: string; assertion: string; label?: string; enabled: boolean; thresholdBdt?: number; }
 const DESCO_CHECK_TIME = '06:00';
 const DESCO_CHECK_TIMEZONE = 'Asia/Dhaka';
 
@@ -79,6 +84,33 @@ async function body<T>(request: Request): Promise<T> {
 async function hash(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function decodeBase64Url(value: string): Uint8Array | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  try {
+    const padded = value.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - value.length % 4) % 4);
+    return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+  } catch { return null; }
+}
+
+async function verifiedWatchIdentity(assertion: unknown, accountNo: string, env: Env): Promise<{ ownerId: string; accountId: number } | null> {
+  if (!env.WATCH_ASSERTION_KEY || env.WATCH_ASSERTION_KEY.length < 32 || !env.DESCO_OWNER_ID || typeof assertion !== 'string' || assertion.length > 2048) return null;
+  const parts = assertion.split('.');
+  if (parts.length !== 2) return null;
+  const payloadBytes = decodeBase64Url(parts[0]);
+  const signature = decodeBase64Url(parts[1]);
+  if (!payloadBytes || !signature || signature.length !== 32) return null;
+  try {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.WATCH_ASSERTION_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    if (!(await crypto.subtle.verify('HMAC', key, signature, new TextEncoder().encode(parts[0])))) return null;
+    const payload = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(payloadBytes)) as Record<string, unknown>;
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.aud !== 'descowise-watch' || payload.ownerId !== env.DESCO_OWNER_ID || payload.accountNo !== accountNo
+      || !Number.isSafeInteger(payload.accountId) || Number(payload.accountId) <= 0
+      || !Number.isSafeInteger(payload.exp) || Number(payload.exp) <= now || Number(payload.exp) > now + 300) return null;
+    return { ownerId: payload.ownerId as string, accountId: payload.accountId as number };
+  } catch { return null; }
 }
 
 async function limited(env: Env, key: string, maximum: number): Promise<boolean> {
@@ -172,7 +204,12 @@ async function adminRunAccountCheck(request: Request, env: Env) {
   if (!input.accountNo || !/^\d{5,30}$/.test(input.accountNo) || !input.subscriptionId || !/^[\w-]{1,128}$/.test(input.subscriptionId)) return json({ error: 'Select a monitored account and subscribed device' }, 400);
   if (input.thresholdOverrideBdt !== undefined && (!Number.isFinite(input.thresholdOverrideBdt) || input.thresholdOverrideBdt < 0 || input.thresholdOverrideBdt > 1_000_000)) return json({ error: 'Invalid threshold override' }, 400);
   if (!(await limited(env, `admin-check:${input.subscriptionId}`, 10))) return json({ error: 'Too many forced checks for this device' }, 429);
-  const results = await processBalanceCheck({ accountNo: input.accountNo, checkDate: bangladeshDate() }, env, {
+  const watched = await env.DB.prepare(`SELECT ar.owner_id AS ownerId, ar.account_id AS accountId FROM account_watch_rules ar
+    JOIN push_subscriptions ps ON ps.device_id=ar.device_id AND ps.enabled=1
+    WHERE ar.account_no=? AND ps.id=? AND ar.enabled=1 AND ar.owner_id IS NOT NULL AND ar.account_id IS NOT NULL LIMIT 1`)
+    .bind(input.accountNo, input.subscriptionId).first<{ ownerId: string; accountId: number }>();
+  if (!watched) return json({ error: 'Account is no longer monitored by this device' }, 404);
+  const results = await processBalanceCheck({ ownerId: watched.ownerId, accountId: watched.accountId, accountNo: input.accountNo, checkDate: bangladeshDate() }, env, {
     subscriptionId: input.subscriptionId,
     thresholdOverrideBdt: input.thresholdOverrideBdt,
     force: true,
@@ -254,14 +291,16 @@ async function saveAccountWatches(request: Request, env: Env) {
   const input = await body<{ deviceId: string; globalThresholdBdt: number; accounts: AccountWatchInput[] }>(request);
   const auth = await requireDevice(request, env, input.deviceId); if (!auth) return json({ error: 'Unauthorized device' }, 401);
   if (!Number.isFinite(input.globalThresholdBdt) || input.globalThresholdBdt < 0 || input.globalThresholdBdt > 1_000_000 || !Array.isArray(input.accounts) || input.accounts.length > 50) return json({ error: 'Invalid account watch rules' }, 400);
-  const accounts = new Map<string, AccountWatchInput>();
+  const accounts = new Map<string, AccountWatchInput & { ownerId: string; accountId: number }>();
   for (const account of input.accounts) {
     if (!/^\d{5,30}$/.test(account.accountNo) || typeof account.enabled !== 'boolean' || (account.thresholdBdt !== undefined && (!Number.isFinite(account.thresholdBdt) || account.thresholdBdt < 0 || account.thresholdBdt > 1_000_000))) return json({ error: 'Invalid account watch rule' }, 400);
-    accounts.set(account.accountNo, account); // deduplicates incoming account numbers deterministically
+    const identity = await verifiedWatchIdentity(account.assertion, account.accountNo, env);
+    if (!identity) return json({ error: 'Account ownership could not be verified' }, 403);
+    accounts.set(account.accountNo, { ...account, ...identity }); // deduplicates incoming account numbers deterministically
   }
   const timestamp = nowIso();
   const statements: D1PreparedStatement[] = [env.DB.prepare('DELETE FROM account_watch_rules WHERE device_id = ?').bind(input.deviceId)];
-  for (const account of accounts.values()) statements.push(env.DB.prepare('INSERT INTO account_watch_rules (id, device_id, account_no, label, enabled, threshold_bdt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(id(), input.deviceId, account.accountNo, account.label?.slice(0, 80) ?? null, Number(account.enabled), account.thresholdBdt ?? input.globalThresholdBdt, timestamp, timestamp));
+  for (const account of accounts.values()) statements.push(env.DB.prepare('INSERT INTO account_watch_rules (id, device_id, owner_id, account_id, account_no, label, enabled, threshold_bdt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id(), input.deviceId, account.ownerId, account.accountId, account.accountNo, account.label?.slice(0, 80) ?? null, Number(account.enabled), account.thresholdBdt ?? input.globalThresholdBdt, timestamp, timestamp));
   await env.DB.batch(statements);
   log('account_watches_synced', { deviceId: input.deviceId, accountCount: accounts.size });
   return json({ accountCount: accounts.size });
@@ -303,11 +342,19 @@ async function removeSubscription(env: Env, subscriptionId: string, status: numb
 function bangladeshDate(): string { return new Intl.DateTimeFormat('en-CA', { timeZone: DESCO_CHECK_TIMEZONE }).format(new Date()); }
 
 type BalanceWatchRule = {
-  account_no: string; label: string | null; device_id: string; threshold_bdt: number; last_notified_date: string | null;
+  ownerId: string; accountId: number; account_no: string; label: string | null; device_id: string; threshold_bdt: number; last_notified_date: string | null;
   id: string; endpoint: string; p256dh: string; auth: string;
 };
 type BalanceCheckOptions = { subscriptionId?: string; thresholdOverrideBdt?: number; force?: boolean };
-type BalanceCheckResult = { accountNo: string; balance: number | null; thresholdBdt: number; outcome: 'sent' | 'failed' | 'expired_subscription' | 'skipped_above_threshold' | 'balance_check_failed'; providerStatus: number | null };
+type BalanceCheckResult = { accountNo: string; balance: number | null; thresholdBdt: number; outcome: 'sent' | 'failed' | 'expired_subscription' | 'skipped_above_threshold' | 'balance_check_failed' | 'account_unlinked'; providerStatus: number | null };
+let cachedDescoClient: { username: string; password: string; client: DescoClient } | undefined;
+function descoClient(env: Env): DescoClient {
+  if (!env.DESCO_USER || !env.DESCO_PASS) throw new Error('DESCO credentials unavailable');
+  if (!cachedDescoClient || cachedDescoClient.username !== env.DESCO_USER || cachedDescoClient.password !== env.DESCO_PASS) {
+    cachedDescoClient = { username: env.DESCO_USER, password: env.DESCO_PASS, client: createDescoClient({ username: env.DESCO_USER, password: env.DESCO_PASS }) };
+  }
+  return cachedDescoClient.client;
+}
 
 async function recordNotificationAttempt(env: Env, rule: BalanceWatchRule, checkDate: string, outcome: string, balance: number | null, providerStatus: number | null = null) {
   await env.DB.prepare(`INSERT INTO notification_attempts
@@ -332,35 +379,56 @@ function lowBalanceNotification(rule: BalanceWatchRule, balance: number) {
 async function enqueueDailyChecks(env: Env) {
   const checkDate = bangladeshDate();
   log('cron_started', { checkDate });
-  const accounts = await env.DB.prepare('SELECT DISTINCT account_no FROM account_watch_rules WHERE enabled = 1').all<{ account_no: string }>();
+  const accounts = await env.DB.prepare('SELECT DISTINCT owner_id, account_id, account_no FROM account_watch_rules WHERE enabled = 1 AND owner_id = ? AND account_id IS NOT NULL').bind(env.DESCO_OWNER_ID).all<{ owner_id: string; account_id: number; account_no: string }>();
   // Cloudflare Queue sendBatch accepts at most 100 messages. Chunking keeps the
   // once-daily fan-out safe even as the registered account set grows.
   for (let index = 0; index < accounts.results.length; index += 100) {
     await env.BALANCE_CHECKS.sendBatch(
-      accounts.results.slice(index, index + 100).map(({ account_no }) => ({ body: { accountNo: account_no, checkDate } })),
+      accounts.results.slice(index, index + 100).map(({ owner_id, account_id, account_no }) => ({ body: { ownerId: owner_id, accountId: account_id, accountNo: account_no, checkDate } })),
     );
   }
   log('balance_checks_queued', { uniqueAccountCount: accounts.results.length });
 }
 
 async function processBalanceCheck(message: BalanceCheckMessage, env: Env, options: BalanceCheckOptions = {}): Promise<BalanceCheckResult[]> {
-  const query = `SELECT ar.account_no, ar.label, ar.device_id, ar.threshold_bdt, ar.last_notified_date, ps.id, ps.endpoint, ps.p256dh, ps.auth
+  if (!env.DESCO_OWNER_ID || message.ownerId !== env.DESCO_OWNER_ID || !Number.isSafeInteger(message.accountId) || message.accountId <= 0 || !/^\d{5,30}$/.test(message.accountNo)) throw new Error('Unauthorized account check');
+  const query = `SELECT ar.owner_id AS ownerId, ar.account_id AS accountId, ar.account_no, ar.label, ar.device_id, ar.threshold_bdt, ar.last_notified_date, ps.id, ps.endpoint, ps.p256dh, ps.auth
     FROM account_watch_rules ar JOIN push_subscriptions ps ON ps.device_id=ar.device_id AND ps.enabled=1
-    WHERE ar.account_no=? AND ar.enabled=1 AND EXISTS (SELECT 1 FROM reminders r WHERE r.device_id=ar.device_id AND r.enabled=1)${options.subscriptionId ? ' AND ps.id=?' : ''}`;
+    WHERE ar.owner_id=? AND ar.account_id=? AND ar.account_no=? AND ar.enabled=1 AND EXISTS (SELECT 1 FROM reminders r WHERE r.device_id=ar.device_id AND r.enabled=1)${options.subscriptionId ? ' AND ps.id=?' : ''}`;
   const rules = options.subscriptionId
-    ? await env.DB.prepare(query).bind(message.accountNo, options.subscriptionId).all<BalanceWatchRule>()
-    : await env.DB.prepare(query).bind(message.accountNo).all<BalanceWatchRule>();
+    ? await env.DB.prepare(query).bind(message.ownerId, message.accountId, message.accountNo, options.subscriptionId).all<BalanceWatchRule>()
+    : await env.DB.prepare(query).bind(message.ownerId, message.accountId, message.accountNo).all<BalanceWatchRule>();
+  if (!rules.results.length) return [];
   let balance: number;
   try {
-    const response = await fetch(`https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${encodeURIComponent(message.accountNo)}`, { headers: { accept: 'application/json' } });
-    const result = await response.json() as { code?: number; data?: { balance?: unknown } };
-    balance = Number(result.data?.balance);
-    if (!response.ok || result.code !== 200 || !Number.isFinite(balance)) throw new Error('DESCO balance response unavailable');
+    const client = descoClient(env);
+    if (await client.getUserId() !== message.ownerId) throw new Error('DESCO owner identity mismatch');
+    const accounts = await client.listAccounts();
+    const linked = accounts.find(account => account.accountId === message.accountId && account.accountNo === message.accountNo);
+    if (!linked) {
+      const outcomes: BalanceCheckResult[] = [];
+      for (const rule of rules.results) {
+        if (rule.last_notified_date === message.checkDate && !options.force) continue;
+        const push = await sendPush(env, rule, {title:'Reconnect DESCO account',body:`Account ${rule.account_no} is no longer linked. Reconnect it in DescoWise to resume balance alerts.`,targetUrl:'/',reminderId:message.accountNo});
+        const outcome = push.invalid ? 'expired_subscription' : push.ok ? 'account_unlinked' : 'failed';
+        await recordNotificationAttempt(env, rule, message.checkDate, outcome, null, push.status);
+        if (push.invalid) await removeSubscription(env, rule.id, push.status);
+        else if (push.ok) {
+          if (!options.force) await env.DB.prepare('UPDATE account_watch_rules SET last_notified_date=? WHERE id=?').bind(message.checkDate, rule.id).run();
+          await env.DB.prepare('UPDATE push_subscriptions SET last_success_at=?, failure_count=0 WHERE id=?').bind(nowIso(), rule.id).run();
+        } else await env.DB.prepare('UPDATE push_subscriptions SET last_failure_at=?, failure_count=failure_count+1 WHERE id=?').bind(nowIso(), rule.id).run();
+        outcomes.push({ accountNo: message.accountNo, balance: null, thresholdBdt: rule.threshold_bdt, outcome, providerStatus: push.status });
+      }
+      return outcomes;
+    }
+    const result = await client.getBalance(message.accountId, message.checkDate);
+    if (result.accountNo !== message.accountNo) throw new Error('DESCO balance account mismatch');
+    balance = result.balance;
   } catch {
     await Promise.all(rules.results.map((rule) => recordNotificationAttempt(env, rule, message.checkDate, 'balance_check_failed', null)));
     throw new Error('DESCO balance response unavailable');
   }
-  await env.DB.prepare('UPDATE account_watch_rules SET last_balance=?, last_checked_at=?, updated_at=? WHERE account_no=?').bind(balance, nowIso(), nowIso(), message.accountNo).run();
+  await env.DB.prepare('UPDATE account_watch_rules SET last_balance=?, last_checked_at=?, updated_at=? WHERE owner_id=? AND account_id=? AND account_no=?').bind(balance, nowIso(), nowIso(), message.ownerId, message.accountId, message.accountNo).run();
   const outcomes: BalanceCheckResult[] = [];
   for (const rule of rules.results) {
     const effectiveRule = options.thresholdOverrideBdt === undefined ? rule : { ...rule, threshold_bdt: options.thresholdOverrideBdt };
@@ -382,7 +450,7 @@ async function processBalanceCheck(message: BalanceCheckMessage, env: Env, optio
       continue;
     }
     if (push.ok) {
-      if (!options.force) await env.DB.prepare('UPDATE account_watch_rules SET last_notified_date=? WHERE device_id=? AND account_no=?').bind(message.checkDate, rule.device_id, message.accountNo).run();
+      if (!options.force) await env.DB.prepare('UPDATE account_watch_rules SET last_notified_date=? WHERE device_id=? AND owner_id=? AND account_id=? AND account_no=?').bind(message.checkDate, rule.device_id, message.ownerId, message.accountId, message.accountNo).run();
       await env.DB.prepare('UPDATE push_subscriptions SET last_success_at=?, failure_count=0 WHERE id=?').bind(nowIso(), rule.id).run();
       await recordNotificationAttempt(env, effectiveRule, message.checkDate, 'sent', balance, push.status);
       outcomes.push({ accountNo: message.accountNo, balance, thresholdBdt: effectiveRule.threshold_bdt, outcome: 'sent', providerStatus: push.status });

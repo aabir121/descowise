@@ -1,4 +1,4 @@
-interface Env { DESCO_SESSION_KEY: string }
+interface Env { DESCO_SESSION_KEY: string; WATCH_ASSERTION_KEY?: string }
 interface Session { cookies: Record<string, string>; expires: number }
 const COOKIE = '__Host-descowise-session';
 const BASE = 'https://prepaid.desco.org.bd/api';
@@ -6,6 +6,12 @@ const MAX_AGE = 60 * 60 * 12;
 const encoder = new TextEncoder();
 const clear = `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+async function watchAssertion(payload: object, secret: string) {
+ const segment = b64(encoder.encode(JSON.stringify(payload)));
+ const key = await crypto.subtle.importKey('raw', encoder.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+ const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(segment));
+ return `${segment}.${b64(new Uint8Array(signature))}`;
+}
 const unb64 = (value: string) => Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0));
 async function key(secret: string) {
  let bytes = encoder.encode(secret || '');
@@ -53,7 +59,7 @@ export async function handleDesco(request: Request, env: Env): Promise<Response>
  const method = request.method;
  if (method !== 'GET' && request.headers.get('Origin') !== url.origin) return response({error:'INVALID_ORIGIN'},403);
  const account = path.match(/^accounts\/([1-9]\d*)\/(.+)$/);
- const allowed = (path === 'login' && method === 'POST') || (path === 'logout' && method === 'POST') || (path === 'session' && method === 'GET') || (['accounts','accounts/realtime-balance'].includes(path) && method === 'GET') || (path === 'accounts/link' && method === 'POST') || (account && ((account[2] === 'link' && method === 'DELETE') || (Object.hasOwn(routes,account[2]) && method === 'GET')));
+ const allowed = (path === 'login' && method === 'POST') || (path === 'logout' && method === 'POST') || (path === 'session' && method === 'GET') || (path === 'watch-assertions' && method === 'POST') || (['accounts','accounts/realtime-balance'].includes(path) && method === 'GET') || (path === 'accounts/link' && method === 'POST') || (account && ((account[2] === 'link' && method === 'DELETE') || (Object.hasOwn(routes,account[2]) && method === 'GET')));
  if (!allowed) return response({error:'NOT_FOUND'},404);
  try {
  const encryptionKey = await key(env.DESCO_SESSION_KEY);
@@ -66,9 +72,13 @@ export async function handleDesco(request: Request, env: Env): Promise<Response>
  if (Number(request.headers.get('Content-Length')) > 4096) return response({error:'BODY_TOO_LARGE'},413);
  const raw = await request.text(); if (raw.length > 4096) return response({error:'BODY_TOO_LARGE'},413);
  try { body = JSON.parse(raw); } catch { return response({error:'INVALID_JSON'},400); }
- const names = path === 'login' ? ['username','password'] : ['accountNo','meterNo'];
- if (!body || names.some(name => typeof body![name] !== 'string' || !(body![name] as string).trim() || (body![name] as string).length > 512)) return response({error:'INVALID_INPUT'},400);
- body = Object.fromEntries(names.map(name=>[name,body![name]]));
+ if (path === 'watch-assertions') {
+  if (!body || !Array.isArray(body.accountNos) || body.accountNos.length > 50 || body.accountNos.some((value: unknown) => typeof value !== 'string' || !/^\d{5,30}$/.test(value))) return response({error:'INVALID_INPUT'},400);
+ } else {
+  const names = path === 'login' ? ['username','password'] : ['accountNo','meterNo'];
+  if (!body || names.some(name => typeof body![name] !== 'string' || !(body![name] as string).trim() || (body![name] as string).length > 512)) return response({error:'INVALID_INPUT'},400);
+  body = Object.fromEntries(names.map(name=>[name,body![name]]));
+ }
  }
  if (path === 'login') {
  session = {cookies:{},expires:Date.now()+MAX_AGE*1000};
@@ -76,6 +86,26 @@ export async function handleDesco(request: Request, env: Env): Promise<Response>
  if (!csrf.ok || !session.cookies['XSRF-TOKEN']) return response({error:'UPSTREAM_UNAVAILABLE'},502,clear);
  }
  const active = session!;
+ if (path === 'watch-assertions') {
+  if (!env.WATCH_ASSERTION_KEY || env.WATCH_ASSERTION_KEY.length < 32) return response({error:'SERVICE_UNAVAILABLE'},503);
+  const identity = await upstream('/auth/session','GET',active.cookies);
+  if (identity.status === 401) return response({error:'AUTHENTICATION_REQUIRED'},401,clear);
+  if (!identity.ok) return response({error:'UPSTREAM_UNAVAILABLE'},502);
+  const profile = await identity.json() as {authenticated?: boolean; userId?: string | number};
+  if (!profile.authenticated || !/^[\w-]{1,128}$/.test(String(profile.userId ?? ''))) return response({error:'AUTHENTICATION_REQUIRED'},401,clear);
+  const linked = await upstream('/accounts','GET',active.cookies);
+  if (linked.status === 401) return response({error:'AUTHENTICATION_REQUIRED'},401,clear);
+  if (!linked.ok) return response({error:'UPSTREAM_UNAVAILABLE'},502);
+  const list = await linked.json() as {accounts?: Array<{accountId: number; accountNo: string}>};
+  const accounts = new Map((list.accounts || []).map(item => [item.accountNo, item.accountId]));
+  const assertions: Record<string,string> = {};
+  for (const accountNo of body!.accountNos as string[]) {
+   const accountId = accounts.get(accountNo);
+   if (!Number.isSafeInteger(accountId) || accountId! <= 0) return response({error:'ACCOUNT_NOT_LINKED'},403);
+   assertions[accountNo] = await watchAssertion({aud:'descowise-watch',ownerId:String(profile.userId),accountId,accountNo,exp:Math.floor(Date.now()/1000)+300},env.WATCH_ASSERTION_KEY);
+  }
+  return response({assertions});
+ }
  const upstreamPath = ['login','session','logout'].includes(path) ? `/auth/${path}` : `/${path}`;
  const query = new URLSearchParams();
  for (const name of account ? routes[account[2]] || [] : []) {

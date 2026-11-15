@@ -15,6 +15,8 @@ This project does not use `vite-plugin-pwa` or Workbox. It uses one custom servi
 3. Set the private key: `npx wrangler secret put VAPID_PRIVATE_KEY --config workers/notifications/wrangler.toml`.
 4. Set an admin-panel password: `npx wrangler secret put ADMIN_PASSWORD --config workers/notifications/wrangler.toml`. This password is requested at `/admin` and is never included in the frontend build.
 5. Copy `.env.example` to `.env.local`, setting `VITE_PUSH_API_BASE_URL` to the deployed Worker (or proxy `/api` through the frontend origin). Set `VITE_VAPID_PUBLIC_KEY` only if you do not use `/api/push/config`.
+6. For authenticated balance alerts, set Worker secrets `DESCO_USER`, `DESCO_PASS`, `DESCO_OWNER_ID`, and `WATCH_ASSERTION_KEY`. `DESCO_OWNER_ID` is the `userId` returned by DESCO `/api/auth/session` for those credentials. Set the same random `WATCH_ASSERTION_KEY` (at least 32 UTF-8 characters) as a Pages secret. The key and DESCO password must never enter frontend environment variables. Only this single DESCO owner can register watches.
+7. Apply D1 migration `0005_watch_owner_identity.sql` before deploying the new Worker. It disables old device-only watch rules; the owner must save notification settings again to authorize them.
 
 ## Local development
 
@@ -37,6 +39,11 @@ npm run build
 npm run worker:migrate
 npx wrangler secret put VAPID_PRIVATE_KEY --config workers/notifications/wrangler.toml
 npx wrangler secret put ADMIN_PASSWORD --config workers/notifications/wrangler.toml
+npx wrangler secret put DESCO_USER --config workers/notifications/wrangler.toml
+npx wrangler secret put DESCO_PASS --config workers/notifications/wrangler.toml
+npx wrangler secret put DESCO_OWNER_ID --config workers/notifications/wrangler.toml
+npx wrangler secret put WATCH_ASSERTION_KEY --config workers/notifications/wrangler.toml
+# Set the identical WATCH_ASSERTION_KEY on the Pages project using its secret management UI.
 npm run worker:deploy
 ```
 

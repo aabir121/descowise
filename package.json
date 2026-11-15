@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "deploy": "bash scripts/deploy.sh",
     "deploy:win": "scripts\\deploy.bat",
-    "test": "vitest run services/pushNotificationService.test.ts workers/notifications/src/schedule.test.ts functions/lib/desco/handler.test.ts services/descoPortalService.test.ts utils/accountMigration.test.ts utils/descoRememberedLogin.test.ts utils/linkedAccountView.test.ts",
+    "test": "vitest run services/pushNotificationService.test.ts workers/notifications/src/schedule.test.ts workers/notifications/src/watchIdentity.test.ts workers/notifications/src/descoClient.test.ts workers/notifications/src/pushFlow.test.ts functions/lib/desco/handler.test.ts services/descoPortalService.test.ts utils/accountMigration.test.ts utils/descoRememberedLogin.test.ts utils/linkedAccountView.test.ts",
     "worker:dev": "wrangler dev --config workers/notifications/wrangler.toml --local",
     "worker:deploy": "wrangler deploy --config workers/notifications/wrangler.toml",
     "worker:migrate:local": "wrangler d1 migrations apply descowise-notifications --local --config workers/notifications/wrangler.toml",

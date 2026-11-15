@@ -1,3 +1,5 @@
+import { portalRequest } from './descoPortalService';
+
 export interface NotificationPermissionState {
   supported: boolean;
   permission: NotificationPermission | 'unsupported';
@@ -130,7 +132,11 @@ export async function syncReminderSchedule(reminder: ReminderInput): Promise<{ i
 
 export async function syncAccountWatches(globalThresholdBdt: number, accounts: AccountWatchInput[]): Promise<void> {
   const { deviceId } = getDeviceIdentity();
-  await request('/api/account-watches', { method: 'PUT', body: JSON.stringify({ deviceId, globalThresholdBdt, accounts }) });
+  const enabled = accounts.filter(account => account.enabled);
+  const { assertions } = enabled.length
+    ? await portalRequest('/watch-assertions', { method: 'POST', body: JSON.stringify({ accountNos: enabled.map(account => account.accountNo) }) }) as { assertions: Record<string, string> }
+    : { assertions: {} as Record<string, string> };
+  await request('/api/account-watches', { method: 'PUT', body: JSON.stringify({ deviceId, globalThresholdBdt, accounts: enabled.map(account => ({ ...account, assertion: assertions[account.accountNo] })) }) });
 }
 
 export function getPushDiagnostics() {
