@@ -11,17 +11,18 @@ import { useModal } from '../../App';
 
 const RechargeStatusBadge = ({ status, t }) => {
   const successful = status === 'Execution Successful';
+  const needsReissue = status === 'Need Re-issue';
   return (
     <span
       title={status}
       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-none ${
         successful
           ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300'
-          : 'border-rose-400/25 bg-rose-400/10 text-rose-300'
+          : needsReissue ? 'border-amber-400/25 bg-amber-400/10 text-amber-300' : 'border-rose-400/25 bg-rose-400/10 text-rose-300'
       }`}
     >
       {successful ? <CheckCircleIcon className="h-3.5 w-3.5" /> : <ExclamationTriangleIcon className="h-3.5 w-3.5" />}
-      {successful ? t('successful') : t('failed')}
+      {successful ? t('successful') : needsReissue ? t('needsReissue') : status || t('failed')}
     </span>
   );
 };
@@ -35,8 +36,10 @@ const formatReceiptDate = (value) => {
 const getChargeAmount = (recharge, chargeName) => {
   const items = Array.isArray(recharge?.chargeItems) ? recharge.chargeItems : [];
   const found = items.find(i => i && i.chargeItemName === chargeName);
-  return found?.chargeAmount;
+  return found?.chargeAmount ?? 0;
 };
+const meterRent = (recharge) => (recharge?.chargeItems || []).reduce((sum, item) =>
+  /meter rent/i.test(item?.chargeItemName || '') ? sum + Number(item.chargeAmount || 0) : sum, 0);
 const formatToken = (token) => {
   if (token === null || token === undefined || token === '') return '-';
   const digits = String(token).replace(/[^0-9A-Za-z]/g, '');
@@ -139,7 +142,7 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
 
   if (!recharge) return null;
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-sm">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg">
       <div className="flex flex-col h-full max-h-[90vh]">
         <ErrorBoundary
           fallback={
@@ -179,7 +182,7 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
             <div className="font-semibold mb-1 text-xs print:text-xs">{t('charges')}</div>
             <div><span className="inline-block w-28">{t('energyCost')}</span>: {formatCurrency(sanitizeCurrency(recharge.energyAmount))}</div>
             <div><span className="inline-block w-28">{t('demandCharge')}</span>: {formatCurrency(sanitizeCurrency(getChargeAmount(recharge, 'Demand Charge')))}</div>
-            <div><span className="inline-block w-28">{t('meterRent1P')}</span>: {formatCurrency(sanitizeCurrency(getChargeAmount(recharge, 'Meter Rent 1P')))}</div>
+            <div><span className="inline-block w-28">{t('meterRent')}</span>: {formatCurrency(meterRent(recharge))}</div>
             <div><span className="inline-block w-28">{t('vat5')}</span>: {formatCurrency(sanitizeCurrency(recharge.VAT))}</div>
             <div><span className="inline-block w-28">{t('rebate')}</span>: {formatCurrency(sanitizeCurrency(recharge.rebate))}</div>
             <div className="font-bold mt-1"><span className="inline-block w-28">{t('grossAmount')}</span>: {formatCurrency(sanitizeCurrency(recharge.totalAmount))}</div>
@@ -205,13 +208,60 @@ const RechargeDetailsModal = ({ isOpen, onClose, recharge, t }) => {
         </div>
         </ErrorBoundary>
         <div className="flex justify-end gap-2 p-3 pt-2 border-t border-slate-700 bg-slate-800 sticky bottom-0 print:hidden z-10">
-          <button onClick={handleDownload} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('download')}</button>
-          <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('print')}</button>
+          {recharge.token && <button type="button" onClick={() => navigator.clipboard.writeText(String(recharge.token))} className="px-3 py-1.5 text-sm text-cyan-300">{t('copyToken')}</button>}
+          <button onClick={handleDownload} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('downloadReceipt')}</button>
+          <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('printSavePdf')}</button>
           <button onClick={onClose} className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-sm">{t('close')}</button>
         </div>
       </div>
     </Modal>
   );
+};
+
+const StatementModal = ({ isOpen, onClose, recharges, t }) => {
+  const printRef = useRef();
+  const Modal = useModal();
+  const columns = [
+    ['totalAmount', t('totalAmount'), item => item.totalAmount],
+    ['energyAmount', t('energyAmount'), item => item.energyAmount],
+    ['VAT', t('vat5'), item => item.VAT],
+    ['rebate', t('rebate'), item => item.rebate],
+    ['demand', t('demandCharge'), item => getChargeAmount(item, 'Demand Charge')],
+    ['rent', t('meterRent'), meterRent],
+  ];
+  const printStatement = () => {
+    if (!printRef.current) return;
+    const popup = window.open('', '_blank');
+    if (!popup) { alert(t('popupBlocked')); return; }
+    popup.document.write(buildReceiptHtml(t('statement'), printRef.current.innerHTML));
+    popup.document.close();
+    let printed = false;
+    const doPrint = () => { if (!printed) { printed = true; popup.print(); } };
+    popup.onload = doPrint;
+    if (popup.document.readyState === 'complete') doPrint();
+  };
+  return <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl">
+    <div className="p-5 text-slate-100">
+      <div ref={printRef} className="overflow-x-auto">
+        <h2 className="mb-1 text-xl font-bold">{t('descoCompany')} — {t('statement')}</h2>
+        <p className="mb-4 text-sm">{t('accountNo')}: {recharges[0]?.accountNo || '—'} · {t('meterNo')}: {recharges[0]?.meterNo || '—'} · {t('rechargeHistory')}: {recharges.length}</p>
+        <table className="w-full min-w-[850px] text-sm">
+          <thead><tr>{[t('orderNo'), t('dateTime'), ...columns.map(column => column[1])].map(label => <th key={label} className="border-b border-slate-600 p-2 text-left">{label}</th>)}</tr></thead>
+          <tbody>
+            {recharges.map(item => <tr key={item.orderID}>
+              <td className="border-b border-slate-700 p-2">{item.orderID}</td>
+              <td className="border-b border-slate-700 p-2 whitespace-nowrap">{formatReceiptDate(item.rechargeDate)}</td>
+              {columns.map(([key, , value]) => <td key={key} className="border-b border-slate-700 p-2 text-right">{formatCurrency(sanitizeCurrency(value(item)))}</td>)}
+            </tr>)}
+          </tbody>
+          <tfoot><tr className="font-bold"><td className="p-2" colSpan={2}>{t('totalAmount')} ({recharges.length})</td>
+            {columns.map(([key, , value]) => <td key={key} className="p-2 text-right">{formatCurrency(recharges.reduce((sum, item) => sum + sanitizeCurrency(value(item)), 0))}</td>)}
+          </tr></tfoot>
+        </table>
+      </div>
+      <div className="mt-5 flex justify-end gap-2"><button onClick={printStatement} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white">{t('printSavePdf')}</button><button onClick={onClose} className="rounded-lg bg-slate-700 px-3 py-2 text-sm">{t('close')}</button></div>
+    </div>
+  </Modal>;
 };
 
 const RechargeHistorySection = ({
@@ -231,6 +281,7 @@ const RechargeHistorySection = ({
 }) => {
   const [selectedRecharge, setSelectedRecharge] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
 
   const handleDetails = (item) => {
     setSelectedRecharge(item);
@@ -262,6 +313,7 @@ const RechargeHistorySection = ({
         </span>
       )
     },
+    { key: 'order', header: t('orderNo'), width: '170px', render: item => <span className="font-mono text-xs">{item.orderID}</span> },
     {
       key: 'meter',
       header: t('meterNo'),
@@ -284,6 +336,10 @@ const RechargeHistorySection = ({
       width: '120px',
       render: (item) => <span className="text-sm">{item.energyAmount}</span>
     },
+    { key: 'vat', header: t('vat5'), render: item => formatCurrency(sanitizeCurrency(item.VAT)) },
+    { key: 'rebate', header: t('rebate'), render: item => formatCurrency(sanitizeCurrency(item.rebate)) },
+    { key: 'demand', header: t('demandCharge'), render: item => formatCurrency(sanitizeCurrency(getChargeAmount(item, 'Demand Charge'))) },
+    { key: 'rent', header: t('meterRent'), render: item => formatCurrency(meterRent(item)) },
     {
       key: 'status',
       header: getDashboardLabel('status', banglaEnabled),
@@ -347,6 +403,7 @@ const RechargeHistorySection = ({
             </div>
           </div>
         )}
+        <button type="button" onClick={() => setStatementOpen(true)} disabled={!rechargeHistory?.length || isHistoryLoading} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{t('statement')}</button>
         <select
           value={rechargeYear}
           onChange={e => setRechargeYear(parseInt(e.target.value))}
@@ -375,7 +432,7 @@ const RechargeHistorySection = ({
               <div className="min-w-0"><p className="text-sm font-semibold text-white">{formatCurrency(sanitizeCurrency(item.totalAmount))}</p><p className="mt-1 text-xs text-slate-400">{formatReceiptDate(item.rechargeDate)}</p></div>
               <RechargeStatusBadge status={item.orderStatus} t={t} />
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-700 pt-3 text-xs"><div><span className="text-slate-500">{t('meterNo')}</span><p className="mt-0.5 break-all text-slate-200">{item.meterNo || '—'}</p></div><div><span className="text-slate-500">{t('energyAmount')}</span><p className="mt-0.5 text-slate-200">{formatCurrency(sanitizeCurrency(item.energyAmount))}</p></div></div>
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-700 pt-3 text-xs"><div><span className="text-slate-500">{t('orderNo')}</span><p className="mt-0.5 break-all text-slate-200">{item.orderID}</p></div><div><span className="text-slate-500">{t('energyAmount')}</span><p className="mt-0.5 text-slate-200">{formatCurrency(sanitizeCurrency(item.energyAmount))}</p></div></div>
             <button onClick={() => handleDetails(item)} className="mt-4 w-full rounded-lg border border-indigo-400/30 bg-indigo-500/10 py-2 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/20">{t('viewDetails')}</button>
           </article>
         )}
@@ -383,6 +440,7 @@ const RechargeHistorySection = ({
 
       {/* Details Modal */}
       <RechargeDetailsModal isOpen={modalOpen} onClose={() => setModalOpen(false)} recharge={selectedRecharge} t={t} />
+      <StatementModal isOpen={statementOpen} onClose={() => setStatementOpen(false)} recharges={rechargeHistory || []} t={t} />
     </Section>
   );
 };
