@@ -13,6 +13,15 @@ describe('authenticated DESCO transport', () => {
   expect(await accountResource('123','balance')).toEqual({balance:20});
   await expect(accountResource('999','balance')).rejects.toThrow('linked');
  });
+ it('routes transactions through the authenticated DESCO proxy', async () => {
+  const urls: string[] = [];
+  vi.stubGlobal('fetch', async (url: string) => {
+   urls.push(url);
+   return Response.json(url.endsWith('/accounts') ? [{accountId:'38118',accountNo:'41348746',meterNo:'030619009024'}] : []);
+  });
+  await accountResource('41348746', 'transactions', '?dateFrom=2026-05-14&dateTo=2026-11-15');
+  expect(urls[1]).toBe('/api/desco/accounts/38118/transactions?dateFrom=2026-05-14&dateTo=2026-11-15');
+ });
  it('explains when a static frontend serves HTML instead of the API', async () => {
   vi.stubGlobal('fetch', async () => new Response('<!DOCTYPE html>', {status:200,headers:{'Content-Type':'text/html'}}));
   await expect(portalRequest('/session')).rejects.toThrow('DESCO backend is unavailable');

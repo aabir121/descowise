@@ -219,9 +219,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         const fromMonth = new Date();
         fromMonth.setMonth(toMonth.getMonth() - 23); // 24 months total (0-23)
 
-        // Convert to date range for recharge history (from first day of fromMonth to last day of current month)
-        const rechargeFromDate = new Date(fromMonth.getFullYear(), fromMonth.getMonth(), 1);
-        const rechargeToDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
+        // DESCO limits transaction queries to 366 days.
+        const rechargeFromDate = new Date(today);
+        rechargeFromDate.setFullYear(today.getFullYear() - 1);
+        const rechargeToDate = today;
 
 
 

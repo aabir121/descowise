@@ -3,8 +3,7 @@ export class PortalRequestError extends Error {
  constructor(message: string, public readonly status: number) { super(message); }
 }
 export async function portalRequest(path: string, options: RequestInit = {}) {
- const baseUrl = path.search('transactions') === -1 ? '/api/desco' : '/api';
- const response = await fetch(`${baseUrl}${path}`, { ...options, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...options.headers } });
+ const response = await fetch(`/api/desco${path}`, { ...options, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...options.headers } });
  const contentType = response.headers?.get('Content-Type');
  if (response.status !== 204 && contentType && !/\bjson\b|\+json\b/i.test(contentType)) {
     debugger;
