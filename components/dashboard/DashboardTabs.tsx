@@ -47,8 +47,8 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   ];
 
   return (
-    <div className={`bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-1 shadow-lg ${className}`}>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+    <div className={`rounded-2xl border border-slate-700/80 bg-slate-900/95 p-1.5 shadow-lg backdrop-blur-sm ${className}`}>
+      <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeView === tab.id;
@@ -62,7 +62,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                 onViewChange(tab.id);
               }}
               className={`
-                relative p-3 sm:p-4 rounded-lg transition-all duration-200 text-left
+                relative min-w-[7.2rem] flex-1 rounded-xl px-3 py-2.5 text-left transition-all duration-200 sm:min-w-0 sm:p-3
                 ${isActive
                   ? 'bg-cyan-600 text-white shadow-lg transform scale-[1.02]'
                   : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
@@ -71,13 +71,13 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
               `}
               title={tab.description}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span className="font-medium text-sm sm:text-base">{tab.label}</span>
+              <div className="flex items-center gap-1.5">
+                <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <span className="whitespace-nowrap text-xs font-semibold sm:text-sm">{tab.label}</span>
               </div>
               
-              <div className="flex items-center justify-between">
-                <span className={`text-xs ${isActive ? 'text-cyan-100' : 'text-slate-400'}`}>
+              <div className="mt-1 flex items-center justify-between">
+                <span className={`text-[10px] ${isActive ? 'text-cyan-100' : 'text-slate-500'}`}>
                   {tab.count} {t('sections')}
                 </span>
                 
@@ -90,8 +90,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
         })}
       </div>
       
-      {/* Desktop: Show description below tabs */}
-      <div className="sm:block mt-3 pt-3 border-t border-slate-600">
+      <div className="mt-2 hidden border-t border-slate-700 pt-2 sm:block">
         <p className="text-sm text-slate-400 text-center">
           {tabs.find(tab => tab.id === activeView)?.description}
         </p>

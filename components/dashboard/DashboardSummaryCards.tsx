@@ -53,9 +53,9 @@ const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({ data, t }
   }, [data, t]);
 
   return (
-    <section aria-label={t('accountSummary', 'Account summary')} className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {summary.map(card => (
-        <div key={card.label} className="rounded-xl border border-slate-700 bg-slate-800/90 p-4 shadow-sm">
+    <section aria-label={t('accountSummary', 'Account summary')} className="grid grid-cols-2 gap-3">
+      {summary.map((card, index) => (
+        <div key={card.label} className={`rounded-2xl border border-slate-700/80 bg-slate-800/90 p-3.5 shadow-sm sm:p-4 ${index === 0 ? 'col-span-2 sm:col-span-1' : ''}`}>
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{card.label}</p>
           <p className={`mt-2 text-2xl font-bold ${card.tone}`}>{card.value}</p>
           <p className="mt-1 text-xs text-slate-500">{card.meta}</p>
