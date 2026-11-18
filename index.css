@@ -194,7 +194,7 @@
     bottom: 4.5rem;
   }
   .desco-signout {
-    bottom: 5.5rem;
+    display: none;
   }
 }
 

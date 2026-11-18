@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { BellIcon, BoltIcon, CloseIcon, InformationCircleIcon, WandSparklesIcon } from './Icons';
+import { useDescoSignOut } from '../DescoAuthGate';
 
 interface MobileAppDrawerProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const MobileAppDrawer: React.FC<MobileAppDrawerProps> = ({
   languageSwitcher,
 }) => {
   const { t } = useTranslation();
+  const signOut = useDescoSignOut();
 
   if (!isOpen) return null;
 
@@ -50,6 +52,12 @@ const MobileAppDrawer: React.FC<MobileAppDrawerProps> = ({
           <button type="button" onClick={() => closeAfter(onOpenHelp)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3.5 text-left text-slate-200 transition hover:bg-slate-800"><InformationCircleIcon className="h-5 w-5 text-cyan-300" /><span className="font-medium">{t('help', 'Help')}</span></button>
           <div className="my-4 border-t border-slate-800" />
           <div className="rounded-2xl bg-slate-800/70 p-3">{languageSwitcher}</div>
+          {signOut && (
+            <button type="button" onClick={() => { signOut(); onClose(); }} className="mt-4 flex w-full items-center justify-between rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3.5 text-left text-sm font-semibold text-slate-200 transition hover:bg-slate-700">
+              <span>{t('descoSignOut')}</span>
+              <span className="text-xs text-slate-500">↗</span>
+            </button>
+          )}
         </nav>
 
         <div className="border-t border-slate-800 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs leading-5 text-slate-500">{t('appSubtitle')}</div>

@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { portalRequest, PortalRequestError } from '../services/descoPortalService';
 import { clearRememberedLogin, hasRememberedLogin, loadRememberedLogin, saveRememberedLogin } from '../utils/descoRememberedLogin';
 
 type AuthStatus = 'loading' | 'ready' | 'login' | 'error';
+
+export const DescoSignOutContext = createContext<(() => void) | null>(null);
+
+export const useDescoSignOut = () => useContext(DescoSignOutContext);
 
 export default function DescoAuthGate({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -96,11 +100,13 @@ export default function DescoAuthGate({ children }: { children: React.ReactNode 
   };
 
   if (status === 'loading') return <main className="p-8 text-center text-slate-200" role="status">{t('descoCheckingSession')}</main>;
-  if (status === 'ready') return <>
-    <button className="desco-signout fixed bottom-4 right-4 z-50 rounded-xl bg-slate-700 px-4 py-2 text-white" onClick={signOut}>{t('descoSignOut')}</button>
-    {error && <p role="alert" className="p-3 text-red-300">{error}</p>}
-    {children}
-  </>;
+  if (status === 'ready') return <DescoSignOutContext.Provider value={() => { void signOut(); }}>
+    <>
+      <button className="desco-signout fixed bottom-4 right-4 z-50 rounded-xl bg-slate-700 px-4 py-2 text-white" onClick={signOut}>{t('descoSignOut')}</button>
+      {error && <p role="alert" className="p-3 text-red-300">{error}</p>}
+      {children}
+    </>
+  </DescoSignOutContext.Provider>;
 
   return <main className="flex min-h-screen items-center justify-center bg-slate-900 p-6 text-slate-100">
     <form className="w-full max-w-sm space-y-5" onSubmit={signIn}>
