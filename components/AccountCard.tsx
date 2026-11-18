@@ -14,6 +14,8 @@ interface AccountCardProps {
     onSelect: (accountNo: string) => void;
     onDelete: (accountNo: string) => void;
     isBalanceLoading: boolean;
+    dragHandleRef?: (node: HTMLElement | null) => void;
+    dragHandleProps?: Record<string, unknown>;
     onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
     onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
     onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void;
@@ -34,6 +36,8 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
     onUpdateAiInsightsEnabled,
     onUpdateBanglaEnabled,
     onOpenApiKeyModal,
+    dragHandleRef,
+    dragHandleProps,
     isArrangeMode = false,
     onMoveUp,
     onMoveDown,
@@ -133,13 +137,25 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                 onKeyDown={handleKeyDown}
                 className={`relative rounded-[1.5rem] border bg-slate-800 p-4 shadow-lg transition-all duration-300 ease-in-out transform sm:p-6 ${
                     isArrangeMode
-                        ? 'cursor-grab border-cyan-500/60 ring-1 ring-cyan-400/30'
+                        ? 'cursor-default border-cyan-500/60 ring-1 ring-cyan-400/30'
                         : 'cursor-pointer border-slate-700 hover:-translate-y-1 hover:border-cyan-500/50 hover:shadow-cyan-500/10'
                 }`}
                 aria-label={isArrangeMode ? `${displayName} arrangement card` : `${t('selectAccount')} ${displayName}`}
                 aria-disabled={isArrangeMode}
             >
                 <div className="mb-4 flex items-start justify-between gap-3">
+                    {isArrangeMode && dragHandleRef && (
+                        <button
+                            type="button"
+                            ref={dragHandleRef}
+                            {...dragHandleProps}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5 flex h-9 w-9 shrink-0 touch-none cursor-grab items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/30 active:cursor-grabbing"
+                            aria-label={t('dragToReorder', 'Drag to reorder')}
+                        >
+                            <DotsVerticalIcon className="h-5 w-5" />
+                        </button>
+                    )}
                     <div className="min-w-0">
                         <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/80 sm:hidden">{t('account', 'Account')}</p>
                         <h3 className="truncate text-lg font-bold text-slate-100 sm:text-xl">{displayName}</h3>
@@ -177,7 +193,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                             <TrashIcon className="h-5 w-5 text-red-500" />
                         </DeleteButton>
                     </div>
-                    <div className="relative sm:hidden">
+                    <div className={`${isArrangeMode ? 'hidden' : 'relative'} sm:hidden`}>
                         <button
                             type="button"
                             className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-700/80 text-slate-300 transition hover:bg-slate-700 hover:text-white"

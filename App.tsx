@@ -130,6 +130,8 @@ const SortableAccountCard: React.FC<{
   onSelect: (accountNo: string) => void;
   onDelete: (accountNo: string) => void;
   isBalanceLoading: boolean;
+    dragHandleRef?: (node: HTMLElement | null) => void;
+    dragHandleProps?: Record<string, unknown>;
   onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
   onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
   onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void;
@@ -150,7 +152,7 @@ const SortableAccountCard: React.FC<{
   onUpdateDisplayName,
   onUpdateAiInsightsEnabled,
   onUpdateBanglaEnabled,
-  onOpenApiKeyModal,
+    onOpenApiKeyModal,
   onMoveUp,
   onMoveDown,
   canMoveUp,
@@ -162,7 +164,8 @@ const SortableAccountCard: React.FC<{
     setNodeRef,
     transform,
     transition,
-    isDragging
+    isDragging,
+    setActivatorNodeRef
   } = useSortable({
     id: account.accountNo,
     disabled: !isArrangeMode
@@ -172,18 +175,14 @@ const SortableAccountCard: React.FC<{
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 40 : 'auto',
-    touchAction: isArrangeMode ? 'none' : undefined
+    touchAction: isArrangeMode ? 'pan-y' : undefined
   };
 
   const showDropTarget = isArrangeMode && isOver && !isActive;
 
   return (
     <div ref={setNodeRef} style={wrapperStyle} className="relative">
-      <div
-        {...attributes}
-        {...listeners}
-        className={isArrangeMode ? 'cursor-grab active:cursor-grabbing' : undefined}
-      >
+      <div>
         <div className={showDropTarget ? 'relative rounded-2xl ring-2 ring-cyan-400/60 ring-offset-2 ring-offset-slate-900' : 'relative'}>
           <div className={isArrangeMode && isActive ? 'opacity-50' : undefined}>
             <AccountCard
@@ -195,6 +194,8 @@ const SortableAccountCard: React.FC<{
               onUpdateAiInsightsEnabled={onUpdateAiInsightsEnabled}
               onUpdateBanglaEnabled={onUpdateBanglaEnabled}
               onOpenApiKeyModal={onOpenApiKeyModal}
+              dragHandleRef={setActivatorNodeRef}
+              dragHandleProps={{ ...attributes, ...listeners }}
               isArrangeMode={isArrangeMode}
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
