@@ -75,9 +75,11 @@ export async function handleDesco(request: Request, env: Env): Promise<Response>
  if (path === 'watch-assertions') {
   if (!body || !Array.isArray(body.accountNos) || body.accountNos.length > 50 || body.accountNos.some((value: unknown) => typeof value !== 'string' || !/^\d{5,30}$/.test(value))) return response({error:'INVALID_INPUT'},400);
  } else {
-  const names = path === 'login' ? ['username','password'] : ['accountNo','meterNo'];
-  if (!body || names.some(name => typeof body![name] !== 'string' || !(body![name] as string).trim() || (body![name] as string).length > 512)) return response({error:'INVALID_INPUT'},400);
-  body = Object.fromEntries(names.map(name=>[name,body![name]]));
+  const required = path === 'login' ? ['username','password'] : ['accountNo'];
+  const optional = path === 'accounts/link' ? ['meterNo'] : [];
+  const valid = (name: string) => typeof body![name] === 'string' && Boolean((body![name] as string).trim()) && (body![name] as string).length <= 512;
+  if (!body || required.some(name => !valid(name)) || optional.some(name => body![name] !== undefined && !valid(name))) return response({error:'INVALID_INPUT'},400);
+  body = Object.fromEntries([...required, ...optional.filter(name => body![name] !== undefined)].map(name=>[name,body![name]]));
  }
  }
  if (path === 'login') {

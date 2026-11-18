@@ -346,6 +346,8 @@
     ]
   },
   "addNewAccount": "Add New Account",
+  "loadingAccounts": "Loading your accounts",
+  "loadingAccountsDescription": "Fetching your linked DESCO accounts...",
   "clickToAddNewAccount": "Click to add a new DESCO account",
   "pleaseEnterAccountNumber": "Please enter an account number.",
   "accountAlreadyAdded": "Account {{accountNo}} is already added. Please use a different account number.",
@@ -932,7 +934,8 @@
   "descoSavedLoginFailed": "Your saved DESCO login no longer works. Please sign in again.",
   "descoNoAccount": "Don't have a DESCO portal account?",
   "descoCreateAccount": "Create one on DESCO's portal",
-  "descoLinkIntro": "Enter the account and meter numbers from your DESCO bill. The link is checked when you save it.",
+  "descoLinkIntro": "Enter your account number and an optional name. We will verify and save it together.",
+  "addAnotherAccount": "Add another account after saving",
   "descoContinue": "Continue",
   "descoReviewAccount": "Review account",
   "descoReviewAccountIntro": "Check the numbers below. Saving will link this account to your DESCO portal login.",

@@ -1,6 +1,6 @@
-import { accountResource } from './descoPortalService';
+import { accountResource, listLinkedAccounts, portalRequest } from './descoPortalService';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiSummaryResponse } from '../types';
+import { BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiSummaryResponse, AccountInfo } from '../types';
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
 import { generateAiDashboardPrompt } from '../ai/promptGenerators';
 import { getApiKeyForRequest } from '../utils/deploymentConfig';
@@ -95,9 +95,36 @@ const generateBasicFallbackSummary = (
 
 export const verifyAccount = async (accountNo: string, meterNo?: string) => {
     if (!/^\d{5,}$/.test(accountNo)) return { success: false, message: 'Enter a valid DESCO account number.' };
-    if (meterNo) return { success: true, data: {accountNo,meterNo,customerName:'',contactNo:'',feederName:'',installationAddress:'',tariffSolution:'',sanctionLoad:''} };
-    try { return {success:true,data:{...await accountResource(accountNo,'summary'),accountNo}}; }
-    catch(error) { return {success:false,message:'Enter the account number and meter number to link this account.'}; }
+    try {
+        const linked = await listLinkedAccounts();
+        let linkedAccount = linked.find(account => account.accountNo === accountNo);
+        if (!linkedAccount) {
+            linkedAccount = await portalRequest('/accounts/link', {
+                method: 'POST',
+                body: JSON.stringify({ accountNo, ...(meterNo ? { meterNo } : {}) })
+            }) as typeof linkedAccount;
+        }
+        let summary: Partial<AccountInfo> = {};
+        try { summary = await accountResource(accountNo, 'summary') as Partial<AccountInfo>; }
+        catch { /* Account is linked; summary details are optional. */ }
+        return {
+            success: true,
+            data: {
+                ...summary,
+                accountNo,
+                meterNo: summary.meterNo || linkedAccount?.meterNo || meterNo || '',
+                customerName: summary.customerName || '',
+                contactNo: summary.contactNo || '',
+                feederName: summary.feederName || '',
+                installationAddress: summary.installationAddress || '',
+                tariffSolution: summary.tariffSolution || '',
+                sanctionLoad: summary.sanctionLoad || '',
+                accountId: linkedAccount?.accountId
+            }
+        };
+    } catch (error) {
+        return { success: false, message: (error as Error)?.message || 'Unable to verify this account.' };
+    }
 };
 
 export const getAccountBalance = async (accountNo: string): Promise<BalanceResponse> => {

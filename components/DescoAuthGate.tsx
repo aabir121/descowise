@@ -97,7 +97,7 @@ export default function DescoAuthGate({ children }: { children: React.ReactNode 
 
   if (status === 'loading') return <main className="p-8 text-center text-slate-200" role="status">{t('descoCheckingSession')}</main>;
   if (status === 'ready') return <>
-    <button className="fixed bottom-4 right-4 z-50 rounded-xl bg-slate-700 px-4 py-2 text-white" onClick={signOut}>{t('descoSignOut')}</button>
+    <button className="desco-signout fixed bottom-4 right-4 z-50 rounded-xl bg-slate-700 px-4 py-2 text-white" onClick={signOut}>{t('descoSignOut')}</button>
     {error && <p role="alert" className="p-3 text-red-300">{error}</p>}
     {children}
   </>;

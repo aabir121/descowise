@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { portalRequest, accountResource, PortalRequestError } from './descoPortalService';
+import { buildAccountLinkPayload } from '../hooks/useAccounts';
 describe('authenticated DESCO transport', () => {
  afterEach(() => vi.unstubAllGlobals());
  it('uses same-origin credentials and JSON requests', async () => {
@@ -7,6 +8,9 @@ describe('authenticated DESCO transport', () => {
   vi.stubGlobal('fetch', async (url: string, options: any) => { request = {url, ...options}; return {ok:true, status:200, json:async()=>({authenticated:true})}; });
   await portalRequest('/login', {method:'POST',body:JSON.stringify({username:'u',password:'p'})});
   expect(request.url).toBe('/api/desco/login'); expect(request.credentials).toBe('same-origin');
+ });
+ it('does not add an empty optional meter number to a new account link', () => {
+  expect(buildAccountLinkPayload({accountNo:'41348746', meterNo:''})).toEqual({accountNo:'41348746'});
  });
  it('resolves account numbers only through server membership', async () => {
   vi.stubGlobal('fetch', async (url: string) => ({ok:true,status:200,json:async()=>url.endsWith('/accounts')?[{accountId:'abc',accountNo:'123',meterNo:'456'}]:{balance:20}}));

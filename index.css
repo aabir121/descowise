@@ -23,6 +23,17 @@
   }
 }
 
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .animate-fade-in-down {
   animation: fadeInDown 0.2s ease-out;
   /* Ensure initial position is set to prevent CLS */
@@ -33,10 +44,96 @@
   animation: fadeIn 0.3s ease-out;
 }
 
+.mobile-app-drawer {
+  animation: slideInFromRight 0.24s ease-out;
+}
+
+.desco-signout {
+  transition: bottom 0.2s ease;
+}
+
+.mobile-bottom-dock {
+  box-shadow: 0 16px 38px rgba(2, 6, 23, 0.58), 0 0 0 1px rgba(34, 211, 238, 0.04);
+}
+
+.mobile-nav-item {
+  display: flex;
+  min-width: 3.75rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 1.15rem;
+  padding: 0.35rem 0.25rem 0.2rem;
+  color: rgb(148 163 184);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-nav-item:hover {
+  color: rgb(226 232 240);
+  background: rgba(51, 65, 85, 0.62);
+}
+
+.mobile-nav-item:active,
+.mobile-nav-add:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.mobile-nav-icon {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+  background: rgba(30, 41, 59, 0.86);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.mobile-nav-item-active {
+  color: rgb(103 232 249);
+}
+
+.mobile-nav-item-active .mobile-nav-icon {
+  background: rgba(8, 145, 178, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.16);
+}
+
+.mobile-nav-add {
+  display: flex;
+  min-width: 3.75rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgb(103 232 249);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.mobile-nav-add > span {
+  display: flex;
+  height: 2.85rem;
+  width: 2.85rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: -1.35rem;
+  border: 5px solid rgb(15 23 42);
+  border-radius: 9999px;
+  background: linear-gradient(145deg, rgb(103 232 249), rgb(34 211 238));
+  color: rgb(8 47 73);
+  box-shadow: 0 8px 18px rgba(6, 182, 212, 0.34), 0 0 0 1px rgba(165, 243, 252, 0.45);
+}
+
 /* Info button styles */
 .floating-info-btn {
   position: fixed;
-  bottom: 2rem;
+  bottom: 6rem;
   right: 2rem;
   z-index: 100;
 }
@@ -91,10 +188,13 @@
     right: 1rem;
   }
   .floating-info-btn {
-    bottom: 1rem;
+    display: none;
   }
   .desco-chat-btn {
     bottom: 4.5rem;
+  }
+  .desco-signout {
+    bottom: 5.5rem;
   }
 }
 

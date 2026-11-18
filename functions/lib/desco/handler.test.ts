@@ -62,6 +62,21 @@ it('forwards only approved query fields and uses account IDs with upstream autho
  expect(calls[2].url).toBe('https://prepaid.desco.org.bd/api/accounts/42/usage/daily?dateFrom=2026-11-01&dateTo=2026-11-14');
  expect((await handleDesco(request('accounts/42/usage/daily?dateFrom=bad','GET',undefined,cookie),env)).status).toBe(400);
 });
+it('forwards a new account link without requiring an optional meter number', async () => {
+ const calls: Request[] = [];
+ vi.stubGlobal('fetch', vi.fn(async (input: Request) => {
+  calls.push(input);
+  const path = new URL(input.url).pathname;
+  if (path.endsWith('/csrf')) return new Response(null, {status:204,headers:{'Set-Cookie':'XSRF-TOKEN=csrf; Path=/'}});
+  if (path.endsWith('/login')) return Response.json({authenticated:true}, {headers:{'Set-Cookie':'DESCO_SESSION=secret; Path=/'}});
+  return Response.json({accountId: 42, accountNo: '41348746', meterNo: '030619009024'}, {status: 201});
+ }));
+ const login = await handleDesco(request('login', 'POST', {username:'user',password:'password'}), env);
+ const cookie = login.headers.get('set-cookie')!.split(';')[0];
+ const result = await handleDesco(request('accounts/link', 'POST', {accountNo:'41348746'}, cookie), env);
+ expect(result.status).toBe(201);
+ expect(await calls.at(-1)!.json()).toEqual({accountNo:'41348746'});
+});
 it('clears a session when DESCO reports authenticated false with HTTP 200', async () => {
  vi.stubGlobal('fetch',vi.fn(async(input:Request)=>{
  const path=new URL(input.url).pathname;

@@ -13,10 +13,11 @@ import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon, CloseIcon } from './components/common/Icons';
+import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon, CloseIcon, HomeIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingInfoButton from './components/FloatingInfoButton';
 import Footer from './components/common/Footer';
+import MobileAppDrawer from './components/common/MobileAppDrawer';
 import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal';
 import { useBalanceWarning } from './hooks/useBalanceWarning';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
@@ -28,6 +29,7 @@ import NotificationSettingsModal from './components/NotificationSettingsModal';
 import AdminNotificationPanel from './components/AdminNotificationPanel';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+import { getAccountListState } from './utils/accountLoading';
 
 // Global Modal Component - moved here to stay on top of everything
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -287,16 +289,14 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
 
 const AccountListPage: React.FC<{
   accounts: Account[];
+  isAccountsLoading: boolean;
   loadingBalances: Set<string>;
   updateAccount: (accountNo: string, data: Partial<Account>) => void;
   moveAccount: (fromIndex: number, toIndex: number) => void;
   handleDeleteAccount: (accountNo: string) => void;
   setAddAccountModalOpen: (open: boolean) => void;
   notification: { message: string; type: 'info' | 'warning' | 'error' } | null;
-  showDataNotice: boolean | null;
-  handleDismissDataNotice: () => void;
   t: any;
-  TrashIcon: any;
   PlusIcon: any;
   LanguageSwitcher: any;
   BoltIcon: any;
@@ -308,16 +308,14 @@ const AccountListPage: React.FC<{
   setIsNotificationSettingsOpen: (open: boolean) => void;
 }> = ({
   accounts,
+  isAccountsLoading,
   loadingBalances,
   updateAccount,
   moveAccount,
   handleDeleteAccount,
   setAddAccountModalOpen,
   notification,
-  showDataNotice,
-  handleDismissDataNotice,
   t,
-  TrashIcon,
   PlusIcon,
   LanguageSwitcher,
   BoltIcon,
@@ -331,7 +329,7 @@ const AccountListPage: React.FC<{
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isArrangeMode, setIsArrangeMode] = useState(false);
-  const [isMobileUtilityMenuOpen, setIsMobileUtilityMenuOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [activeAccountNo, setActiveAccountNo] = useState<string | null>(null);
   const [overAccountNo, setOverAccountNo] = useState<string | null>(null);
   const [activeCardSize, setActiveCardSize] = useState<DraggedCardSize | null>(null);
@@ -368,6 +366,7 @@ const AccountListPage: React.FC<{
   );
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const accountListState = getAccountListState(isAccountsLoading, accounts);
 
   const filteredAccounts = useMemo(() => {
     if (!normalizedSearchQuery) {
@@ -474,26 +473,12 @@ const AccountListPage: React.FC<{
     }
   }, [accounts.length, getAccountIndex, moveAccount]);
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
-      {showDataNotice === true && (
-        <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
-          <span className="text-base font-medium">
-            {t('dataUpdateNotice')}
-          </span>
-          <button
-            className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
-            aria-label={t('dismissNotice')}
-            onClick={handleDismissDataNotice}
-          >
-            <TrashIcon className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {notification && (
         <Notification message={notification.message} type={notification.type} />
       )}
-      <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-12">
-        <header className="mb-5 sm:mb-12 animate-fade-in">
+      <div className="flex-grow container mx-auto w-full px-4 pb-24 pt-3 sm:px-6 sm:py-12 lg:px-8 lg:pb-12">
+        <header className="sticky top-0 z-30 -mx-4 mb-5 border-b border-slate-800/80 bg-slate-950/95 px-4 py-3 backdrop-blur-xl sm:static sm:mx-0 sm:mb-12 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none animate-fade-in">
           {/* Header design with consistent branding */}
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Mobile app bar: account work is primary; utility controls live behind an overflow menu. */}
@@ -508,45 +493,15 @@ const AccountListPage: React.FC<{
                 </div>
               </div>
               <div className="relative flex shrink-0 items-center gap-1">
-                <button onClick={() => setIsNotificationSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-slate-800 hover:text-white" aria-label={t('notificationSettings')}>
-                  <BellIcon className="h-5 w-5" />
-                </button>
                 <button
                   type="button"
-                  onClick={() => setIsMobileUtilityMenuOpen((open) => !open)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                  onClick={() => setIsMobileDrawerOpen(true)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-slate-200 ring-1 ring-slate-700 transition hover:bg-slate-700"
                   aria-label={t('moreOptions', 'More options')}
-                  aria-expanded={isMobileUtilityMenuOpen}
+                  aria-expanded={isMobileDrawerOpen}
                 >
-                  <span className="mb-2 text-xl leading-none">•••</span>
+                  <span className="flex flex-col gap-1"><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /></span>
                 </button>
-                {isMobileUtilityMenuOpen && (
-                  <div className="absolute right-0 top-12 z-40 w-44 rounded-2xl border border-slate-700 bg-slate-800 p-1.5 shadow-2xl shadow-slate-950/60">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsApiKeyModalOpen(true);
-                        setIsMobileUtilityMenuOpen(false);
-                      }}
-                      className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-slate-700"
-                    >
-                      {t('aiSettings', 'AI settings')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsHelpModalOpen(true);
-                        setIsMobileUtilityMenuOpen(false);
-                      }}
-                      className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-slate-700"
-                    >
-                      {t('help', 'Help')}
-                    </button>
-                    <div className="border-t border-slate-700 px-1 pt-1.5">
-                      <LanguageSwitcher />
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
             {/* Controls bar - always at top */}
@@ -605,7 +560,16 @@ const AccountListPage: React.FC<{
           </div>
         </header>
         <main>
-          {accounts.length === 0 ? (
+          {accountListState === 'loading' ? (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-slate-700 bg-slate-800/50 p-10 text-center" role="status" aria-live="polite">
+              <div className="mb-6 h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-400" />
+              <h2 className="mb-2 text-2xl font-bold text-slate-100">{t('loadingAccounts', 'Loading your accounts')}</h2>
+              <p className="mb-8 text-slate-400">{t('loadingAccountsDescription', 'Fetching your linked DESCO accounts...')}</p>
+              <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[0, 1, 2].map(index => <div key={index} className="h-[210px] animate-pulse rounded-2xl border border-slate-700 bg-slate-900/60" />)}
+              </div>
+            </div>
+          ) : accountListState === 'empty' ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center bg-slate-800/50 border border-slate-700 rounded-2xl p-10 sm:p-16">
               {/* Friendly icon/illustration */}
               <div className="mb-6">
@@ -626,7 +590,7 @@ const AccountListPage: React.FC<{
             </div>
           ) : (
             <>
-              <div className="mb-4 sm:hidden">
+              <div className="mb-5 sm:hidden">
                 <div className="flex gap-2">
                   <div className="relative min-w-0 flex-1">
                     <input
@@ -677,7 +641,7 @@ const AccountListPage: React.FC<{
                 </div>
               </div>
 
-              <div className="mb-6 hidden flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-6 hidden flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                   <label htmlFor="account-search" className="mb-2 block text-sm font-medium text-slate-300">
                     {t('searchAccountsLabel')}
@@ -805,7 +769,25 @@ const AccountListPage: React.FC<{
           )}
         </main>
       </div>
-      <Footer />
+      <div className="hidden sm:block"><Footer /></div>
+      <nav className="mobile-bottom-dock fixed inset-x-3 bottom-3 z-50 rounded-[1.75rem] border border-slate-700/80 bg-slate-900/95 px-2 pt-2 shadow-2xl shadow-slate-950/80 backdrop-blur-xl sm:hidden" aria-label={t('navigation', 'Navigation')}>
+        <div className="mx-auto flex max-w-md items-end justify-between gap-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <button type="button" className="mobile-nav-item mobile-nav-item-active"><span className="mobile-nav-icon"><HomeIcon className="h-[1.1rem] w-[1.1rem]" /></span><span>{t('home', 'Home')}</span></button>
+          <button type="button" onClick={() => setIsNotificationSettingsOpen(true)} className="mobile-nav-item"><span className="mobile-nav-icon"><BellIcon className="h-[1.1rem] w-[1.1rem]" /></span><span>{t('notifications', 'Alerts')}</span></button>
+          <button type="button" onClick={() => setAddAccountModalOpen(true)} className="mobile-nav-add" aria-label={t('addNewAccount')}><span><PlusIcon className="h-6 w-6" /></span><small>{t('add', 'Add')}</small></button>
+          <button type="button" onClick={() => setIsHelpModalOpen(true)} className="mobile-nav-item"><span className="mobile-nav-icon"><InformationCircleIcon className="h-[1.1rem] w-[1.1rem]" /></span><span>{t('help', 'Help')}</span></button>
+          <button type="button" onClick={() => setIsMobileDrawerOpen(true)} className="mobile-nav-item"><span className="mobile-nav-icon"><span className="flex flex-col gap-1"><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /></span></span><span>{t('menu', 'Menu')}</span></button>
+        </div>
+      </nav>
+      <MobileAppDrawer
+        isOpen={isMobileDrawerOpen}
+        accountCount={accounts.length}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+        onOpenNotifications={() => setIsNotificationSettingsOpen(true)}
+        onOpenHelp={() => setIsHelpModalOpen(true)}
+        languageSwitcher={<LanguageSwitcher />}
+      />
       <HelpModal
         isOpen={isHelpModalOpen}
         onClose={() => setIsHelpModalOpen(false)}
@@ -818,7 +800,7 @@ const AccountListPage: React.FC<{
 const AuthenticatedApp: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount, error: accountsError, syncResults, dismissSyncResults, retryMigration } = useAccounts();
+    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount, error: accountsError, isLoading: isAccountsLoading, syncResults, dismissSyncResults, retryMigration } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
 const { trackAction, preloadForRoute } = useIntelligentPreloader();
@@ -843,7 +825,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         accountNo: null,
         accountName: ''
     });
-    const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
     const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -891,21 +872,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         // localStorage.removeItem('onboardingCompleted');
     }, []);
 
-
-    useEffect(() => {
-        // Check if the notice was dismissed within the last 6 hours
-        const dismissedAt = localStorage.getItem('dataNoticeDismissedAt');
-        if (dismissedAt) {
-            const dismissedTime = parseInt(dismissedAt, 10);
-            const now = Date.now();
-            const hoursPassed = (now - dismissedTime) / (1000 * 60 * 60);
-            if (hoursPassed < 6) {
-                setShowDataNotice(false);
-                return;
-            }
-        }
-        setShowDataNotice(true);
-    }, []);
 
     useEffect(() => {
         // Only fetch balances if:
@@ -1078,11 +1044,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         }
     }, [deleteConfirmation.accountNo, deleteAccount]);
 
-    const handleDismissDataNotice = useCallback(() => {
-        localStorage.setItem('dataNoticeDismissedAt', Date.now().toString());
-        setShowDataNotice(false);
-    }, []);
-
     const handleLanguageSelect = useCallback((language: 'en' | 'bn') => {
         i18n.changeLanguage(language);
     }, [i18n]);
@@ -1130,16 +1091,14 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                     <Route path="/" element={
                         <AccountListPage
                           accounts={accounts}
+                          isAccountsLoading={isAccountsLoading}
                           loadingBalances={loadingBalances}
                           updateAccount={updateAccount}
                           moveAccount={moveAccount}
                           handleDeleteAccount={handleDeleteAccount}
                           setAddAccountModalOpen={setAddAccountModalOpen}
                           notification={notification}
-                          showDataNotice={showDataNotice}
-                          handleDismissDataNotice={handleDismissDataNotice}
                           t={t}
-                          TrashIcon={TrashIcon}
                           PlusIcon={PlusIcon}
                           LanguageSwitcher={LanguageSwitcher}
                           BoltIcon={BoltIcon}
