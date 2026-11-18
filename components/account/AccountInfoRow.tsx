@@ -11,14 +11,14 @@ interface AccountInfoRowProps {
 }
 
 const AccountInfoRow: React.FC<AccountInfoRowProps> = ({ label, value, valueClassName = '', onCopy, copyStatus = 'idle', t }) => (
-  <div className="flex justify-between items-center">
+  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-start gap-x-3">
     <span className="font-medium text-slate-400">{label}</span>
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center justify-start gap-2 text-left">
       {onCopy && (
         <button
           type="button"
           onClick={(event) => { event.stopPropagation(); onCopy?.(); }}
-          className="p-1 rounded hover:bg-slate-700 focus:outline-none"
+          className="shrink-0 rounded p-1 leading-none hover:bg-slate-700 focus:outline-none"
           title={copyStatus === 'copied' ? t('accountNumberCopied', { accountNo: value }) : t('copyAccountNo')}
           aria-label={copyStatus === 'copied' ? t('copied') : t('copyAccountNumber')}
         >
@@ -29,7 +29,7 @@ const AccountInfoRow: React.FC<AccountInfoRowProps> = ({ label, value, valueClas
           )}
         </button>
       )}
-      <span className={`font-semibold text-slate-200 ${valueClassName}`}>{value}</span>
+      <span className={`min-w-0 whitespace-normal break-words font-semibold text-slate-200 ${valueClassName}`}>{value}</span>
     </div>
   </div>
 );
