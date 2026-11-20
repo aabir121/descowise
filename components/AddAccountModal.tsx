@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account, AccountInfo } from '../types';
 import { verifyAccount } from '../services/descoService';
+import { createAccountToSave } from '../utils/addAccountFlow';
 import { CloseIcon } from './common/Icons';
 import Spinner from './common/Spinner';
 import { useModal } from '../App';
@@ -9,7 +10,7 @@ import { useModal } from '../App';
 interface AddAccountModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAccountAdded: (account: Account) => void;
+    onAccountAdded: (account: Account) => void | Promise<void>;
     existingAccounts: Account[];
     preVerifiedAccount?: { accountNo: string; data: AccountInfo } | null;
 }
@@ -17,218 +18,105 @@ interface AddAccountModalProps {
 const AddAccountModal: React.FC<AddAccountModalProps> = ({ isOpen, onClose, onAccountAdded, existingAccounts, preVerifiedAccount }) => {
     const { t, i18n } = useTranslation();
     const Modal = useModal();
-    const [step, setStep] = useState<'form' | 'details'>('form');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
     const [accountNumber, setAccountNumber] = useState('');
     const [displayName, setDisplayName] = useState('');
-    const [verifiedData, setVerifiedData] = useState<AccountInfo | null>(null);
+    const [addAnother, setAddAnother] = useState(false);
     const [aiInsightsEnabled, setAiInsightsEnabled] = useState(true);
     const [banglaEnabled, setBanglaEnabled] = useState(false);
 
     const resetState = useCallback(() => {
-        if (preVerifiedAccount) {
-            // If we have a pre-verified account, go directly to details step
-            setStep('details');
-            setAccountNumber(preVerifiedAccount.accountNo);
-            setVerifiedData(preVerifiedAccount.data);
-            setDisplayName(preVerifiedAccount.data.customerName || '');
-            setMessage({ text: t('accountVerifiedSuccessfully'), type: 'success' });
-        } else {
-            // Normal reset for manual entry
-            setStep('form');
-            setAccountNumber('');
-            setDisplayName('');
-            setVerifiedData(null);
-            setMessage(null);
-        }
+        setAccountNumber(preVerifiedAccount?.accountNo || '');
+        setDisplayName('');
+        setAddAnother(false);
+        setMessage(null);
         setIsLoading(false);
         setAiInsightsEnabled(true);
         setBanglaEnabled(i18n.language === 'bn');
-    }, [i18n.language, preVerifiedAccount, t]);
+    }, [i18n.language, preVerifiedAccount]);
 
     useEffect(() => {
-        if (isOpen) {
-            resetState();
-        }
+        if (isOpen) resetState();
     }, [isOpen, resetState]);
 
     if (!isOpen) return null;
 
-    const handleVerify = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!accountNumber.trim()) {
+        const trimmedAccountNumber = accountNumber.trim();
+        if (!trimmedAccountNumber) {
             setMessage({ text: t('pleaseEnterAccountNumber'), type: 'error' });
             return;
         }
-        const trimmedAccountNumber = accountNumber.trim();
-        const existingAccount = existingAccounts.find(acc => acc.accountNo === trimmedAccountNumber);
-        if (existingAccount) {
-            setMessage({ 
-                text: t('accountAlreadyAdded', { accountNo: trimmedAccountNumber }), 
-                type: 'error' 
-            });
+        if (existingAccounts.some(account => account.accountNo === trimmedAccountNumber)) {
+            setMessage({ text: t('accountAlreadyAdded', { accountNo: trimmedAccountNumber }), type: 'error' });
             return;
         }
+
         setIsLoading(true);
         setMessage(null);
-        const result = await verifyAccount(trimmedAccountNumber);
-        setIsLoading(false);
-        if (!result.success) {
-            setMessage({ text: result.message, type: 'error' });
-            return;
+        try {
+            const result = await verifyAccount(trimmedAccountNumber);
+            if (!result.success || !result.data) {
+                setMessage({ text: result.message || 'Unable to verify account.', type: 'error' });
+                return;
+            }
+
+            await onAccountAdded(createAccountToSave(result.data, displayName, aiInsightsEnabled, banglaEnabled));
+            if (addAnother) {
+                setAccountNumber('');
+                setDisplayName('');
+                setMessage(null);
+            } else {
+                onClose();
+            }
+        } catch (error) {
+            setMessage({ text: (error as Error).message || 'Unable to add account.', type: 'error' });
+        } finally {
+            setIsLoading(false);
         }
-        setVerifiedData(result.data);
-        setMessage({ text: t('accountVerifiedSuccessfully'), type: 'success' });
-        setStep('details');
     };
-
-    const handleConfirmAdd = () => {
-        if (!verifiedData) return;
-        const newAccount: Account = {
-            ...verifiedData,
-            displayName: displayName.trim() || null,
-            dateAdded: new Date().toISOString(),
-            aiInsightsEnabled, // Add this property to the account object
-            banglaEnabled, // Persist Bangla language preference
-        } as Account & { aiInsightsEnabled: boolean; banglaEnabled: boolean };
-        onAccountAdded(newAccount);
-        onClose(); // Close the modal after adding the account
-    };
-
-    const DetailItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
-        <div className="py-2">
-            <span className="text-sm font-medium text-slate-400">{label}</span>
-            <p className="text-base font-semibold text-slate-100">{value || t('na')}</p>
-        </div>
-    );
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-h-[70vh]">
-            <div className="p-4 sm:p-5">
-                <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-bold text-white">{step === 'form' ? t('addNewAccount') : t('confirmAccount')}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-slate-400 hover:text-slate-300 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-                        aria-label={t('closeModal')}
-                        type="button"
-                    >
-                        <span className="w-6 h-6 block">
-                            <CloseIcon />
-                        </span>
-                    </button>
-                </div>
-
-                {message && (
-                    <div className={`p-2 rounded-lg mb-3 text-xs ${message.type === 'success' ? 'bg-green-500/10 text-green-300 border border-green-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'}`}>
-                        {message.text}
-                    </div>
-                )}
-
-                {step === 'form' && (
-                    <form onSubmit={handleVerify}>
-                        <div className="mb-2">
-                            <label htmlFor="accountNo" className="block text-xs font-medium text-slate-300 mb-1">{t('accountNumber')}</label>
-                            <input
-                                type="text"
-                                id="accountNo"
-                                value={accountNumber}
-                                onChange={(e) => {
-                                    setAccountNumber(e.target.value);
-                                    if (message?.type === 'error') {
-                                        setMessage(null);
-                                    }
-                                }}
-                                placeholder={t('enterAccountNumberPlaceholder')}
-                                className="w-full px-3 py-2 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400 text-sm"
-                                aria-required="true"
-                                aria-invalid={message?.type === 'error'}
-                                aria-describedby={message ? "form-message" : undefined}
-                            />
-                        </div>
-                        {message && <p id="form-message" role="alert" className="sr-only">{message.text}</p>}
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none text-sm">
-                            {isLoading ? <><Spinner /> {t('verifying')}...</> : t('verifyAccount')}
-                        </button>
-                    </form>
-                )}
-
-                {step === 'details' && verifiedData && (
+        <Modal isOpen={isOpen} onClose={onClose} mobileFullscreen>
+            <div className="flex min-h-full flex-1 flex-col">
+                <header className="flex items-center justify-between border-b border-slate-700 px-5 py-[max(1rem,env(safe-area-inset-top))] sm:p-5">
                     <div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 max-h-48 overflow-y-auto pr-1">
-                            <DetailItem label={t('accountNumber')} value={verifiedData.accountNo} />
-                            <DetailItem label={t('customerName')} value={verifiedData.customerName} />
-                            <DetailItem label={t('contactNumber')} value={verifiedData.contactNo} />
-                            <DetailItem label={t('feederName')} value={verifiedData.feederName} />
-                            <DetailItem label={t('meterNumber')} value={verifiedData.meterNo} />
-                            <DetailItem label={t('tariffSolution')} value={verifiedData.tariffSolution} />
-                            <DetailItem label={t('sanctionLoad')} value={verifiedData.sanctionLoad} />
-                            <div className="sm:col-span-2">
-                                <DetailItem label={t('installationAddress')} value={verifiedData.installationAddress} />
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <label htmlFor="displayName" className="block text-xs font-medium text-slate-300 mb-1">{t('displayNameOptional')}</label>
-                            <input
-                                type="text"
-                                id="displayName"
-                                value={displayName}
-                                onChange={(e) => setDisplayName(e.target.value)}
-                                placeholder={t('displayNamePlaceholder')}
-                                className="w-full px-3 py-2 bg-slate-700 text-slate-100 border-2 border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition placeholder-slate-400 text-sm"
-                            />
-                        </div>
-                        {/* AI Insights and Bangla Language Toggles Side by Side */}
-                        <div className="flex flex-col items-center gap-2 my-2">
-                            <div className="flex flex-row items-center gap-4">
-                                {/* AI Insights Toggle */}
-                                <div className="flex flex-col items-center gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-slate-200 font-medium text-xs">{t('enableAiInsights')}</span>
-                                        <button
-                                            type="button"
-                                            className={`relative inline-flex h-5 w-8 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${aiInsightsEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                                            aria-pressed={aiInsightsEnabled}
-                                            onClick={() => setAiInsightsEnabled(v => !v)}
-                                            style={{ minWidth: '32px' }}
-                                        >
-                                            <span
-                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${aiInsightsEnabled ? 'translate-x-3' : 'translate-x-0.5'}`}
-                                            />
-                                            <span className="sr-only">{t('toggleAiInsights')}</span>
-                                        </button>
-                                    </div>
-                                    <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">{t('aiInsightsDescription')}</span>
-                                </div>
-                                {/* Bangla Language Toggle */}
-                                <div className="flex flex-col items-center gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-slate-200 font-medium text-xs">{t('enableBanglaLanguage')}</span>
-                                        <button
-                                            type="button"
-                                            className={`relative inline-flex h-5 w-8 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${banglaEnabled ? 'bg-cyan-500' : 'bg-slate-600'}`}
-                                            aria-pressed={banglaEnabled}
-                                            onClick={() => setBanglaEnabled(v => !v)}
-                                            style={{ minWidth: '32px' }}
-                                        >
-                                            <span
-                                                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform duration-200 ${banglaEnabled ? 'translate-x-3' : 'translate-x-0.5'}`}
-                                            />
-                                            <span className="sr-only">{t('toggleBanglaLanguage')}</span>
-                                        </button>
-                                    </div>
-                                    <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">{t('banglaLanguageDescription')}</span>
-                                </div>
-                            </div>
-                            <span className="text-[10px] text-slate-400 max-w-xs text-center leading-tight">{t('settingsCanBeChangedLater')}</span>
-                        </div>
-                        <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                            <button onClick={resetState} className="w-full bg-slate-600 text-slate-200 font-bold py-2 px-3 rounded-lg hover:bg-slate-500 transition text-sm">{t('cancel')}</button>
-                            <button onClick={handleConfirmAdd} className="w-full bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 hover:shadow-lg transition-transform transform hover:-translate-y-0.5 text-sm">{t('addAccount')}</button>
-                        </div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">{t('addAccountStepOne', 'Add account')}</p>
+                        <h2 className="mt-1 text-xl font-bold text-white">{t('addNewAccount')}</h2>
                     </div>
-                )}
+                    <button onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800" aria-label={t('closeModal')} type="button">
+                        <span className="block h-6 w-6"><CloseIcon /></span>
+                    </button>
+                </header>
+                <main className="flex-1 overflow-y-auto px-5 py-8 sm:p-6">
+                    <div className="mx-auto w-full max-w-md">
+                        {message && <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200" role="alert">{message.text}</div>}
+                        <div className="mb-8">
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('addAccountHeading', 'Add your DESCO account')}</h3>
+                            <p className="mt-3 text-sm leading-6 text-slate-400">{t('descoLinkIntro', 'Enter your account number and an optional name. We will verify and save it together.')}</p>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div>
+                                <label htmlFor="accountNo" className="mb-2 block text-sm font-semibold text-slate-200">{t('accountNumber')}</label>
+                                <input type="text" id="accountNo" inputMode="numeric" autoFocus value={accountNumber} onChange={e => { setAccountNumber(e.target.value); if (message) setMessage(null); }} placeholder={t('enterAccountNumberPlaceholder')} className="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-4 text-base text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" aria-required="true" aria-invalid={message?.type === 'error'} />
+                                <p className="mt-2 text-xs leading-5 text-slate-500">{t('addAccountHelp', 'You can find this number on your bill or DESCO account statement.')}</p>
+                            </div>
+                            <div>
+                                <label htmlFor="displayName" className="mb-2 block text-sm font-semibold text-slate-200">{t('displayNameOptional')}</label>
+                                <input type="text" id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder={t('displayNamePlaceholder')} className="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-4 text-base text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" />
+                            </div>
+                            <label className="flex items-center gap-3 text-sm text-slate-300">
+                                <input type="checkbox" checked={addAnother} onChange={e => setAddAnother(e.target.checked)} className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-400" />
+                                {t('addAnotherAccount', 'Add another account after saving')}
+                            </label>
+                            <button type="submit" disabled={isLoading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-4 text-base font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50">
+                                {isLoading ? <><Spinner /> {t('verifying')}...</> : t('addAccount')}
+                            </button>
+                        </form>
+                    </div>
+                </main>
             </div>
         </Modal>
     );

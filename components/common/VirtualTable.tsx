@@ -13,6 +13,7 @@ interface VirtualTableProps<T> {
   className?: string;
   headerClassName?: string;
   rowClassName?: string;
+  mobileCard?: (item: T, index: number) => React.ReactNode;
   emptyMessage?: string;
   isLoading?: boolean;
   loadingComponent?: React.ReactNode;
@@ -26,6 +27,7 @@ const VirtualTable = <T,>({
   className = '',
   headerClassName = '',
   rowClassName = '',
+  mobileCard,
   emptyMessage = 'No data available',
   isLoading = false,
   loadingComponent
@@ -138,7 +140,7 @@ const VirtualTable = <T,>({
 
   return (
     <div className="w-full">
-      <div className="overflow-x-auto">
+      <div className={mobileCard ? 'hidden sm:block overflow-x-auto' : 'overflow-x-auto'}>
         <table className={`w-full text-sm text-left text-slate-300 ${className}`}>
           <thead className={`text-xs text-slate-400 uppercase bg-slate-700/50 ${headerClassName}`}>
             <tr>
@@ -174,6 +176,14 @@ const VirtualTable = <T,>({
           </tbody>
         </table>
       </div>
+
+      {mobileCard && (
+        <div className="space-y-3 sm:hidden">
+          {currentItems.length > 0 ? currentItems.map((item, index) => (
+            <React.Fragment key={startIndex + index}>{mobileCard(item, startIndex + index)}</React.Fragment>
+          )) : <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-5 text-center text-sm text-slate-400">{emptyMessage}</div>}
+        </div>
+      )}
 
       {/* Pagination */}
       {data.length > 0 && totalPages > 1 && (

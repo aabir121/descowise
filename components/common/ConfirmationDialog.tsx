@@ -12,6 +12,9 @@ const ConfirmationDialog: React.FC<{
   cancelText?: string;
   confirmButtonClass?: string;
   icon?: React.ReactNode;
+  mobileFullscreen?: boolean;
+  closeOnConfirm?: boolean;
+  confirmDisabled?: boolean;
 }> = ({
   isOpen,
   onClose,
@@ -22,13 +25,16 @@ const ConfirmationDialog: React.FC<{
   cancelText = 'Cancel',
   confirmButtonClass = 'bg-red-600 hover:bg-red-700',
   icon,
+  mobileFullscreen = false,
+  closeOnConfirm = true,
+  confirmDisabled = false,
 }) => {
   const Modal = useModal();
 
   if (!isOpen) return null;
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-8 text-slate-100 relative max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <Modal isOpen={isOpen} onClose={onClose} mobileFullscreen={mobileFullscreen}>
+      <div className={`bg-slate-800 text-slate-100 ${mobileFullscreen ? 'flex min-h-full flex-col justify-center px-5 py-10 sm:min-h-0 sm:p-8' : 'relative max-h-[70vh] max-w-md overflow-y-auto rounded-2xl p-8 shadow-2xl'}`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 mb-4">
           {icon && <span className="flex-shrink-0">{icon}</span>}
           <h2 className="text-xl font-bold text-white">{title}</h2>
@@ -42,8 +48,9 @@ const ConfirmationDialog: React.FC<{
             {cancelText}
           </button>
           <button
-            onClick={() => { onConfirm(); onClose(); }}
-            className={`px-4 py-2 rounded-lg text-white font-bold transition ${confirmButtonClass}`}
+            onClick={() => { onConfirm(); if (closeOnConfirm) onClose(); }}
+            disabled={confirmDisabled}
+            className={`px-4 py-2 rounded-lg text-white font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${confirmButtonClass}`}
           >
             {confirmText}
           </button>

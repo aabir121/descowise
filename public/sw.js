@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
-      .then(() => self.skipWaiting()) // Force immediate activation
+      // Do not force activation: existing clients keep their consistent asset set.
   );
 });
 
@@ -24,6 +24,11 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
       const url = new URL(event.request.url);
+
+      // Notification API data must never be served from an offline cache.
+      if (url.pathname.startsWith('/api/')) {
+        return fetch(event.request);
+      }
 
       // Strategy for index.html and root path: Network-First
       // This ensures the latest version of the main page is always attempted first.
@@ -78,27 +83,31 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('Service Worker activated. Claiming clients.');
+      console.log('Service Worker activated.');
       // Enable navigation preload if supported
       if (self.registration.navigationPreload) {
         console.log('Navigation preload is supported. Enabling it.');
         return self.registration.navigationPreload.enable();
       }
-      return clients.claim(); // Take control of all clients immediately
+      return undefined;
     })
   );
 });
 
 self.addEventListener('push', (event) => {
-  const data = event.data.json();
-  console.log('Push received:', data);
-
-  const title = data.title || 'DescoWise Notification';
+  let data = { title: 'DescoWise notification', body: 'You have a new update.', icon: '/icon-192x192.png', badge: '/icon-192x192.png', data: { url: '/' } };
+  if (event.data) {
+    try { data = { ...data, ...event.data.json() }; }
+    catch { data.body = event.data.text(); }
+  }
+  const title = data.title;
   const options = {
-    body: data.body || 'You have a new notification.',
-    icon: data.icon || '/icon-192x192.png',
-    badge: data.badge || '/favicon.svg',
-    data: data.data || {},
+    body: data.body,
+    icon: data.icon,
+    badge: data.badge,
+    tag: data.tag,
+    renotify: data.renotify ?? false,
+    data: data.data,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -107,10 +116,26 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const clickData = event.notification.data;
-  if (clickData && clickData.url) {
-    event.waitUntil(clients.openWindow(clickData.url));
-  } else {
-    event.waitUntil(clients.openWindow('/'));
-  }
+  const requested = event.notification.data?.url || '/';
+  const target = new URL(requested, self.location.origin);
+  const targetUrl = target.origin === self.location.origin ? target.href : self.location.origin + '/';
+  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    for (const client of windowClients) {
+      if ('focus' in client) { client.navigate(targetUrl); return client.focus(); }
+    }
+    return clients.openWindow(targetUrl);
+  }));
+});
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  // Some browsers do not fire this reliably; the page also refreshes subscriptions on startup.
+  event.waitUntil((async () => {
+    const response = await fetch('/api/push/config', { cache: 'no-store' });
+    const { vapidPublicKey } = await response.json();
+    const base64 = vapidPublicKey.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - vapidPublicKey.length % 4) % 4);
+    const key = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+    const subscription = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    clientList.forEach(client => client.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED', subscription: subscription.toJSON() }));
+  })());
 });

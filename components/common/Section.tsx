@@ -73,6 +73,8 @@ const Section: React.FC<SectionProps> = ({
                             onClick={handleToggle}
                             className="text-slate-400 hover:text-slate-300 transition-colors duration-200 ml-2 p-1 rounded"
                             aria-label={isOpen ? 'Collapse section' : 'Expand section'}
+                            aria-expanded={isOpen}
+                            aria-controls={`${uniqueId}-content`}
                         >
                             {isOpen ? (
                                 <ChevronDownIcon className="w-5 h-5" />
@@ -88,6 +90,8 @@ const Section: React.FC<SectionProps> = ({
                                 alwaysExpanded ? 'cursor-default' : 'cursor-pointer'
                             }`}
                             disabled={alwaysExpanded}
+                            aria-expanded={isOpen}
+                            aria-controls={`${uniqueId}-content`}
                         >
                             {title}
                         </button>
@@ -123,7 +127,7 @@ const Section: React.FC<SectionProps> = ({
             <div
                 id={`${uniqueId}-content`}
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                    isOpen ? 'max-h-[10000px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
             >
                 <div className="p-4 sm:p-6 border-t border-slate-700">

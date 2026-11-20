@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BoltIcon, CloseIcon, GlobeAltIcon, InformationCircleIcon, CogIcon, WandSparklesIcon, ExclamationTriangleIcon } from './common/Icons';
-import { getDeploymentConfig } from '../utils/deploymentConfig';
-import { storeUserApiKey } from '../utils/apiKeyStorage';
-import { validateApiKey } from '../services/descoService';
-import ApiKeySetupStep from './ApiKeySetupStep';
+import { BoltIcon, CloseIcon, GlobeAltIcon } from './common/Icons';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -12,425 +8,120 @@ interface OnboardingModalProps {
   onLanguageSelect: (language: 'en' | 'bn') => void;
 }
 
+/**
+ * First-run onboarding is deliberately a focused welcome screen rather than a
+ * scrollable product-tour modal. On phones it fills the app surface; on larger
+ * screens it becomes a compact dialog.
+ */
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, onLanguageSelect }) => {
   const { t, i18n } = useTranslation();
-  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'bn'>(i18n.language as 'en' | 'bn');
-  const [currentStep, setCurrentStep] = useState<'language' | 'apikey' | 'complete'>('language');
-  const [apiKey, setApiKey] = useState('');
-  const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
-  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'bn'>(
+    i18n.language.startsWith('bn') ? 'bn' : 'en'
+  );
 
-  const deploymentConfig = getDeploymentConfig();
-
-  // Update selected language when i18n language changes
   useEffect(() => {
-    setSelectedLanguage(i18n.language as 'en' | 'bn');
+    setSelectedLanguage(i18n.language.startsWith('bn') ? 'bn' : 'en');
   }, [i18n.language]);
 
   if (!isOpen) return null;
 
-  const handleLanguageSelect = (language: 'en' | 'bn') => {
+  const selectLanguage = (language: 'en' | 'bn') => {
     setSelectedLanguage(language);
     onLanguageSelect(language);
   };
 
-  const handleLanguageNext = () => {
-    if (deploymentConfig.showApiKeySetup) {
-      setCurrentStep('apikey');
-    } else {
-      handleGetStarted();
-    }
-  };
-
-  const handleApiKeyValidation = async () => {
-    if (!apiKey.trim()) {
-      // Skip API key setup
-      handleGetStarted();
-      return;
-    }
-
-    setIsValidatingApiKey(true);
-    setApiKeyError(null);
-
-    try {
-      const result = await validateApiKey(apiKey.trim());
-      if (result.isValid) {
-        await storeUserApiKey(apiKey.trim());
-        handleGetStarted();
-      } else {
-        setApiKeyError(result.error || 'Invalid API key');
-      }
-    } catch (error) {
-      console.error('API key validation error:', error);
-      setApiKeyError('Failed to validate API key');
-    } finally {
-      setIsValidatingApiKey(false);
-    }
-  };
-
-  const handleSkipApiKey = () => {
-    setApiKey('');
-    handleGetStarted();
-  };
-
-  const handleGetStarted = () => {
-    localStorage.setItem('onboardingCompleted', 'true');
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[70vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-6 py-4 rounded-t-2xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BoltIcon className="w-8 h-8 text-cyan-400" />
-              <h1 className="text-2xl font-bold text-slate-100">DescoWise</h1>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-              aria-label="Close onboarding"
-            >
-              <CloseIcon className="w-6 h-6" />
-            </button>
+    <div
+      className="fixed inset-0 z-50 bg-slate-950 sm:flex sm:items-center sm:justify-center sm:bg-slate-950/80 sm:p-6 sm:backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-title"
+    >
+      <main className="flex min-h-[100dvh] w-full flex-col bg-slate-950 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:min-h-0 sm:max-w-md sm:rounded-3xl sm:border sm:border-slate-700 sm:bg-slate-900 sm:p-7 sm:shadow-2xl">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-slate-100">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/20">
+              <BoltIcon className="h-6 w-6" />
+            </span>
+            <span className="text-lg font-semibold tracking-tight">DescoWise</span>
           </div>
-        </div>
+          <button
+            onClick={onClose}
+            className="-mr-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+            aria-label={t('onboarding.skip', 'Skip welcome')}
+          >
+            <span className="sm:hidden">{t('onboarding.skip', 'Skip')}</span>
+            <CloseIcon className="hidden h-5 w-5 sm:block" />
+          </button>
+        </header>
 
-        {/* Content */}
-        <div className="px-6 py-6">
-          {/* Language Selection Step */}
-          {currentStep === 'language' && (
-            <>
-              {/* Welcome Section */}
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-slate-100 mb-4">
-                  {t('onboardingTitle')}
-                </h2>
-                <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-                  {t('onboardingSubtitle')}
-                </p>
-              </div>
+        <section className="flex flex-1 flex-col justify-center py-10 sm:py-8">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">
+            {t('onboarding.eyebrow', 'Your DESCO companion')}
+          </p>
+          <h1 id="welcome-title" className="max-w-sm text-4xl font-bold tracking-tight text-white sm:text-3xl">
+            {t('onboardingTitle')}
+          </h1>
+          <p className="mt-4 max-w-sm text-base leading-7 text-slate-400">
+            {t('onboarding.mobileIntro', 'Add an account, see your balance clearly, and stay ahead of low credit.')}
+          </p>
 
-          {/* Language Selection */}
-          <div className="bg-slate-700/50 rounded-xl p-6 mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <GlobeAltIcon className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-xl font-semibold text-slate-100">
-                {selectedLanguage === 'en' ? 'Choose Your Language' : 'আপনার ভাষা বেছে নিন'}
-              </h3>
+          <div className="mt-8">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-300">
+              <GlobeAltIcon className="h-4 w-4 text-cyan-300" />
+              {t('onboarding.languageLabel', 'Choose language')}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                onClick={() => handleLanguageSelect('en')}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  selectedLanguage === 'en'
-                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                    : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500 hover:bg-slate-600/50'
-                }`}
-              >
-                <div className="text-center">
-                  <div className="text-lg font-semibold mb-1">English</div>
-                  <div className="text-sm opacity-75">Continue in English</div>
-                </div>
-              </button>
-              <button
-                onClick={() => handleLanguageSelect('bn')}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  selectedLanguage === 'bn'
-                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                    : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500 hover:bg-slate-600/50'
-                }`}
-              >
-                <div className="text-center">
-                  <div className="text-lg font-semibold mb-1">বাংলা</div>
-                  <div className="text-sm opacity-75">বাংলায় চালিয়ে যান</div>
-                </div>
-              </button>
+            <div className="grid grid-cols-2 rounded-2xl bg-slate-900 p-1.5 ring-1 ring-inset ring-slate-800">
+              {(['en', 'bn'] as const).map((language) => {
+                const isSelected = selectedLanguage === language;
+                return (
+                  <button
+                    key={language}
+                    type="button"
+                    onClick={() => selectLanguage(language)}
+                    className={`rounded-xl px-3 py-3 text-sm font-semibold transition-all ${
+                      isSelected
+                        ? 'bg-slate-700 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    {language === 'en' ? 'English' : 'বাংলা'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Why DescoWise Section */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <InformationCircleIcon className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-xl font-semibold text-slate-100">
-                {t('whyDescoWise')}
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-700/30 rounded-lg p-5">
-                <h4 className="font-semibold text-slate-100 mb-3">
-                  {t('beyondOfficialPortal')}
-                </h4>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  {t('beyondOfficialPortalDesc')}
-                </p>
-              </div>
-              
-              <div className="bg-slate-700/30 rounded-lg p-5">
-                <h4 className="font-semibold text-slate-100 mb-3">
-                  {t('privacyFirst')}
-                </h4>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  {t('privacyFirstDesc')}
-                </p>
-              </div>
-            </div>
-          </div>
+          <ul className="mt-8 space-y-4">
+            {[
+              t('onboarding.benefitAccounts', 'Keep your DESCO accounts in one place'),
+              t('onboarding.benefitBalance', 'Understand balance and usage at a glance'),
+              t('onboarding.benefitPrivacy', 'Your Gemini API key stays on this device')
+            ].map((benefit) => (
+              <li key={benefit} className="flex items-center gap-3 text-sm text-slate-300">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-400/10 text-xs font-bold text-cyan-300">✓</span>
+                {benefit}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          {/* Key Features */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <WandSparklesIcon className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-xl font-semibold text-slate-100">
-                {t('keyFeatures')}
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-slate-700/30 rounded-lg p-4">
-                <div className="text-cyan-400 text-2xl mb-2">🤖</div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('aiInsightsFeature')}
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  {t('aiInsightsFeatureDesc')}
-                </p>
-              </div>
-              
-              <div className="bg-slate-700/30 rounded-lg p-4">
-                <div className="text-cyan-400 text-2xl mb-2">📊</div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('smartAnalytics')}
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  {t('smartAnalyticsDesc')}
-                </p>
-              </div>
-              
-              <div className="bg-slate-700/30 rounded-lg p-4">
-                <div className="text-cyan-400 text-2xl mb-2">💰</div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('costOptimization')}
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  {t('costOptimizationDesc')}
-                </p>
-              </div>
-              
-              <div className="bg-slate-700/30 rounded-lg p-4">
-                <div className="text-cyan-400 text-2xl mb-2">🔒</div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('securePrivate')}
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  {t('securePrivateDesc')}
-                </p>
-              </div>
-              
-              <div className="bg-slate-700/30 rounded-lg p-4">
-                <div className="text-cyan-400 text-2xl mb-2">🌐</div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('bilingualSupport')}
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  {t('bilingualSupportDesc')}
-                </p>
-              </div>
-              
-              <div className="bg-slate-700/30 rounded-lg p-4">
-                <div className="text-cyan-400 text-2xl mb-2">⚡</div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('realTimeData')}
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  {t('realTimeDataDesc')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* How It Works */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <CogIcon className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-xl font-semibold text-slate-100">
-                {t('howItWorks')}
-              </h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
-                <div>
-                  <h4 className="font-semibold text-slate-100 mb-1">
-                    {t('step1Title')}
-                  </h4>
-                  <p className="text-slate-300 text-sm">
-                    {t('step1Desc')}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
-                <div>
-                  <h4 className="font-semibold text-slate-100 mb-1">
-                    {t('step2Title')}
-                  </h4>
-                  <p className="text-slate-300 text-sm">
-                    {t('step2Desc')}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
-                <div>
-                  <h4 className="font-semibold text-slate-100 mb-1">
-                    {t('step3Title')}
-                  </h4>
-                  <p className="text-slate-300 text-sm">
-                    {t('step3Desc')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Data Reliability & Limitations */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <ExclamationTriangleIcon className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-xl font-semibold text-slate-100">
-                {t('dataReliability')}
-              </h3>
-            </div>
-            
-            <div className="space-y-6">
-              {/* Data Source */}
-              <div className="bg-slate-700/30 rounded-lg p-5">
-                <h4 className="font-semibold text-slate-100 mb-3">
-                  {t('dataSourceTitle')}
-                </h4>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  {t('dataSourceDesc')}
-                </p>
-              </div>
-              
-              {/* Data Limitations */}
-              <div className="bg-slate-700/30 rounded-lg p-5">
-                <h4 className="font-semibold text-slate-100 mb-3">
-                  {t('dataLimitationsTitle')}
-                </h4>
-                <p className="text-slate-300 text-sm leading-relaxed mb-3">
-                  {t('dataLimitationsDesc')}
-                </p>
-                <ul className="text-slate-300 text-sm space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('dataLimitationReason1')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('dataLimitationReason2')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('dataLimitationReason3')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('dataLimitationReason4')}</span>
-                  </li>
-                </ul>
-                <p className="text-slate-300 text-sm leading-relaxed mt-3 italic">
-                  {t('dataLimitationNote')}
-                </p>
-              </div>
-              
-              {/* What You Can Do */}
-              <div className="bg-slate-700/30 rounded-lg p-5">
-                <h4 className="font-semibold text-slate-100 mb-3">
-                  {t('whatToDoTitle')}
-                </h4>
-                <p className="text-slate-300 text-sm leading-relaxed mb-3">
-                  {t('whatToDoDesc')}
-                </p>
-                <ul className="text-slate-300 text-sm space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('whatToDoAction1')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('whatToDoAction2')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('whatToDoAction3')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{t('whatToDoAction4')}</span>
-                  </li>
-                </ul>
-                <p className="text-slate-300 text-sm leading-relaxed mt-3 font-medium">
-                  {t('dataAccuracyNote')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="bg-slate-700/30 rounded-lg p-5 mb-8">
-            <div className="flex items-start gap-3">
-              <InformationCircleIcon className="w-6 h-6 text-cyan-400 flex-shrink-0 mt-1" />
-              <div>
-                <h4 className="font-semibold text-slate-100 mb-2">
-                  {t('importantNote')}
-                </h4>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  {t('importantNoteDesc')}
-                </p>
-              </div>
-            </div>
-          </div>
-            </>
-          )}
-
-          {/* API Key Setup Step */}
-          {currentStep === 'apikey' && (
-            <ApiKeySetupStep
-              apiKey={apiKey}
-              setApiKey={setApiKey}
-              isValidating={isValidatingApiKey}
-              error={apiKeyError}
-              onValidate={handleApiKeyValidation}
-              onSkip={handleSkipApiKey}
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-slate-800 border-t border-slate-700 px-6 py-4 rounded-b-2xl">
-          <div className="flex justify-end">
-            {currentStep === 'language' && (
-              <button
-                onClick={handleLanguageNext}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
-              >
-                {deploymentConfig.showApiKeySetup ? t('apiKeySetup.continue') : t('getStarted')}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+        <footer className="space-y-4 pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-2xl bg-cyan-400 px-5 py-4 text-base font-bold text-slate-950 transition-colors hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+          >
+            {t('onboarding.continue', 'Continue to DescoWise')}
+          </button>
+          <p className="text-center text-xs leading-5 text-slate-500">
+            {t('onboarding.apiKeyLater', 'You can set up optional AI insights later from Settings.')}
+          </p>
+        </footer>
+      </main>
     </div>
   );
 };
 
-export default OnboardingModal; 
+export default OnboardingModal;

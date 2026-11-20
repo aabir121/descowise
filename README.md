@@ -71,7 +71,7 @@ While DESCO already provides excellent official Android and iOS apps, as well as
 - **Mobile-Optimized Charts**: Touch-friendly charts optimized for mobile devices
 
 ### 🔔 **Smart Notification System**
-- **Daily Balance Monitoring**: Automated daily checks at 3:00 PM Bangladesh Time
+- **Daily Balance Monitoring**: Automated daily checks at 6:00 AM Bangladesh Time
 - **Low Balance Alerts**: Customizable threshold-based notifications
 - **Data Availability Alerts**: Notifications when account data is unavailable
 - **Browser Push Notifications**: Native browser notifications with service worker support
@@ -153,7 +153,7 @@ DescoWise is built with a modern, scalable architecture designed for performance
    ```
 
 5. **Open your browser:**
-   Navigate to `http://localhost:5173` to see the application.
+   Navigate to `http://127.0.0.1:5173` to see the application. `npm run dev` starts Vite and a local Cloudflare Pages Function server, then proxies `/api/desco` through Vite. Stop any older Vite process on port 5173 before starting it. An ignored `.dev.vars` file holds only the local session encryption key so sign-in survives dev server restarts. The sign-in page offers an optional encrypted local credential store for automatic re-login; leave it unchecked to keep credentials only in memory.
 
 ### First-Time Setup
 1. **Complete Onboarding**: Choose your preferred language and learn about the features
@@ -231,12 +231,13 @@ scripts\deploy.bat       # Windows
 
 ```bash
 # Development
-npm run dev          # Start development server with HMR
+npm run dev          # Start Vite with HMR and local Pages Functions
+npm run dev:vite     # Frontend only; DESCO login API is unavailable
 npm run build        # Build for production
 npm run preview      # Preview production build locally
 
 # Deployment
-npm run deploy       # Deploy to Vercel
+npm run deploy       # Deploy to Cloudflare Pages
 npm run deploy:win   # Deploy on Windows
 
 # Testing

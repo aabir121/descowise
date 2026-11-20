@@ -1,18 +1,21 @@
 import React, { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../types';
-import { TrashIcon, PencilIcon, ExclamationTriangleIcon, ShareIcon } from './common/Icons';
+import { TrashIcon, PencilIcon, ExclamationTriangleIcon, ShareIcon, DotsVerticalIcon } from './common/Icons';
 import { DeleteButton } from './common/Section';
 import ShareModal from './common/ShareModal';
 import AccountInfoRow from './account/AccountInfoRow';
 import BalanceDisplay from './account/BalanceDisplay';
 import { hasStoredApiKey } from '../utils/apiKeyStorage';
+import { shouldOpenAiSetupModal } from '../utils/aiFeatureToggle';
 
 interface AccountCardProps {
     account: Account;
     onSelect: (accountNo: string) => void;
     onDelete: (accountNo: string) => void;
     isBalanceLoading: boolean;
+    dragHandleRef?: (node: HTMLElement | null) => void;
+    dragHandleProps?: Record<string, unknown>;
     onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
     onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
     onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void;
@@ -33,6 +36,8 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
     onUpdateAiInsightsEnabled,
     onUpdateBanglaEnabled,
     onOpenApiKeyModal,
+    dragHandleRef,
+    dragHandleProps,
     isArrangeMode = false,
     onMoveUp,
     onMoveDown,
@@ -50,7 +55,9 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
     const [editDisplayName, setEditDisplayName] = useState(displayName);
     const [hasApiKey, setHasApiKey] = useState(false);
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+    const [meterCopyStatus, setMeterCopyStatus] = useState<'idle' | 'copied'>('idle');
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
 
     useEffect(() => {
         setHasApiKey(hasStoredApiKey());
@@ -106,6 +113,16 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
         }
     }, [account.accountNo]);
 
+    const handleCopyMeterNo = useCallback(async () => {
+        try {
+            await navigator.clipboard.writeText(account.meterNo);
+            setMeterCopyStatus('copied');
+            setTimeout(() => setMeterCopyStatus('idle'), 2000);
+        } catch (err) {
+            console.error('Failed to copy meter number: ', err);
+        }
+    }, [account.meterNo]);
+
     const handleShare = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         setIsShareModalOpen(true);
@@ -118,17 +135,32 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                 tabIndex={0}
                 onClick={handleCardClick}
                 onKeyDown={handleKeyDown}
-                className={`relative rounded-2xl border bg-slate-800 p-6 shadow-lg transition-all duration-300 ease-in-out transform ${
+                className={`relative rounded-[1.5rem] border bg-slate-800 p-4 shadow-lg transition-all duration-300 ease-in-out transform sm:p-6 ${
                     isArrangeMode
-                        ? 'cursor-grab border-cyan-500/60 ring-1 ring-cyan-400/30'
+                        ? 'cursor-default border-cyan-500/60 ring-1 ring-cyan-400/30'
                         : 'cursor-pointer border-slate-700 hover:-translate-y-1 hover:border-cyan-500/50 hover:shadow-cyan-500/10'
                 }`}
                 aria-label={isArrangeMode ? `${displayName} arrangement card` : `${t('selectAccount')} ${displayName}`}
                 aria-disabled={isArrangeMode}
             >
-                <div className="mb-4 flex items-center justify-between">
-                    <h3 className="max-w-[70%] truncate pr-4 text-xl font-bold text-slate-100">{displayName}</h3>
-                    <div className="flex items-center gap-2">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                    {isArrangeMode && dragHandleRef && (
+                        <button
+                            type="button"
+                            ref={dragHandleRef}
+                            {...dragHandleProps}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5 flex h-9 w-9 shrink-0 touch-none cursor-grab items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/30 active:cursor-grabbing"
+                            aria-label={t('dragToReorder', 'Drag to reorder')}
+                        >
+                            <DotsVerticalIcon className="h-5 w-5" />
+                        </button>
+                    )}
+                    <div className="min-w-0">
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/80 sm:hidden">{t('account', 'Account')}</p>
+                        <h3 className="truncate text-lg font-bold text-slate-100 sm:text-xl">{displayName}</h3>
+                    </div>
+                    <div className="hidden items-center gap-2 sm:flex">
                         <button
                             type="button"
                             className="rounded p-1 hover:bg-slate-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
@@ -160,6 +192,27 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                         >
                             <TrashIcon className="h-5 w-5 text-red-500" />
                         </DeleteButton>
+                    </div>
+                    <div className={`${isArrangeMode ? 'hidden' : 'relative'} sm:hidden`}>
+                        <button
+                            type="button"
+                            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-700/80 text-slate-300 transition hover:bg-slate-700 hover:text-white"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMobileActionsOpen((open) => !open);
+                            }}
+                            aria-label={t('moreOptions', 'More options')}
+                            aria-expanded={isMobileActionsOpen}
+                        >
+                            <DotsVerticalIcon className="h-5 w-5" />
+                        </button>
+                        {isMobileActionsOpen && (
+                            <div className="absolute right-0 top-11 z-20 w-40 rounded-2xl border border-slate-700 bg-slate-900 p-1.5 shadow-2xl shadow-slate-950/70" onClick={(e) => e.stopPropagation()}>
+                                <button type="button" onClick={(e) => { handleShare(e); setIsMobileActionsOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800"><ShareIcon className="h-4 w-4 text-cyan-300" />{t('shareAccount')}</button>
+                                <button type="button" onClick={(e) => { handleEditClick(e); setIsMobileActionsOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800"><PencilIcon className="h-4 w-4 text-cyan-300" />{t('editDisplayName')}</button>
+                                <button type="button" onClick={(e) => { handleDeleteClick(e); setIsMobileActionsOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-300 hover:bg-red-950/50"><TrashIcon className="h-4 w-4" />{t('deleteAccount')}</button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -195,8 +248,9 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                     </div>
                 )}
 
-                <div className="mb-4 flex w-full flex-row items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col">
+                <div className="order-2 mb-4 mt-6 grid w-full grid-cols-2 gap-2 sm:order-none sm:mt-0 sm:flex sm:items-center sm:justify-between sm:gap-0">
+                    <div className="flex min-w-0 items-center justify-between gap-1 rounded-xl bg-slate-900/60 px-2.5 py-2.5 sm:justify-start sm:rounded-none sm:bg-transparent sm:p-0">
                         <span className="text-xs text-slate-400">{t('aiInsights')}</span>
                         <div className="relative">
                             <button
@@ -213,7 +267,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                                     if (isArrangeMode) {
                                         return;
                                     }
-                                    if (!hasApiKey && onOpenApiKeyModal) {
+                                    if (shouldOpenAiSetupModal(account.aiInsightsEnabled, hasApiKey) && onOpenApiKeyModal) {
                                         onOpenApiKeyModal();
                                     } else {
                                         onUpdateAiInsightsEnabled?.(account.accountNo, !account.aiInsightsEnabled);
@@ -240,7 +294,7 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center justify-between gap-1 rounded-xl bg-slate-900/60 px-2.5 py-2.5 sm:justify-start sm:rounded-none sm:bg-transparent sm:p-0">
                         <span className="text-xs text-slate-400">{t('bangla')}</span>
                         <button
                             type="button"
@@ -271,18 +325,10 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                     </div>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                    <AccountInfoRow
-                        label={`${t('accountNo')}:`}
-                        value={account.accountNo}
-                        onCopy={handleCopyAccountNo}
-                        copyStatus={copyStatus}
-                        t={t}
-                    />
-                    <AccountInfoRow label={`${t('customerName')}:`} value={account.customerName} valueClassName="truncate max-w-[150px]" t={t} />
-                    <AccountInfoRow label={`${t('meterNo')}:`} value={account.meterNo} t={t} />
-                    <div className="flex min-h-[50px] items-start justify-between pt-2">
-                        <span className="text-base font-medium text-slate-400">{t('balance')}:</span>
+                <div className="order-1 flex flex-col gap-3 sm:order-none">
+                    <div className="order-1 rounded-2xl border border-cyan-400/15 bg-gradient-to-br from-cyan-400/10 via-slate-800 to-slate-800 px-4 py-3.5 sm:order-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                        <div className="flex items-center justify-between sm:justify-end">
+                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 sm:hidden">{t('balance')}</span>
                         <BalanceDisplay
                             isLoading={isBalanceLoading}
                             balance={account.balance}
@@ -290,6 +336,25 @@ const AccountCard: React.FC<AccountCardProps> = memo(({
                             naClassName="break-words text-2xl font-extrabold text-yellow-400 sm:text-3xl md:text-4xl"
                         />
                     </div>
+                    </div>
+                    <div className="order-2 space-y-2 text-sm sm:order-1">
+                        <AccountInfoRow
+                            label={`${t('accountNo')}:`}
+                            value={account.accountNo}
+                            onCopy={handleCopyAccountNo}
+                            copyStatus={copyStatus}
+                            t={t}
+                        />
+                        <AccountInfoRow label={`${t('customerName')}:`} value={account.customerName} t={t} />
+                        <AccountInfoRow
+                            label={`${t('meterNo')}:`}
+                            value={account.meterNo}
+                            onCopy={handleCopyMeterNo}
+                            copyStatus={meterCopyStatus}
+                            t={t}
+                        />
+                    </div>
+                </div>
                 </div>
             </div>
 

@@ -1,3 +1,4 @@
+import DescoAuthGate from './components/DescoAuthGate';
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy, createContext, useContext, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext, DragEndEvent, DragOverlay, DragOverEvent, DragStartEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
@@ -5,17 +6,18 @@ import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useS
 import { CSS } from '@dnd-kit/utilities';
 import { Account } from './types';
 import { useAccounts } from './hooks/useAccounts';
-import { getAccountBalance, verifyAccount } from './services/descoService';
-import { useIntelligentPreloader, preloadCriticalResources, addResourceHints, registerServiceWorker } from './utils/preloadStrategies';
+import { getAccountBalance } from './services/descoService';
+import { useIntelligentPreloader, preloadCriticalResources, addResourceHints } from './utils/preloadStrategies';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AccountCard from './components/AccountCard';
 import AddAccountCard from './components/AddAccountCard';
 import AddAccountModal from './components/AddAccountModal';
 import ConfirmationDialog from './components/common/ConfirmationDialog';
-import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon, CloseIcon } from './components/common/Icons';
+import { BoltIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, InformationCircleIcon, BellIcon, CloseIcon, HomeIcon } from './components/common/Icons';
 import Notification from './components/common/Notification';
 import FloatingInfoButton from './components/FloatingInfoButton';
 import Footer from './components/common/Footer';
+import MobileAppDrawer from './components/common/MobileAppDrawer';
 import BalanceInfoWarningModal from './components/common/BalanceInfoWarningModal';
 import { useBalanceWarning } from './hooks/useBalanceWarning';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
@@ -24,9 +26,10 @@ import ApiKeyManagementModal from './components/ApiKeyManagementModal';
 import ApiKeyStatusIndicator from './components/common/ApiKeyStatusIndicator';
 import HelpModal from './components/common/HelpModal';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
+import AdminNotificationPanel from './components/AdminNotificationPanel';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
-import { notificationService } from './services/notificationService';
+import { getAccountListState } from './utils/accountLoading';
 
 // Global Modal Component - moved here to stay on top of everything
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -34,9 +37,10 @@ interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  mobileFullscreen?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = '', ...props }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = '', mobileFullscreen = false, ...props }) => {
   // Handle escape key and prevent zoom issues
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -81,15 +85,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, className = ''
   // Render modal at document root level using portal
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
+      className={`fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm ${mobileFullscreen ? 'p-0 sm:flex sm:items-center sm:justify-center sm:p-6' : 'flex items-center justify-center p-4 sm:p-6'}`}
       onClick={onClose}
     >
       <div
-        className={`bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[70vh] mx-4 sm:mx-auto my-8 text-slate-100 relative transform flex flex-col ${className}`}
+        className={`bg-slate-800 shadow-2xl w-full text-slate-100 relative transform flex flex-col ${mobileFullscreen ? 'min-h-[100dvh] max-h-[100dvh] rounded-none sm:min-h-0 sm:max-h-[86vh] sm:max-w-md sm:rounded-2xl sm:mx-auto sm:my-8' : 'max-w-md max-h-[70vh] rounded-xl mx-4 sm:mx-auto my-8'} ${className}`}
         onClick={e => e.stopPropagation()}
         {...props}
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className={mobileFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex-1 overflow-y-auto'}>
           {children}
         </div>
       </div>
@@ -126,6 +130,8 @@ const SortableAccountCard: React.FC<{
   onSelect: (accountNo: string) => void;
   onDelete: (accountNo: string) => void;
   isBalanceLoading: boolean;
+    dragHandleRef?: (node: HTMLElement | null) => void;
+    dragHandleProps?: Record<string, unknown>;
   onUpdateDisplayName?: (accountNo: string, newDisplayName: string) => void;
   onUpdateAiInsightsEnabled?: (accountNo: string, enabled: boolean) => void;
   onUpdateBanglaEnabled?: (accountNo: string, enabled: boolean) => void;
@@ -146,7 +152,7 @@ const SortableAccountCard: React.FC<{
   onUpdateDisplayName,
   onUpdateAiInsightsEnabled,
   onUpdateBanglaEnabled,
-  onOpenApiKeyModal,
+    onOpenApiKeyModal,
   onMoveUp,
   onMoveDown,
   canMoveUp,
@@ -158,7 +164,8 @@ const SortableAccountCard: React.FC<{
     setNodeRef,
     transform,
     transition,
-    isDragging
+    isDragging,
+    setActivatorNodeRef
   } = useSortable({
     id: account.accountNo,
     disabled: !isArrangeMode
@@ -168,18 +175,14 @@ const SortableAccountCard: React.FC<{
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 40 : 'auto',
-    touchAction: isArrangeMode ? 'none' : undefined
+    touchAction: isArrangeMode ? 'pan-y' : undefined
   };
 
   const showDropTarget = isArrangeMode && isOver && !isActive;
 
   return (
     <div ref={setNodeRef} style={wrapperStyle} className="relative">
-      <div
-        {...attributes}
-        {...listeners}
-        className={isArrangeMode ? 'cursor-grab active:cursor-grabbing' : undefined}
-      >
+      <div>
         <div className={showDropTarget ? 'relative rounded-2xl ring-2 ring-cyan-400/60 ring-offset-2 ring-offset-slate-900' : 'relative'}>
           <div className={isArrangeMode && isActive ? 'opacity-50' : undefined}>
             <AccountCard
@@ -191,6 +194,8 @@ const SortableAccountCard: React.FC<{
               onUpdateAiInsightsEnabled={onUpdateAiInsightsEnabled}
               onUpdateBanglaEnabled={onUpdateBanglaEnabled}
               onOpenApiKeyModal={onOpenApiKeyModal}
+              dragHandleRef={setActivatorNodeRef}
+              dragHandleProps={{ ...attributes, ...listeners }}
               isArrangeMode={isArrangeMode}
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
@@ -249,7 +254,7 @@ const DragPreview: React.FC<{
   );
 };
 
-const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete, sharedViewerMode }) => {
+const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void; onDelete: (accountNo: string) => void; sharedViewerMode: boolean; }> = ({ accounts, showNotification, onDelete }) => {
     const { accountNo } = useParams<{ accountNo: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -260,54 +265,7 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
     const isSharedLink = params.get('shared') === '1';
 
     if (!selectedAccount) {
-        // If account not found and it's a shared link in viewer mode, create a temporary account
-        if (isSharedLink && sharedViewerMode && accountNo) {
-            const tempAccount: Account = {
-                accountNo: accountNo,
-                customerName: 'Shared Account',
-                contactNo: '',
-                feederName: '',
-                installationAddress: '',
-                meterNo: '',
-                tariffSolution: '',
-                sanctionLoad: '',
-                dateAdded: new Date().toISOString(),
-                aiInsightsEnabled: false,
-                banglaEnabled: false,
-                displayName: null
-            };
-
-            return (
-                <Suspense fallback={
-                    <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                            <p className="text-slate-300">Loading dashboard...</p>
-                        </div>
-                    </div>
-                }>
-                    <AccountDashboardView
-                        account={tempAccount}
-                        onClose={() => navigate("/", { replace: true })}
-                        onDelete={() => {}} // Disable delete for view-only mode
-                        showNotification={showNotification}
-                    />
-                </Suspense>
-            );
-        }
-
-        // If account not found and it's a shared link but not in viewer mode, show loading
-        if (isSharedLink) {
-            // Return a placeholder or loading state while shared link logic processes
-            return (
-                <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                        <p className="text-slate-300">Processing shared link...</p>
-                    </div>
-                </div>
-            );
-        }
+        if (isSharedLink) return <main className="p-8 text-center text-slate-200">Link this account with its meter number before opening the dashboard.<button onClick={() => navigate('/')} className="ml-3 underline">Go to accounts</button></main>;
         // If account not found and not a shared link, redirect to home
         return <Navigate to="/" replace />;
     }
@@ -332,16 +290,14 @@ const DashboardWrapper: React.FC<{ accounts: Account[]; showNotification: (messa
 
 const AccountListPage: React.FC<{
   accounts: Account[];
+  isAccountsLoading: boolean;
   loadingBalances: Set<string>;
   updateAccount: (accountNo: string, data: Partial<Account>) => void;
   moveAccount: (fromIndex: number, toIndex: number) => void;
   handleDeleteAccount: (accountNo: string) => void;
   setAddAccountModalOpen: (open: boolean) => void;
   notification: { message: string; type: 'info' | 'warning' | 'error' } | null;
-  showDataNotice: boolean | null;
-  handleDismissDataNotice: () => void;
   t: any;
-  TrashIcon: any;
   PlusIcon: any;
   LanguageSwitcher: any;
   BoltIcon: any;
@@ -353,16 +309,14 @@ const AccountListPage: React.FC<{
   setIsNotificationSettingsOpen: (open: boolean) => void;
 }> = ({
   accounts,
+  isAccountsLoading,
   loadingBalances,
   updateAccount,
   moveAccount,
   handleDeleteAccount,
   setAddAccountModalOpen,
   notification,
-  showDataNotice,
-  handleDismissDataNotice,
   t,
-  TrashIcon,
   PlusIcon,
   LanguageSwitcher,
   BoltIcon,
@@ -376,12 +330,24 @@ const AccountListPage: React.FC<{
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isArrangeMode, setIsArrangeMode] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [activeAccountNo, setActiveAccountNo] = useState<string | null>(null);
   const [overAccountNo, setOverAccountNo] = useState<string | null>(null);
   const [activeCardSize, setActiveCardSize] = useState<DraggedCardSize | null>(null);
   const handleSelectAccount = useCallback((accountNo: string) => {
     navigate(`/dashboard/${accountNo}`);
   }, [navigate]);
+
+  const toggleArrangeMode = useCallback(() => {
+    setIsArrangeMode((current) => {
+      if (!current) {
+        // Search is a focused finding task; arrangement is an editing task.
+        // Starting one should not leave the other in a conflicting state.
+        setSearchQuery('');
+      }
+      return !current;
+    });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -401,6 +367,7 @@ const AccountListPage: React.FC<{
   );
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const accountListState = getAccountListState(isAccountsLoading, accounts);
 
   const filteredAccounts = useMemo(() => {
     if (!normalizedSearchQuery) {
@@ -507,30 +474,39 @@ const AccountListPage: React.FC<{
     }
   }, [accounts.length, getAccountIndex, moveAccount]);
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
-      {showDataNotice === true && (
-        <div className="flex items-center justify-between bg-blue-100 text-blue-900 px-4 py-3 shadow-md w-full relative z-50" style={{ minHeight: '56px' }}>
-          <span className="text-base font-medium">
-            {t('dataUpdateNotice')}
-          </span>
-          <button
-            className="ml-4 text-blue-700 hover:text-blue-900 p-1 focus:outline-none flex-shrink-0"
-            aria-label={t('dismissNotice')}
-            onClick={handleDismissDataNotice}
-          >
-            <TrashIcon className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {notification && (
         <Notification message={notification.message} type={notification.type} />
       )}
-      <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <header className="mb-6 sm:mb-12 animate-fade-in">
+      <div className="flex-grow container mx-auto w-full px-4 pb-24 pt-3 sm:px-6 sm:py-12 lg:px-8 lg:pb-12">
+        <header className="sticky top-0 z-30 -mx-4 mb-5 border-b border-slate-800/80 bg-slate-950/95 px-4 py-3 backdrop-blur-xl sm:static sm:mx-0 sm:mb-12 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none animate-fade-in">
           {/* Header design with consistent branding */}
           <div className="flex flex-col gap-4 sm:gap-6">
+            {/* Mobile app bar: account work is primary; utility controls live behind an overflow menu. */}
+            <div className="flex items-center justify-between sm:hidden">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 ring-1 ring-cyan-400/20">
+                  <BoltIcon className="h-5 w-5 text-cyan-300" />
+                </span>
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-bold tracking-tight text-white">{t('yourAccounts', 'Your accounts')}</h1>
+                  <p className="text-xs text-slate-400">{accounts.length} {accounts.length === 1 ? t('account') : t('accounts', 'accounts')}</p>
+                </div>
+              </div>
+              <div className="relative flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(true)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-slate-200 ring-1 ring-slate-700 transition hover:bg-slate-700"
+                  aria-label={t('moreOptions', 'More options')}
+                  aria-expanded={isMobileDrawerOpen}
+                >
+                  <span className="flex flex-col gap-1"><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /></span>
+                </button>
+              </div>
+            </div>
             {/* Controls bar - always at top */}
-            <div className="flex justify-around py-1">
+            <div className="hidden justify-around py-1 sm:flex">
               <div className="flex items-center flex-wrap justify-center gap-2 sm:gap-3">
                 <ApiKeyStatusIndicator
                   variant="button"
@@ -569,7 +545,7 @@ const AccountListPage: React.FC<{
             </div>
 
             {/* Main branding section - always visible and centered */}
-            <div className="text-center">
+            <div className="hidden text-center sm:block">
               <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-cyan-400/10 border border-cyan-400/20">
                   <BoltIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-cyan-400"/>
@@ -585,7 +561,16 @@ const AccountListPage: React.FC<{
           </div>
         </header>
         <main>
-          {accounts.length === 0 ? (
+          {accountListState === 'loading' ? (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-slate-700 bg-slate-800/50 p-10 text-center" role="status" aria-live="polite">
+              <div className="mb-6 h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-400" />
+              <h2 className="mb-2 text-2xl font-bold text-slate-100">{t('loadingAccounts', 'Loading your accounts')}</h2>
+              <p className="mb-8 text-slate-400">{t('loadingAccountsDescription', 'Fetching your linked DESCO accounts...')}</p>
+              <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[0, 1, 2].map(index => <div key={index} className="h-[210px] animate-pulse rounded-2xl border border-slate-700 bg-slate-900/60" />)}
+              </div>
+            </div>
+          ) : accountListState === 'empty' ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center bg-slate-800/50 border border-slate-700 rounded-2xl p-10 sm:p-16">
               {/* Friendly icon/illustration */}
               <div className="mb-6">
@@ -606,7 +591,58 @@ const AccountListPage: React.FC<{
             </div>
           ) : (
             <>
-              <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-5 sm:hidden">
+                <div className="flex gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <input
+                      id="account-search-mobile"
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t('searchAccountsPlaceholder')}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3.5 pr-10 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100"
+                        aria-label={t('clearSearch')}
+                      >
+                        <CloseIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAddAccountModalOpen(true)}
+                    className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/10 transition hover:bg-cyan-300"
+                    aria-label={t('addNewAccount')}
+                  >
+                    <PlusIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-200">
+                    {normalizedSearchQuery
+                      ? t('searchResultsCount', { count: filteredAccounts.length })
+                      : `${accounts.length} ${accounts.length === 1 ? t('account') : t('accounts', 'accounts')}`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={toggleArrangeMode}
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                      isArrangeMode
+                        ? 'bg-cyan-400 text-slate-950'
+                        : 'text-cyan-300 hover:bg-cyan-400/10 hover:text-cyan-200'
+                    }`}
+                  >
+                    {isArrangeMode ? t('done', 'Done') : t('editOrder', 'Edit order')}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-6 hidden flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                   <label htmlFor="account-search" className="mb-2 block text-sm font-medium text-slate-300">
                     {t('searchAccountsLabel')}
@@ -640,7 +676,7 @@ const AccountListPage: React.FC<{
                 <div className="flex items-center gap-3 sm:pl-4">
                   <button
                     type="button"
-                    onClick={() => setIsArrangeMode((current) => !current)}
+                    onClick={toggleArrangeMode}
                     disabled={!!normalizedSearchQuery}
                     className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
                       normalizedSearchQuery
@@ -656,13 +692,13 @@ const AccountListPage: React.FC<{
               </div>
 
               {isArrangeMode && (
-                <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                <div className="mb-4 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100 sm:mb-6">
                   {t('arrangeCardsDescription')}
                 </div>
               )}
 
               {normalizedSearchQuery && (
-                <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
+                <div className="mb-4 hidden rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-300 sm:mb-6 sm:block">
                   {t('searchDisablesArrangeMode')}
                 </div>
               )}
@@ -734,7 +770,25 @@ const AccountListPage: React.FC<{
           )}
         </main>
       </div>
-      <Footer />
+      <div className="hidden sm:block"><Footer /></div>
+      <nav className="mobile-bottom-dock fixed inset-x-3 bottom-3 z-50 rounded-[1.75rem] border border-slate-700/80 bg-slate-900/95 px-2 pt-2 shadow-2xl shadow-slate-950/80 backdrop-blur-xl sm:hidden" aria-label={t('navigation', 'Navigation')}>
+        <div className="mx-auto flex max-w-md items-end justify-between gap-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <button type="button" className="mobile-nav-item mobile-nav-item-active"><span className="mobile-nav-icon"><HomeIcon className="h-[1.1rem] w-[1.1rem]" /></span><span>{t('home', 'Home')}</span></button>
+          <button type="button" onClick={() => setIsNotificationSettingsOpen(true)} className="mobile-nav-item"><span className="mobile-nav-icon"><BellIcon className="h-[1.1rem] w-[1.1rem]" /></span><span>{t('notifications', 'Alerts')}</span></button>
+          <button type="button" onClick={() => setAddAccountModalOpen(true)} className="mobile-nav-add" aria-label={t('addNewAccount')}><span><PlusIcon className="h-6 w-6" /></span><small>{t('add', 'Add')}</small></button>
+          <button type="button" onClick={() => setIsHelpModalOpen(true)} className="mobile-nav-item"><span className="mobile-nav-icon"><InformationCircleIcon className="h-[1.1rem] w-[1.1rem]" /></span><span>{t('help', 'Help')}</span></button>
+          <button type="button" onClick={() => setIsMobileDrawerOpen(true)} className="mobile-nav-item"><span className="mobile-nav-icon"><span className="flex flex-col gap-1"><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /><span className="h-0.5 w-4 rounded-full bg-current" /></span></span><span>{t('menu', 'Menu')}</span></button>
+        </div>
+      </nav>
+      <MobileAppDrawer
+        isOpen={isMobileDrawerOpen}
+        accountCount={accounts.length}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+        onOpenNotifications={() => setIsNotificationSettingsOpen(true)}
+        onOpenHelp={() => setIsHelpModalOpen(true)}
+        languageSwitcher={<LanguageSwitcher />}
+      />
       <HelpModal
         isOpen={isHelpModalOpen}
         onClose={() => setIsHelpModalOpen(false)}
@@ -744,10 +798,10 @@ const AccountListPage: React.FC<{
   );
 };
 
-const App: React.FC = () => {
+const AuthenticatedApp: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount } = useAccounts();
+    const { accounts, addAccount, deleteAccount, updateAccount, moveAccount, error: accountsError, isLoading: isAccountsLoading, syncResults, dismissSyncResults, retryMigration } = useAccounts();
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
     const [notification, setNotification] = useState<{ message: string; type: 'info' | 'warning' | 'error' } | null>(null);
 const { trackAction, preloadForRoute } = useIntelligentPreloader();
@@ -757,8 +811,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     useEffect(() => {
         preloadCriticalResources();
         addResourceHints();
-        registerServiceWorker();
-
         const handlePwaUpdate = () => {
             setShowPwaUpdateNotification(true);
         };
@@ -774,7 +826,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         accountNo: null,
         accountName: ''
     });
-    const [showDataNotice, setShowDataNotice] = useState<null | boolean>(null);
     const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -797,8 +848,9 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
     }, []);
 
     const location = useLocation();
+    const isAdminRoute = location.pathname === '/admin';
     const [sharedPrompt, setSharedPrompt] = useState<{ isOpen: boolean; accountNo: string | null }>({ isOpen: false, accountNo: null });
-    const [sharedLoading, setSharedLoading] = useState(false);
+    const sharedLoading = false;
     const [sharedError, setSharedError] = useState<string | null>(null);
 
     // Track route changes for intelligent preloading
@@ -821,35 +873,6 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         // localStorage.removeItem('onboardingCompleted');
     }, []);
 
-    // Initialize notification service once on mount
-    useEffect(() => {
-        notificationService.initialize(accounts);
-        return () => {
-            // Cleanup on unmount
-            notificationService.stopScheduler();
-        };
-    }, []); // Remove accounts dependency to prevent re-initialization
-
-    // Update accounts in notification service when accounts change
-    useEffect(() => {
-        // Always update accounts, even if empty (for proper cleanup)
-        notificationService.updateAccounts(accounts);
-    }, [accounts]);
-
-    useEffect(() => {
-        // Check if the notice was dismissed within the last 6 hours
-        const dismissedAt = localStorage.getItem('dataNoticeDismissedAt');
-        if (dismissedAt) {
-            const dismissedTime = parseInt(dismissedAt, 10);
-            const now = Date.now();
-            const hoursPassed = (now - dismissedTime) / (1000 * 60 * 60);
-            if (hoursPassed < 6) {
-                setShowDataNotice(false);
-                return;
-            }
-        }
-        setShowDataNotice(true);
-    }, []);
 
     useEffect(() => {
         // Only fetch balances if:
@@ -975,37 +998,14 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         }
     }, [location, accounts, sharedPrompt.isOpen, sharedViewerMode]);
 
-    const handleConfirmSharedAdd = useCallback(async () => {
-        if (!sharedPrompt.accountNo) return;
-        setSharedLoading(true);
-        setSharedError(null);
-        try {
-            const result = await verifyAccount(sharedPrompt.accountNo);
-            if (result.success && result.data) {
-                // Close the shared prompt and open AddAccountModal with pre-verified data
-                setSharedPrompt({ isOpen: false, accountNo: null });
-                setPreVerifiedAccount({ accountNo: sharedPrompt.accountNo, data: result.data });
-                setAddAccountModalOpen(true);
-            } else {
-                setSharedError(result.message || 'Could not fetch account details.');
-            }
-        } catch (e) {
-            setSharedError('Network error. Please try again.');
-        } finally {
-            setSharedLoading(false);
-        }
-    }, [sharedPrompt.accountNo, t]);
-
+    const handleConfirmSharedAdd = useCallback(() => {
+        setSharedPrompt({isOpen:false,accountNo:null});
+        setAddAccountModalOpen(true);
+    }, []);
     const handleDeclineSharedAdd = useCallback(() => {
-        const accountNo = sharedPrompt.accountNo;
-        setSharedPrompt({ isOpen: false, accountNo: null });
-        setSharedViewerMode(true);
-
-        // Navigate to the dashboard in view-only mode
-        if (accountNo) {
-            navigate(`/dashboard/${accountNo}?shared=1`);
-        }
-    }, [sharedPrompt.accountNo, navigate]);
+        setSharedPrompt({isOpen:false,accountNo:null});
+        navigate('/');
+    }, [navigate]);
 
     // Clean up checkedAccounts when accounts are deleted
     useEffect(() => {
@@ -1018,8 +1018,8 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         });
     }, [accounts]);
 
-    const handleAccountAdded = useCallback((newAccount: Account) => {
-        addAccount(newAccount);
+    const handleAccountAdded = useCallback(async (newAccount: Account) => {
+        await addAccount(newAccount);
     }, [addAccount]);
     
     const handleDeleteAccount = useCallback((accountNo: string) => {
@@ -1038,23 +1038,22 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
         });
     }, []);
 
-    const handleConfirmDelete = useCallback(() => {
+    const handleConfirmDelete = useCallback(async () => {
         if (deleteConfirmation.accountNo) {
-            deleteAccount(deleteConfirmation.accountNo);
+            try { await deleteAccount(deleteConfirmation.accountNo); } catch(error) { showNotification((error as Error).message, 'error'); return; }
             setDeleteConfirmation({ isOpen: false, accountNo: null, accountName: '' });
         }
     }, [deleteConfirmation.accountNo, deleteAccount]);
-
-    const handleDismissDataNotice = useCallback(() => {
-        localStorage.setItem('dataNoticeDismissedAt', Date.now().toString());
-        setShowDataNotice(false);
-    }, []);
 
     const handleLanguageSelect = useCallback((language: 'en' | 'bn') => {
         i18n.changeLanguage(language);
     }, [i18n]);
 
     const handleCloseOnboarding = useCallback(() => {
+        // Dismissing the welcome flow is an intentional choice. Persist it here,
+        // rather than only from the final onboarding button, so the close button
+        // does not cause the dialog to return every time the installed PWA opens.
+        localStorage.setItem('onboardingCompleted', 'true');
         setShowOnboarding(false);
 
         // If there's a pending shared link, show the confirmation modal
@@ -1073,8 +1072,15 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
 
     return (
         <ModalContext.Provider value={Modal}>
+            {accountsError && <div role="alert" className="bg-red-950 p-4 text-red-200">{accountsError}<button onClick={retryMigration} className="ml-4 underline">{t('descoRetrySync')}</button></div>}
+            <Modal isOpen={!!syncResults} onClose={dismissSyncResults}>
+                <div className="space-y-4 p-6"><h2 className="text-xl font-bold">{t('descoSyncResults')}</h2><p className="text-sm text-slate-300">{t('descoSyncIntro')}</p>
+                <ul className="space-y-3">{syncResults?.map(result=><li key={result.accountNo}><strong>{result.accountNo}</strong>: {t(`descoSync_${result.status}`)}{result.message&&<p className="text-sm text-slate-400">{result.message}</p>}</li>)}</ul>
+                <button onClick={retryMigration} className="rounded-lg bg-cyan-500 p-3 text-slate-950">{t('descoRetryUnfinished')}</button><button onClick={dismissSyncResults} className="ml-3 p-3">{t('closeModal')}</button></div>
+            </Modal>
             <ErrorBoundary>
                 <Routes>
+                    <Route path="/admin" element={<AdminNotificationPanel />} />
                     <Route path="/dashboard/:accountNo" element={
                         <DashboardWrapper
                             accounts={accounts}
@@ -1086,16 +1092,14 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                     <Route path="/" element={
                         <AccountListPage
                           accounts={accounts}
+                          isAccountsLoading={isAccountsLoading}
                           loadingBalances={loadingBalances}
                           updateAccount={updateAccount}
                           moveAccount={moveAccount}
                           handleDeleteAccount={handleDeleteAccount}
                           setAddAccountModalOpen={setAddAccountModalOpen}
                           notification={notification}
-                          showDataNotice={showDataNotice}
-                          handleDismissDataNotice={handleDismissDataNotice}
                           t={t}
-                          TrashIcon={TrashIcon}
                           PlusIcon={PlusIcon}
                           LanguageSwitcher={LanguageSwitcher}
                           BoltIcon={BoltIcon}
@@ -1110,6 +1114,7 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </ErrorBoundary>
+            {!isAdminRoute && <>
             <AddAccountModal
                 isOpen={addAccountModalOpen}
                 onClose={() => {
@@ -1165,9 +1170,12 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                 title={t('sharedAccountTitle') || 'Shared Account'}
                 message={sharedError ? (sharedError) : (t('sharedAccountMessage') || 'This account was shared with you. What would you like to do?')}
                 confirmText={sharedLoading ? (t('adding') || 'Adding...') : (t('addAccount') || 'Add account')}
-                cancelText={t('viewOnly') || 'View only'}
+                cancelText={t('cancel')}
                 confirmButtonClass={sharedLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700'}
                 icon={<BoltIcon />}
+                mobileFullscreen
+                closeOnConfirm={false}
+                confirmDisabled={sharedLoading}
             />
             <ApiKeyManagementModal
                 isOpen={isApiKeyModalOpen}
@@ -1181,8 +1189,10 @@ const { trackAction, preloadForRoute } = useIntelligentPreloader();
                 isOpen={isNotificationSettingsOpen}
                 onClose={() => setIsNotificationSettingsOpen(false)}
             />
+            </>}
         </ModalContext.Provider>
     );
 };
 
+const App: React.FC = () => <DescoAuthGate><AuthenticatedApp /></DescoAuthGate>;
 export default App;

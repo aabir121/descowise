@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DESCO Account Manager now includes a comprehensive push notification system that monitors account balances and data availability, sending daily notifications at 3:00 PM Bangladesh Time (BDT).
+The DESCO Account Manager now includes a comprehensive push notification system that monitors account balances and data availability, sending daily notifications at 6:00 AM Bangladesh Time (BDT).
 
 ## Features
 
@@ -11,7 +11,7 @@ The DESCO Account Manager now includes a comprehensive push notification system 
 - **Data Unavailable Alert**: Triggered when account data shows as "N/A" or is unavailable
 
 ### ✅ Scheduling
-- **Daily Check**: Automatically checks all accounts once per day at 3:00 PM BDT
+- **Daily Check**: Automatically checks all accounts once per day at 6:00 AM BDT
 - **Bangladesh Timezone**: All scheduling is based on Bangladesh Standard Time (UTC+6)
 - **Duplicate Prevention**: Ensures notifications are sent only once per day per qualifying account
 
@@ -40,7 +40,7 @@ The DESCO Account Manager now includes a comprehensive push notification system 
    - Manages daily check status
 
 3. **NotificationScheduler** (`services/notificationScheduler.ts`)
-   - Handles daily scheduling at 3:00 PM BDT
+   - Handles daily scheduling at 6:00 AM BDT
    - Manages timezone calculations
    - Provides scheduling status information
 
@@ -84,7 +84,7 @@ Click the "Notifications" button in the header to open the settings modal:
 1. Toggle "Daily Notifications" to enable
 2. Grant browser permission when prompted
 3. Configure low balance threshold (default: ৳100)
-4. Set notification time (default: 15:00 BDT)
+4. Set notification time (default: 06:00 BDT)
 
 ### 2. Test the System
 
@@ -110,7 +110,7 @@ The notification settings modal shows:
 {
   enabled: false,
   lowBalanceThreshold: 100,
-  notificationTime: '15:00', // 3:00 PM BDT
+  notificationTime: '06:00', // 6:00 AM BDT
 }
 ```
 

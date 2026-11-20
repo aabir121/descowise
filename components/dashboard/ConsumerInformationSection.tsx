@@ -7,6 +7,7 @@ import { MapPinIcon, HomeIcon, CopyIcon } from '../common/Icons';
 interface ConsumerInformationSectionProps {
     account: Account;
     locationData?: CustomerLocation;
+    locationUnavailable?: boolean;
     banglaEnabled: boolean;
     t: (key: string, options?: any) => string;
     showNotification: (message: string, type?: 'info' | 'warning' | 'error') => void;
@@ -19,6 +20,7 @@ interface ConsumerInformationSectionProps {
 const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({ 
     account, 
     locationData, 
+    locationUnavailable = false,
     banglaEnabled,
     t,
     showNotification,
@@ -143,17 +145,21 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
                 </div>
 
                 {/* Location Information (if available) */}
-                {locationData && (
+                {(locationData || locationUnavailable) && (
                     <div className="bg-slate-700/50 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <MapPinIcon className="w-4 h-4 text-cyan-400" />
                             <h3 className="font-semibold text-slate-100 text-sm">{t('locationInfo')}</h3>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
-                            <DetailItem label={t('zone')} value={locationData.zone} />
-                            <DetailItem label={t('block')} value={locationData.block} />
-                            <DetailItem label={t('route')} value={locationData.route} />
-                        </div>
+                        {locationUnavailable && !locationData ? (
+                            <p className="text-sm text-amber-300">{t('locationUnavailable', 'Location data is temporarily unavailable.')}</p>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-3">
+                                <DetailItem label={t('zone')} value={locationData?.zone} />
+                                <DetailItem label={t('block')} value={locationData?.block} />
+                                <DetailItem label={t('route')} value={locationData?.route} />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -164,4 +170,4 @@ const ConsumerInformationSection: React.FC<ConsumerInformationSectionProps> = ({
     );
 };
 
-export default ConsumerInformationSection; 
+export default ConsumerInformationSection;

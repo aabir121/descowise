@@ -1,7 +1,7 @@
+import { accountResource, listLinkedAccounts, portalRequest } from './descoPortalService';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiSummaryResponse } from '../types';
+import { BalanceData, BalanceResponse, CustomerLocation, MonthlyConsumption, RechargeHistoryItem, DailyConsumption, AiSummary, AiSummaryResponse, AccountInfo } from '../types';
 import { sanitizeCurrency, formatDate, formatMonth } from '../utils/dataSanitization';
-import { fetchJsonWithHandling } from '../utils/api';
 import { generateAiDashboardPrompt } from '../ai/promptGenerators';
 import { getApiKeyForRequest } from '../utils/deploymentConfig';
 import { getUserApiKey, setApiKeyValidationStatus } from '../utils/apiKeyStorage';
@@ -93,27 +93,44 @@ const generateBasicFallbackSummary = (
     };
 };
 
-export const verifyAccount = async (accountNo: string) => {
-    if (!accountNo || !/^\d+$/.test(accountNo) || accountNo.length < 5) {
-        return { success: false, message: 'Invalid account number. Please enter only digits and ensure it is a valid length.' };
-    }
+export const verifyAccount = async (accountNo: string, meterNo?: string) => {
+    if (!/^\d{5,}$/.test(accountNo)) return { success: false, message: 'Enter a valid DESCO account number.' };
     try {
-        const url = `https://prepaid.desco.org.bd/api/unified/customer/getCustomerInfo?accountNo=${accountNo}`;
-        const result = await fetchJsonWithHandling(url);
-        if (result.code === 200 && result.data) {
-            return { success: true, data: result.data };
-        } else {
-            return { success: false, message: result.message || 'Account not found or an unknown error occurred.' };
+        const linked = await listLinkedAccounts();
+        let linkedAccount = linked.find(account => account.accountNo === accountNo);
+        if (!linkedAccount) {
+            linkedAccount = await portalRequest('/accounts/link', {
+                method: 'POST',
+                body: JSON.stringify({ accountNo, ...(meterNo ? { meterNo } : {}) })
+            }) as typeof linkedAccount;
         }
-    } catch (error: any) {
-        return { success: false, message: error.message || 'A network error occurred.' };
+        let summary: Partial<AccountInfo> = {};
+        try { summary = await accountResource(accountNo, 'summary') as Partial<AccountInfo>; }
+        catch { /* Account is linked; summary details are optional. */ }
+        return {
+            success: true,
+            data: {
+                ...summary,
+                accountNo,
+                meterNo: summary.meterNo || linkedAccount?.meterNo || meterNo || '',
+                customerName: summary.customerName || '',
+                contactNo: summary.contactNo || '',
+                feederName: summary.feederName || '',
+                installationAddress: summary.installationAddress || '',
+                tariffSolution: summary.tariffSolution || '',
+                sanctionLoad: summary.sanctionLoad || '',
+                accountId: linkedAccount?.accountId
+            }
+        };
+    } catch (error) {
+        return { success: false, message: (error as Error)?.message || 'Unable to verify this account.' };
     }
 };
 
 export const getAccountBalance = async (accountNo: string): Promise<BalanceResponse> => {
     try {
-        const url = `https://prepaid.desco.org.bd/api/unified/customer/getBalance?accountNo=${accountNo}`;
-        const result = await fetchJsonWithHandling(url);
+        const balance = await accountResource(accountNo, 'balance');
+        const result = {code:200,message: undefined as string | undefined,data:{...balance, accountNo,balance:balance.stale ? null : balance.balance,currentMonthConsumption:balance.currentMonthConsumption ?? balance.currentMonthConsumedTaka}};
         if (result.code === 200 && result.data) {
             const sanitizedData = { ...result.data };
             // Only balance being null/undefined is considered a problem
@@ -513,60 +530,17 @@ export const validateApiKey = async (apiKey: string): Promise<{ isValid: boolean
     }
 };
 
-export const getCustomerLocation = async (accountNo: string): Promise<CustomerLocation> => {
-    const url = `https://prepaid.desco.org.bd/api/common/getCustomerLocation?accountNo=${accountNo}`;
-    const result = await fetchJsonWithHandling(url);
-    if (result.code !== 200 || !result.data) throw new Error(result.message || 'Invalid data for customer location');
-    return result.data;
-};
+export const getCustomerLocation = async (accountNo: string): Promise<CustomerLocation> => accountResource(accountNo, 'summary');
 
-export const getCustomerDailyConsumption = async (accountNo: string, meterNo: string, days: number = 30): Promise<DailyConsumption[]> => {
-    const today = new Date();
-    const fromDate = new Date();
-    fromDate.setDate(today.getDate() - (days - 1));
-    const url = `https://prepaid.desco.org.bd/api/unified/customer/getCustomerDailyConsumption?accountNo=${accountNo}&meterNo=${meterNo}&dateFrom=${formatDate(fromDate)}&dateTo=${formatDate(today)}`;
-    const result = await fetchJsonWithHandling(url);
-    if (result.code !== 200 || !result.data) throw new Error(result.message || 'Invalid data for daily consumption');
-    
-    // Sort data by date to ensure proper calculation
-    const sortedData = result.data.sort((a: DailyConsumption, b: DailyConsumption) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    
-    // Calculate daily consumption by subtracting previous day's accumulated value
-    return sortedData.map((item: DailyConsumption, index: number) => {
-        const currentAccumulatedTaka = sanitizeCurrency(item.consumedTaka);
-        const currentAccumulatedUnit = item.consumedUnit || 0;
-        
-        let dailyTaka = currentAccumulatedTaka;
-        let dailyUnit = currentAccumulatedUnit;
-        
-        // If not the first item, calculate daily difference
-        if (index > 0) {
-            const previousItem = sortedData[index - 1];
-            const previousAccumulatedTaka = sanitizeCurrency(previousItem.consumedTaka);
-            const previousAccumulatedUnit = previousItem.consumedUnit || 0;
-            
-            dailyTaka = currentAccumulatedTaka - previousAccumulatedTaka;
-            dailyUnit = currentAccumulatedUnit - previousAccumulatedUnit;
-            
-            // Ensure non-negative values (in case of data inconsistencies)
-            dailyTaka = Math.max(0, dailyTaka);
-            dailyUnit = Math.max(0, dailyUnit);
-        }
-        
-        return {
-            ...item,
-            consumedTaka: dailyTaka,
-            consumedUnit: dailyUnit
-        };
-    });
+export const getCustomerDailyConsumption = async (accountNo: string, _meterNo: string, days: number = 30): Promise<DailyConsumption[]> => {
+    const today = new Date(); const from = new Date(); from.setDate(today.getDate() - days + 1);
+    const result = await accountResource(accountNo,'usage/daily',`?dateFrom=${formatDate(from)}&dateTo=${formatDate(today)}`);
+    return (result.days || result).map((item: any) => ({...item,consumedTaka:sanitizeCurrency(item.dailyConsumedTaka ?? item.consumedTaka), consumedUnit:item.dailyConsumedUnit ?? item.consumedUnit ?? 0}));
 };
 
 // Updated function with date range support
-export const getRechargeHistory = async (accountNo: string, meterNo: string, fromDate: Date, toDate: Date): Promise<RechargeHistoryItem[]> => {
-    const url = `https://prepaid.desco.org.bd/api/unified/customer/getRechargeHistory?accountNo=${accountNo}&meterNo=${meterNo}&dateFrom=${formatDate(fromDate)}&dateTo=${formatDate(toDate)}`;
-    const result = await fetchJsonWithHandling(url);
+export const getRechargeHistory = async (accountNo: string, _meterNo: string, fromDate: Date, toDate: Date): Promise<RechargeHistoryItem[]> => {
+    const result = {code:200,message: undefined as string | undefined,data:await accountResource(accountNo,'transactions',`?dateFrom=${formatDate(fromDate)}&dateTo=${formatDate(toDate)}`)};
     if (result.code !== 200 || !result.data) return [];
     return result.data.map((item: RechargeHistoryItem) => ({
         ...item,
@@ -575,19 +549,18 @@ export const getRechargeHistory = async (accountNo: string, meterNo: string, fro
 };
 
 // Legacy function for backward compatibility (year-based)
-export const getRechargeHistoryByYear = async (accountNo: string, meterNo: string, year: number): Promise<RechargeHistoryItem[]> => {
+export const getRechargeHistoryByYear = async (accountNo: string, _meterNo: string, year: number): Promise<RechargeHistoryItem[]> => {
     const fromDate = new Date(year, 0, 1); // January 1st
     const toDate = new Date(year, 11, 31); // December 31st
-    return getRechargeHistory(accountNo, meterNo, fromDate, toDate);
+    return getRechargeHistory(accountNo, _meterNo, fromDate, toDate);
 };
 
-export const getCustomerMonthlyConsumption = async (accountNo: string, meterNo: string, months: number = 24): Promise<MonthlyConsumption[]> => {
+export const getCustomerMonthlyConsumption = async (accountNo: string, _meterNo: string, months: number = 24): Promise<MonthlyConsumption[]> => {
     const today = new Date();
     const toMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const fromMonth = new Date();
     fromMonth.setMonth(toMonth.getMonth() - (months - 1));
-    const url = `https://prepaid.desco.org.bd/api/unified/customer/getCustomerMonthlyConsumption?accountNo=${accountNo}&meterNo=${meterNo}&monthFrom=${formatMonth(fromMonth)}&monthTo=${formatMonth(toMonth)}`;
-    const result = await fetchJsonWithHandling(url);
+    const result = {code:200,message: undefined as string | undefined,data:await accountResource(accountNo,'usage/monthly',`?monthFrom=${formatMonth(fromMonth)}&monthTo=${formatMonth(toMonth)}`)};
     if (result.code !== 200 || !result.data) throw new Error(result.message || 'Invalid data for monthly consumption');
     return result.data.map((item: MonthlyConsumption) => ({
         ...item,

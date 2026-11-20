@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Account } from '../types';
 import Spinner from './common/Spinner';
 import ConfirmationDialog from './common/ConfirmationDialog';
-import { BuildingOfficeIcon, InformationCircleIcon, TrashIcon } from './common/Icons';
+import { BuildingOfficeIcon, InformationCircleIcon, TrashIcon, HomeIcon, ArrowUpIcon } from './common/Icons';
 import useDashboardData from './dashboard/useDashboardData';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardSections from './dashboard/DashboardSections';
@@ -39,6 +39,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
     const { t, i18n } = useTranslation();
     const { open: openBalanceWarning } = useBalanceWarning();
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+    const dashboardScrollRef = useRef<HTMLElement>(null);
     const {
         processedData,
         isLoading,
@@ -67,6 +68,9 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
         // AI Cache information
         isUsingCache,
         cacheStatus,
+        dataIssues,
+        lastFetchedAt,
+        retryData,
     } = useDashboardData(account);
 
     // Add notification state for dashboard view
@@ -130,7 +134,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                     </div>
                 </div>
             )}
-            <main className="flex-grow px-4 pt-2 pb-4 sm:px-6 sm:pt-2 sm:pb-6 lg:px-8 lg:pt-2 lg:pb-8 overflow-y-auto">
+            <main ref={dashboardScrollRef} className="flex-grow overflow-y-auto px-4 pb-24 pt-2 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8 lg:pt-2">
                 <div className="relative min-h-full">
                     {/* Skeleton Dashboard with fade out transition */}
                     <div className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
@@ -155,6 +159,28 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                 ? 'opacity-0 transform translate-y-4 pointer-events-none'
                                 : 'opacity-100 transform translate-y-0'
                         }`}>
+                            {dataIssues.length > 0 && (
+                                <div className="mb-4 flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between" role="status">
+                                    <div>
+                                        <p className="font-semibold">{t('partialDataLoaded', 'Some DESCO data is unavailable')}</p>
+                                        <p className="mt-1 text-xs text-amber-200/80">
+                                            {dataIssues.map(issue => issue.label).join(', ')}. Other sections remain available.
+                                        </p>
+                                        {lastFetchedAt && (
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                {t('lastChecked', 'Last checked')}: {lastFetchedAt.toLocaleTimeString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={retryData}
+                                        className="shrink-0 rounded-lg border border-amber-300/40 px-3 py-2 text-xs font-semibold text-amber-100 transition hover:bg-amber-300/10"
+                                    >
+                                        {t('retryUnavailableData', 'Retry unavailable data')}
+                                    </button>
+                                </div>
+                            )}
                             <DashboardSections
                                 processedData={processedData}
                                 data={data}
@@ -176,6 +202,7 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                                 distributedAiInsights={distributedAiInsights}
                                 aiLoadingStates={aiLoadingStates}
                                 onSetupApiKey={() => setIsApiKeyModalOpen(true)}
+                                dataIssues={dataIssues}
                             />
                         </div>
                     )}
@@ -230,7 +257,17 @@ const AccountDashboardView: React.FC<{ account: Account; onClose: () => void; on
                 }}
             />
 
-            <Footer />
+            <nav className="fixed inset-x-3 bottom-3 z-50 flex items-center justify-around rounded-[1.5rem] border border-slate-700/80 bg-slate-900/95 px-2 py-2 shadow-2xl shadow-slate-950/80 backdrop-blur-xl sm:hidden" aria-label={t('navigation', 'Navigation')}>
+                <button type="button" onClick={onClose} className="flex min-w-[7rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-slate-300 transition hover:bg-slate-800 hover:text-white">
+                    <HomeIcon className="h-5 w-5 text-cyan-300" />
+                    <span className="text-[10px] font-semibold">{t('accounts', 'Accounts')}</span>
+                </button>
+                <button type="button" onClick={() => dashboardScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} className="flex min-w-[7rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-slate-300 transition hover:bg-slate-800 hover:text-white">
+                    <ArrowUpIcon className="h-5 w-5 text-cyan-300" />
+                    <span className="text-[10px] font-semibold">{t('overview', 'Overview')}</span>
+                </button>
+            </nav>
+            <div className="hidden sm:block"><Footer /></div>
         </div>
     );
 };

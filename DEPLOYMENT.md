@@ -1,6 +1,6 @@
 # DescoWise Deployment Guide
 
-This document explains how to deploy DescoWise with user-provided API key configuration.
+This document explains how to deploy DescoWise with user-provided API key configuration on Cloudflare Pages.
 
 ## Overview
 
@@ -31,39 +31,28 @@ npm run deploy
 scripts\deploy.bat
 ```
 
-### Custom Project Name
-
-```bash
-PROJECT_NAME=my-descowise npm run deploy
-```
-
 ## Manual Deployment
 
 ### Prerequisites
 
-1. Install Vercel CLI: `npm install -g vercel`
-2. Login to Vercel: `vercel login`
-3. Link your project: `vercel link`
+1. Install Wrangler: `npm install -g wrangler`
+2. Login: `wrangler login`
+3. Create the project once: `wrangler pages project create descowise --production-branch main`
 
 ### Deployment Steps
 
-1. **Set Environment Variables in Vercel Dashboard (Optional):**
-   ```
-   GEMINI_MODEL=gemini-2.5-flash (optional, default)
-   GEMINI_TEMPERATURE=0.3 (optional, default)
-   ```
-
-2. **Deploy:**
+1. **Deploy:**
    ```bash
-   vercel --prod
+   npm run deploy
    ```
 
 ## Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `GEMINI_MODEL` | AI model to use (default: gemini-2.5-flash) | Optional |
-| `GEMINI_TEMPERATURE` | AI temperature setting (default: 0.3) | Optional |
+| `VITE_PUSH_API_BASE_URL` | Cloudflare notification Worker URL | Required for Web Push |
+
+See [Web Push deployment](docs/WEB_PUSH.md) for D1 migration, Worker deployment, and VAPID configuration.
 
 ## User Experience
 
@@ -110,7 +99,7 @@ This approach gives you:
 ### Common Issues
 
 **Deployment fails:**
-- Check Vercel deployment logs
+- Check Cloudflare Pages deployment logs
 - Verify build process completes
 - Ensure all dependencies are installed
 

@@ -16,6 +16,7 @@ import BalanceDisplay from '../account/BalanceDisplay';
 import DashboardTabs from './DashboardTabs';
 import StandardizedLoading, { LoadingTransition, StaggeredLoadingContainer } from '../common/StandardizedLoading';
 import { calculateLoadingDelay, useDebouncedLoading } from '../../utils/loadingStates';
+import DashboardSummaryCards from './DashboardSummaryCards';
 
 // Lazy load heavy chart components
 const ConsumptionChartSection = lazy(() => import('./ConsumptionChartSection'));
@@ -95,6 +96,7 @@ const DashboardSections: React.FC<any> = ({
   aiLoadingStates,
   isDataLoading = false,
   onSetupApiKey,
+  dataIssues = [],
 }) => {
   const { getSectionPreference } = useSectionPreferences();
   const [preferencesVersion, setPreferencesVersion] = useState(0);
@@ -333,6 +335,7 @@ const DashboardSections: React.FC<any> = ({
             <ConsumerInformationSection
               account={account}
               locationData={data?.location}
+              locationUnavailable={dataIssues.some(issue => issue.key === 'location')}
               banglaEnabled={banglaEnabled}
               t={t}
               showNotification={showNotification}
@@ -433,7 +436,7 @@ const DashboardSections: React.FC<any> = ({
       default:
         return null;
     }
-  }, [shouldShowSection, account.aiInsightsEnabled, isDataLoading, aiSummary, isAiLoading, isAiAvailable, data, banglaEnabled, t, balanceUnavailable, getDefaultOpen, handleInfoClick, retryAiSummary, onSetupApiKey, distributedAiInsights, aiLoadingStates, processedData, consumptionTimeRange, setConsumptionTimeRange, rechargeYear, isHistoryLoading, handleYearChange, aiInsight, aiBalanceError, isAiBalanceLoading, estimatedDaysRemaining]);
+  }, [shouldShowSection, account.aiInsightsEnabled, isDataLoading, aiSummary, isAiLoading, isAiAvailable, data, dataIssues, banglaEnabled, t, balanceUnavailable, getDefaultOpen, handleInfoClick, retryAiSummary, onSetupApiKey, distributedAiInsights, aiLoadingStates, processedData, consumptionTimeRange, setConsumptionTimeRange, rechargeYear, isHistoryLoading, handleYearChange, aiInsight, aiBalanceError, isAiBalanceLoading, estimatedDaysRemaining]);
 
   return (
     <div className="space-y-6" key={preferencesVersion}>
@@ -444,6 +447,8 @@ const DashboardSections: React.FC<any> = ({
         t={t}
         className="top-0 z-20"
       />
+
+      <DashboardSummaryCards data={data} t={t} />
 
       {/* Render sections with staggered loading */}
       <StaggeredLoadingContainer staggerDelay={100}>
@@ -465,4 +470,4 @@ const DashboardSections: React.FC<any> = ({
   );
 };
 
-export default DashboardSections; 
+export default DashboardSections;

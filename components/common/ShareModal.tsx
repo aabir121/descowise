@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account } from '../../types';
-import { CloseIcon, ShareIcon, CopyIcon, CheckIcon, BoltIcon } from './Icons';
+import { CheckIcon, CloseIcon, CopyIcon, ShareIcon } from './Icons';
 import { useModal } from '../../App';
 
 interface ShareModalProps {
@@ -14,237 +14,95 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, account }) => 
   const { t } = useTranslation();
   const Modal = useModal();
   const [copied, setCopied] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<'simple' | 'detailed'>('simple');
 
-  // Generate different types of share URLs with enhanced parameters
-  const accountName = encodeURIComponent(account.displayName || account.customerName || 'DESCO Account');
-  const shareId = Math.random().toString(36).substring(2, 8); // Generate a short random ID
+  const shareUrl = useMemo(
+    () => `${window.location.origin}/dashboard/${account.accountNo}?shared=1&ref=share`,
+    [account.accountNo]
+  );
+  const accountLabel = account.displayName || account.customerName || `${t('account')} ${account.accountNo}`;
+  const shareTitle = t('shareAccountTitle', { accountName: accountLabel, defaultValue: `DESCO account: ${accountLabel}` });
+  const shareText = t('shareAccountText', {
+    accountName: accountLabel,
+    defaultValue: `View the DESCO account “${accountLabel}” in DescoWise.`
+  });
 
-  const shareFormats = {
-    simple: {
-      url: `${window.location.origin}/dashboard/${account.accountNo}?shared=1&ref=simple&sid=${shareId}`,
-      title: t('shareSimpleTitle'),
-      description: t('shareSimpleDescription', { accountNo: account.accountNo })
-    },
-    detailed: {
-      url: `${window.location.origin}/dashboard/${account.accountNo}?shared=1&ref=detailed&name=${accountName}&sid=${shareId}&utm_source=descowise&utm_medium=share&utm_campaign=dashboard_share`,
-      title: t('shareDetailedTitle', { accountName: account.displayName || account.customerName || t('myDescoAccount') }),
-      description: t('shareDetailedDescription', { accountNo: account.accountNo })
-    }
-  };
-
-  const currentFormat = shareFormats[selectedFormat];
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(currentFormat.url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy link:', error);
-    }
-  };
-
-  const handleCopyWithText = async () => {
-    const shareText = `${currentFormat.title}\n\n${currentFormat.description}\n\n🔗 ${currentFormat.url}`;
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy text:', error);
-    }
-  };
-
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: currentFormat.title,
-          text: currentFormat.description,
-          url: currentFormat.url,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      // Fallback to copy
-      handleCopyWithText();
-    }
-  };
-
-  // Reset copied state when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setCopied(false);
-    }
+    if (isOpen) setCopied(false);
   }, [isOpen]);
 
   if (!isOpen) return null;
 
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access is not available in every embedded browser.
+      window.prompt(t('copyShareLink', 'Copy this link'), shareUrl);
+    }
+  };
+
+  const share = async () => {
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+      } catch (error) {
+        // Cancelling the system share sheet is not an application error.
+        if ((error as DOMException).name !== 'AbortError') console.error('Unable to share account', error);
+      }
+      return;
+    }
+    await copyLink();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
-      <div className="flex flex-col h-full">
-        {/* Fixed Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-700 flex-shrink-0 sticky top-0 bg-slate-800 z-10">
+    <Modal isOpen={isOpen} onClose={onClose} mobileFullscreen>
+      <div className="flex min-h-full flex-1 flex-col">
+        <header className="flex items-center justify-between border-b border-slate-700 px-5 py-[max(1rem,env(safe-area-inset-top))] sm:p-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-cyan-500/20 rounded-lg">
-              <ShareIcon className="w-6 h-6 text-cyan-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">{t('shareDashboard')}</h2>
-              <p className="text-sm text-slate-400">{t('shareAccountDashboard')}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 p-2 rounded-lg hover:bg-slate-700 transition-colors"
-            aria-label={t('closeModal')}
-          >
-            <CloseIcon className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 px-6 pt-10 pb-6 overflow-y-auto">
-
-        {/* Account Preview */}
-        <div className="bg-slate-700/50 rounded-lg p-4 mb-6 border border-slate-600">
-          <div className="flex items-center gap-3 mb-2">
-            <BoltIcon className="w-5 h-5 text-cyan-400" />
-            <span className="font-semibold text-slate-200">
-              {account.displayName || account.customerName || `Account ${account.accountNo}`}
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300">
+              <ShareIcon className="h-5 w-5" />
             </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">{t('shareAccount', 'Share account')}</p>
+              <h2 className="mt-0.5 text-xl font-bold text-white">{t('shareDashboard')}</h2>
+            </div>
           </div>
-          <div className="text-sm text-slate-400 space-y-1">
-            <div>{t('account')}: {account.accountNo}</div>
-            {account.customerName && <div>{t('customerName')}: {account.customerName}</div>}
-            {account.installationAddress && (
-              <div className="truncate">{t('installationAddress')}: {account.installationAddress}</div>
-            )}
-          </div>
-        </div>
-
-        {/* Share Format Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-300 mb-3">
-            {t('shareFormat')}
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setSelectedFormat('simple')}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                selectedFormat === 'simple'
-                  ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                  : 'border-slate-600 bg-slate-700/30 text-slate-300 hover:border-slate-500'
-              }`}
-            >
-              <div className="font-medium text-sm">{t('simpleShare')}</div>
-              <div className="text-xs text-slate-400 mt-1">{t('simpleShareDesc')}</div>
-            </button>
-            <button
-              onClick={() => setSelectedFormat('detailed')}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                selectedFormat === 'detailed'
-                  ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                  : 'border-slate-600 bg-slate-700/30 text-slate-300 hover:border-slate-500'
-              }`}
-            >
-              <div className="font-medium text-sm">{t('detailedShare')}</div>
-              <div className="text-xs text-slate-400 mt-1">{t('detailedShareDesc')}</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Preview */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            {t('sharePreview')}
-          </label>
-          <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
-            <div className="font-medium text-slate-200 mb-1">{currentFormat.title}</div>
-            <div className="text-sm text-slate-400 mb-3 whitespace-pre-wrap">{currentFormat.description}</div>
-            <div className="text-xs text-cyan-400 font-mono break-all">{currentFormat.url}</div>
-          </div>
-        </div>
-
-        {/* Share Actions */}
-        <div className="space-y-3">
-          <button
-            onClick={handleCopyLink}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] shadow-lg"
-          >
-            {copied ? (
-              <>
-                <CheckIcon className="w-5 h-5" />
-                {t('linkCopied')}
-              </>
-            ) : (
-              <>
-                <CopyIcon className="w-5 h-5" />
-                {t('copyLink')}
-              </>
-            )}
+          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-700 hover:text-slate-100" aria-label={t('closeModal')}>
+            <CloseIcon className="h-6 w-6" />
           </button>
+        </header>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={handleCopyWithText}
-              className="flex items-center justify-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-            >
-              <ShareIcon className="w-4 h-4" />
-              <span className="text-sm">{t('copyWithDescription')}</span>
+        <main className="flex-1 px-5 py-8 sm:p-6">
+          <div className="mx-auto w-full max-w-md">
+            <h3 className="text-2xl font-bold tracking-tight text-slate-50">{t('shareAccountHeading', 'Share access with someone you trust')}</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-400">{t('shareAccountIntro', 'They can open the latest account information from this link. They can choose to add it to their own dashboard or just view it.')}</p>
+
+            <section className="mt-8 rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
+              <p className="text-base font-semibold text-slate-100">{accountLabel}</p>
+              <p className="mt-1 text-sm text-slate-400">{t('accountNumber')}: {account.accountNo}</p>
+              {account.meterNo && <p className="mt-1 text-sm text-slate-400">{t('meterNumber')}: {account.meterNo}</p>}
+            </section>
+
+            <div className="mt-6 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-5 text-amber-100">
+              {t('sharePrivacyNote', 'Only share this link with people you trust. Anyone with the link can view this account.')}
+            </div>
+          </div>
+        </main>
+
+        <footer className="border-t border-slate-700 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:p-5">
+          <div className="mx-auto grid w-full max-w-md gap-3">
+            <button onClick={share} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-4 text-base font-bold text-slate-950 transition hover:bg-cyan-300">
+              <ShareIcon className="h-5 w-5" />
+              {typeof navigator.share === 'function' ? t('shareViaSystem', 'Share') : t('copyLink')}
             </button>
-
-            {typeof navigator.share === 'function' && (
-              <button
-                onClick={handleNativeShare}
-                className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-              >
-                <ShareIcon className="w-4 h-4" />
-                <span className="text-sm">{t('shareViaSystem')}</span>
-              </button>
-            )}
+            <button onClick={copyLink} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-600 px-4 py-3.5 text-sm font-bold text-slate-200 transition hover:bg-slate-700">
+              {copied ? <CheckIcon className="h-5 w-5 text-emerald-300" /> : <CopyIcon className="h-5 w-5" />}
+              {copied ? t('linkCopied') : t('copyLink')}
+            </button>
           </div>
-
-          {/* Quick Social Share Options */}
-          <div className="pt-2 border-t border-slate-600">
-            <div className="text-xs text-slate-400 mb-2">{t('quickShare')}</div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(currentFormat.title + '\n\n' + currentFormat.description + '\n\n' + currentFormat.url)}`, '_blank')}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
-              >
-                {t('whatsapp')}
-              </button>
-              <button
-                onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent(currentFormat.url)}&text=${encodeURIComponent(currentFormat.title)}`, '_blank')}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
-              >
-                {t('telegram')}
-              </button>
-              <button
-                onClick={() => window.open(`mailto:?subject=${encodeURIComponent(currentFormat.title)}&body=${encodeURIComponent(currentFormat.description + '\n\n' + currentFormat.url)}`, '_blank')}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
-              >
-                {t('email')}
-              </button>
-            </div>
-          </div>
-        </div>
-
-          {/* Tips */}
-          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <div className="text-sm text-blue-300">
-              <div className="font-medium mb-1">💡 {t('sharingTips')}</div>
-              <ul className="text-xs text-blue-200 space-y-1">
-                <li>• {t('sharingTip1')}</li>
-                <li>• {t('sharingTip2')}</li>
-                <li>• {t('sharingTip3')}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        </footer>
       </div>
     </Modal>
   );

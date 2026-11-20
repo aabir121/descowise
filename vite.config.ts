@@ -4,8 +4,18 @@ import { defineConfig, loadEnv } from 'vite';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const isProduction = mode === 'production';
+    const pagesOrigin = `http://127.0.0.1:${process.env.DESCO_PAGES_DEV_PORT || '8788'}`;
 
     return {
+      server: {
+        proxy: {
+          '/api': {
+            target: pagesOrigin,
+            changeOrigin: true,
+            headers: { Origin: pagesOrigin }
+          }
+        }
+      },
       define: {
         // Environment variables for build-time configuration
         'process.env.GEMINI_MODEL': JSON.stringify(env.GEMINI_MODEL || 'gemini-2.5-flash'),

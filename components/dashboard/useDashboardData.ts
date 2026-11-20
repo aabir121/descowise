@@ -14,6 +14,8 @@ import {
 import { shouldEnableAiFeatures } from '../../utils/deploymentConfig';
 import { getUserApiKey } from '../../utils/apiKeyStorage';
 import { BalanceCalculator } from '../../utils/balanceCalculations';
+import { settledValue } from '../../utils/settledValue';
+import { DashboardDataIssue, getDashboardDataIssues } from '../../utils/dashboardData';
 import {
   getCachedAiResponse,
   cacheAiResponse,
@@ -61,6 +63,9 @@ type UseDashboardDataReturn = {
     lastFetch: Date | null;
     timeRemaining: number;
   };
+  dataIssues: DashboardDataIssue[];
+  lastFetchedAt: Date | null;
+  retryData: () => void;
 };
 
 const useDashboardData = (account: Account): UseDashboardDataReturn => {
@@ -91,6 +96,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     lastFetch: Date | null;
     timeRemaining: number;
   }>({ isCached: false, isStale: false, lastFetch: null, timeRemaining: 0 });
+  const [dataIssues, setDataIssues] = useState<DashboardDataIssue[]>([]);
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   // Move fetchAiSummary outside useEffect so it can be accessed by other functions
   const fetchAiSummary = useCallback(async (monthlyConsumption: MonthlyConsumption[], rechargeHistory: RechargeHistoryItem[], balanceData: BalanceData | null, dailyConsumption: DailyConsumption[], forceRefreshCache: boolean = false) => {
@@ -203,6 +211,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         setIsLoading(true);
         setIsDataProcessing(true);
         setError(null);
+        setDataIssues([]);
 
         // Calculate date range for consistent 24-month period across all data sources
         const today = new Date();
@@ -210,13 +219,14 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
         const fromMonth = new Date();
         fromMonth.setMonth(toMonth.getMonth() - 23); // 24 months total (0-23)
 
-        // Convert to date range for recharge history (from first day of fromMonth to last day of current month)
-        const rechargeFromDate = new Date(fromMonth.getFullYear(), fromMonth.getMonth(), 1);
-        const rechargeToDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
+        // DESCO limits transaction queries to 366 days.
+        const rechargeFromDate = new Date(today);
+        rechargeFromDate.setFullYear(today.getFullYear() - 1);
+        const rechargeToDate = today;
 
 
 
-        const [location, monthlyConsumption, rechargeHistory, dailyConsumption, balanceResult] = await Promise.all([
+        const [locationResult, monthlyConsumptionResult, rechargeHistoryResult, dailyConsumptionResult, balanceResultResult] = await Promise.allSettled([
           api.getCustomerLocation(account.accountNo),
           api.getCustomerMonthlyConsumption(account.accountNo, account.meterNo, 24),
           api.getRechargeHistory(account.accountNo, account.meterNo, rechargeFromDate, rechargeToDate),
@@ -224,7 +234,29 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
           api.getAccountBalance(account.accountNo)
         ]);
 
+        const issues = getDashboardDataIssues({
+          location: locationResult,
+          monthlyConsumption: monthlyConsumptionResult,
+          rechargeHistory: rechargeHistoryResult,
+          dailyConsumption: dailyConsumptionResult,
+          balance: balanceResultResult,
+        });
+
+        // DESCO occasionally returns HTTP 500 for one of the optional history
+        // endpoints. Keep the dashboard usable with the data that did load.
+        const location = settledValue(locationResult, null);
+        const monthlyConsumption = settledValue(monthlyConsumptionResult, []);
+        const rechargeHistory = settledValue(rechargeHistoryResult, []);
+        const dailyConsumption = settledValue(dailyConsumptionResult, []);
+        const balanceResult = settledValue(balanceResultResult, {
+          success: false,
+          message: 'Could not fetch account balance.'
+        });
+
         if (!isMounted) return;
+
+        setDataIssues(issues);
+        setLastFetchedAt(new Date());
 
         // Set data immediately but keep processing state active
         setData({
@@ -286,7 +318,7 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     return () => {
       isMounted = false;
     };
-  }, [account.accountNo, account.meterNo]);
+  }, [account.accountNo, account.meterNo, reloadVersion]);
 
   useEffect(() => {
     if (notification) {
@@ -585,6 +617,10 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     }
   }, [data, account.accountNo, fetchAiSummary]);
 
+  const retryData = useCallback(() => {
+    setReloadVersion(version => version + 1);
+  }, []);
+
   return {
     processedData,
     isLoading: isLoading || isDataProcessing, // Include data processing in loading state
@@ -617,6 +653,9 @@ const useDashboardData = (account: Account): UseDashboardDataReturn => {
     // AI Cache information
     isUsingCache,
     cacheStatus,
+    dataIssues,
+    lastFetchedAt,
+    retryData,
   };
 };
 
